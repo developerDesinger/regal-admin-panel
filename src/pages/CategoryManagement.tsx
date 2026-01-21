@@ -22,7 +22,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Plus, Search, Edit2, Trash2, LayoutGrid, Palette, BadgeHelp, Upload, Loader2 } from "lucide-react";
+import { MoreHorizontal, Plus, Search, Edit2, Trash2, LayoutGrid, Upload, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";

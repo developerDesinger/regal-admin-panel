@@ -14,7 +14,6 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger,
   DialogFooter
 } from "@/components/ui/dialog";
 import { 
@@ -23,7 +22,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Plus, Search, Edit2, Trash2, UserPlus, Shield, User } from "lucide-react";
+import { MoreHorizontal, Search, Edit2, Trash2, UserPlus, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";

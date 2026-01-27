@@ -59,7 +59,12 @@ const UserManagement = () => {
     try {
       const response = await api.get('/users');
       // The backend returns { users: [], pagination: {} }
-      setUsers(response.data.users || []);
+      // Normalize users to ensure they have an 'id' field (some might have _id)
+      const normalizedUsers = (response.data.users || []).map((u: any) => ({
+        ...u,
+        id: u.id || u._id || Math.random().toString()
+      }));
+      setUsers(normalizedUsers);
     } catch (error) {
       console.error("Failed to fetch users", error);
       // Demo Data
@@ -101,7 +106,7 @@ const UserManagement = () => {
   const handleSave = async () => {
     try {
       if (editingUser) {
-        await api.patch(`/users/${editingUser.id}`, formData);
+        await api.put(`/users/${editingUser.id}`, formData);
         toast({ title: "User updated successfully" });
       } else {
         await api.post('/users', formData);

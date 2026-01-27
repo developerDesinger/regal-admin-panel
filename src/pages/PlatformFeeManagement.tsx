@@ -90,7 +90,10 @@ const PlatformFeeManagement = () => {
                     min="0"
                     step="0.01"
                     value={fee}
-                    onChange={(e) => setFee(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setFee(isNaN(val) ? 0 : Math.max(0, val));
+                    }}
                     placeholder="0.0"
                   />
                   <p className="text-xs text-muted-foreground">

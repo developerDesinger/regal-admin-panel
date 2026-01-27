@@ -93,7 +93,11 @@ const CategoryManagement = () => {
     try {
       const response = await api.get('/categories');
       // The backend returns { success: true, data: { categories: [], count: 0 } }
-      setCategories(response.data.data?.categories || []);
+      const normalizedCategories = (response.data.data?.categories || []).map((c: any) => ({
+        ...c,
+        id: c.id || c._id || Math.random().toString()
+      }));
+      setCategories(normalizedCategories);
     } catch (error) {
       console.error("Failed to fetch categories", error);
       // Demo Data
@@ -139,7 +143,7 @@ const CategoryManagement = () => {
   const handleSave = async () => {
     try {
       if (editingCategory) {
-        await api.patch(`/categories/${editingCategory.id}`, formData);
+        await api.put(`/categories/${editingCategory.id}`, formData);
         toast({ title: "Category updated successfully" });
       } else {
         await api.post('/categories', formData);

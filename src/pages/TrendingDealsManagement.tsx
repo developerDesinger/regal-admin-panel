@@ -95,7 +95,11 @@ const TrendingDealsManagement = () => {
     try {
       const response = await api.get('/trending-deals');
       // The backend returns { success: true, data: { deals: [], count: 0 } }
-      setDeals(response.data.data?.deals || []);
+      const normalizedDeals = (response.data.data?.deals || []).map((d: any) => ({
+        ...d,
+        id: d.id || d._id || Math.random().toString()
+      }));
+      setDeals(normalizedDeals);
     } catch (error) {
       console.error("Failed to fetch deals", error);
       // Demo Data
@@ -143,7 +147,7 @@ const TrendingDealsManagement = () => {
   const handleSave = async () => {
     try {
       if (editingDeal) {
-        await api.patch(`/trending-deals/${editingDeal.id}`, formData);
+        await api.put(`/trending-deals/${editingDeal.id}`, formData);
         toast({ title: "Deal updated successfully" });
       } else {
         await api.post('/trending-deals', formData);
@@ -329,8 +333,12 @@ const TrendingDealsManagement = () => {
                   <Input 
                     id="price" 
                     type="number"
+                    min="0"
                     value={formData.amount} 
-                    onChange={(e) => setFormData({...formData, amount: parseFloat(e.target.value)})}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setFormData({...formData, amount: isNaN(val) ? 0 : Math.max(0, val)});
+                    }}
                     className="pl-10"
                   />
                 </div>

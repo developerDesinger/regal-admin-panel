@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Users, LayoutGrid, Flame, LogOut, ShieldCheck } from 'lucide-react';
+import { Users, LayoutGrid, Flame, LogOut, ShieldCheck, Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -7,6 +7,7 @@ const menuItems = [
   { icon: Users, label: 'User Management', path: '/users' },
   { icon: LayoutGrid, label: 'Categories', path: '/categories' },
   { icon: Flame, label: 'Trending Deals', path: '/trending-deals' },
+  { icon: Coins, label: 'Platform Fee', path: '/platform-fee' },
 ];
 
 const Sidebar = ({ onClose }: { onClose?: () => void }) => {

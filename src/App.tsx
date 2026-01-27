@@ -4,6 +4,7 @@ import DashboardLayout from './components/layout/DashboardLayout';
 import UserManagement from './pages/UserManagement';
 import CategoryManagement from './pages/CategoryManagement';
 import TrendingDealsManagement from './pages/TrendingDealsManagement';
+import PlatformFeeManagement from './pages/PlatformFeeManagement';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('admin_token');
@@ -28,6 +29,7 @@ function App() {
           <Route path="users" element={<UserManagement />} />
           <Route path="categories" element={<CategoryManagement />} />
           <Route path="trending-deals" element={<TrendingDealsManagement />} />
+          <Route path="platform-fee" element={<PlatformFeeManagement />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />

@@ -22,7 +22,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Search, Edit2, Trash2, UserPlus, Shield } from "lucide-react";
+import { MoreHorizontal, Search, Edit2, Trash2, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
@@ -150,10 +150,6 @@ const UserManagement = () => {
           <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
           <p className="text-muted-foreground">Manage your platform users and their roles.</p>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="gap-2">
-          <UserPlus className="w-4 h-4" />
-          Add User
-        </Button>
       </div>
 
       <div className="flex items-center gap-4 bg-card p-4 rounded-lg border shadow-sm">

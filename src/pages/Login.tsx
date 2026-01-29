@@ -40,7 +40,7 @@ const LoginPage = () => {
         description: `Welcome back, ${user.name}!`,
       });
       
-      navigate('/users');
+      navigate('/');
     } catch (error: any) {
       toast({
         title: "Login Failed",
@@ -52,7 +52,7 @@ const LoginPage = () => {
       if (email === 'admin@regal.com' && password === 'admin123') {
          localStorage.setItem('admin_token', 'dev-token');
          localStorage.setItem('admin_user', JSON.stringify({ firstName: 'Admin', role: 'ADMIN' }));
-         navigate('/users');
+         navigate('/');
       }
     } finally {
       setIsLoading(false);

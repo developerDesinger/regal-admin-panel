@@ -1,12 +1,17 @@
 import { NavLink } from 'react-router-dom';
-import { Users, LayoutGrid, Flame, LogOut, ShieldCheck, Coins } from 'lucide-react';
+import { Users, LayoutGrid, Flame, LogOut, ShieldCheck, Coins, LayoutDashboard, Calendar, Receipt, FileBarChart, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 const menuItems = [
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
   { icon: Users, label: 'User Management', path: '/users' },
   { icon: LayoutGrid, label: 'Categories', path: '/categories' },
   { icon: Flame, label: 'Trending Deals', path: '/trending-deals' },
+  { icon: Calendar, label: 'Events', path: '/events' },
+  { icon: Receipt, label: 'Transactions', path: '/transactions' },
+  { icon: FileBarChart, label: 'Reports', path: '/reports' },
+  { icon: AlertTriangle, label: 'Risk Alerts', path: '/alerts' },
   { icon: Coins, label: 'Platform Fee', path: '/platform-fee' },
 ];
 

@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/Login';
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -5,6 +6,11 @@ import UserManagement from './pages/UserManagement';
 import CategoryManagement from './pages/CategoryManagement';
 import TrendingDealsManagement from './pages/TrendingDealsManagement';
 import PlatformFeeManagement from './pages/PlatformFeeManagement';
+import ExecutiveDashboard from './pages/dashboard/ExecutiveDashboard';
+import EventsManagement from './pages/dashboard/EventsManagement';
+import TransactionsLedger from './pages/dashboard/TransactionsLedger';
+import Reports from './pages/dashboard/Reports';
+import RiskAlerts from './pages/dashboard/RiskAlerts';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('admin_token');
@@ -17,7 +23,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('admin_token');
   if (token) {
-    return <Navigate to="/users" replace />;
+    return <Navigate to="/" replace />; // Redirect to dashboard root which is now Executive Dashboard
   }
   return <>{children}</>;
 };
@@ -37,8 +43,12 @@ function App() {
             <DashboardLayout />
           </ProtectedRoute>
         }>
-          <Route index element={<Navigate to="/users" replace />} />
+          <Route index element={<ExecutiveDashboard />} />
           <Route path="users" element={<UserManagement />} />
+          <Route path="events" element={<EventsManagement />} />
+          <Route path="transactions" element={<TransactionsLedger />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="alerts" element={<RiskAlerts />} />
           <Route path="categories" element={<CategoryManagement />} />
           <Route path="trending-deals" element={<TrendingDealsManagement />} />
           <Route path="platform-fee" element={<PlatformFeeManagement />} />

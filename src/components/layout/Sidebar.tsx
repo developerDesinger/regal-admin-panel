@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { Users, LayoutGrid, Flame, LogOut, ShieldCheck, Coins, LayoutDashboard, Calendar, Receipt, FileBarChart, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
@@ -16,6 +17,8 @@ const menuItems = [
 ];
 
 const Sidebar = ({ onClose }: { onClose?: () => void }) => {
+  const { t } = useLanguage();
+
   const handleLogout = () => {
     localStorage.removeItem('admin_token');
     window.location.href = '/login';
@@ -46,7 +49,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
             }
           >
             <item.icon className="w-5 h-5" />
-            <span className="font-medium">{item.label}</span>
+            <span className="font-medium">{t(item.label)}</span>
           </NavLink>
         ))}
       </div>
@@ -58,7 +61,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
           onClick={handleLogout}
         >
           <LogOut className="w-5 h-5 mr-3" />
-          Logout
+          {t('Logout')}
         </Button>
       </div>
     </div>

@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const DashboardLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { language, toggleLanguage } = useLanguage();
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -23,17 +25,33 @@ const DashboardLayout = () => {
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile Header */}
-        <header className="flex items-center justify-between px-4 h-16 border-b lg:hidden bg-card">
-          <div className="flex items-center gap-2">
+        {/* Header */}
+        <header className="flex items-center justify-between px-4 h-16 border-b bg-card">
+          <div className="flex items-center gap-2 lg:hidden">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold">R</span>
             </div>
             <span className="font-bold">Regal Admin</span>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-            {isMobileMenuOpen ? <X /> : <Menu />}
-          </Button>
+
+          {/* Spacer for desktop alignment */}
+          <div className="hidden lg:block"></div>
+
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={toggleLanguage}
+              className="flex items-center gap-2"
+            >
+              <Languages className="w-4 h-4" />
+              <span>{language === 'eng' ? 'English' : 'Español'}</span>
+            </Button>
+
+            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+              {isMobileMenuOpen ? <X /> : <Menu />}
+            </Button>
+          </div>
         </header>
 
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto w-full">

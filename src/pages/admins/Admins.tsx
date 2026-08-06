@@ -171,13 +171,13 @@ export default function Admins() {
         Permission matrix
       </SectionHeading>
       <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="scroll-x">
           <table className="w-full border-collapse">
             <thead className="sticky top-0 bg-neutral-50">
               <tr className="border-b border-neutral-200">
                 <th
                   scope="col"
-                  className="sticky left-0 z-10 min-w-[200px] bg-neutral-50 px-4 py-3 text-left text-table-header uppercase text-neutral-500"
+                  className="min-w-[200px] px-4 py-3 text-left text-table-header uppercase text-neutral-500"
                 >
                   Permission
                 </th>
@@ -199,14 +199,14 @@ export default function Admins() {
                     <th
                       scope="rowgroup"
                       colSpan={ROLES.length + 1}
-                      className="sticky left-0 px-4 py-2 text-left text-table-header uppercase text-neutral-500"
+                      className="px-4 py-2 text-left text-table-header uppercase text-neutral-500"
                     >
                       {group.label}
                     </th>
                   </tr>
                   {group.permissions.map((p) => (
                     <tr key={p} className="border-b border-neutral-200 last:border-0">
-                      <td className="sticky left-0 bg-neutral-0 px-4 py-3">
+                      <td className="whitespace-nowrap px-4 py-3">
                         <code className="font-mono text-[13px] text-neutral-900">{p}</code>
                       </td>
                       {ROLES.map((r) => {

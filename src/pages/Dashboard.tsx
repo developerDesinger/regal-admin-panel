@@ -451,7 +451,7 @@ export default function Dashboard() {
             </p>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="scroll-x">
           <table className="w-full border-collapse">
             <thead className="bg-neutral-50">
               <tr className="border-y border-neutral-200">

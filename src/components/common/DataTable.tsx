@@ -28,8 +28,12 @@ import { readLocal, writeLocal } from '@/hooks/useUrlState';
  * DataTable (§4)
  * Sticky header · zebra neutral-50 · row hover neutral-100 · 52px rows ·
  * column visibility menu · multi-select with a bulk-action bar that slides in
- * from the bottom · sticky first column on horizontal scroll · empty, loading
- * and error states all required · row click → detail, ⌘-click → new tab.
+ * from the bottom · empty, loading and error states all required ·
+ * row click → detail, ⌘-click → new tab.
+ *
+ * Note: the spec's "sticky first column" was dropped at the client's request —
+ * every column scrolls together so the table reads as one unit. Below `md` the
+ * rows render as stacked cards instead, where sideways scrolling never applies.
  *
  * Sorting/paging is driven by props so the real implementation stays
  * server-side (§21 Performance). The mock adapter sorts in memory.
@@ -64,7 +68,6 @@ export interface DataTableProps<T> {
   pageSize?: number;
   /** Persist column visibility per table. */
   storageKey?: string;
-  stickyFirstColumn?: boolean;
   initialSort?: { id: string; dir: 'asc' | 'desc' };
   /** Row-level tint, e.g. failed payouts pinned with a danger-50 row (§11). */
   rowClassName?: (row: T) => string | undefined;
@@ -85,7 +88,6 @@ export function DataTable<T>({
   bulkActions,
   pageSize = 25,
   storageKey,
-  stickyFirstColumn = true,
   initialSort,
   rowClassName,
   toolbar,
@@ -305,7 +307,7 @@ export function DataTable<T>({
         )}
 
         {/* The table scrolls sideways inside its container; the page body never does (§2.5) */}
-        <div className="hidden overflow-x-auto md:block">
+        <div className="scroll-x hidden md:block">
           <table className="w-full min-w-full border-collapse">
             <thead className="sticky top-0 z-10 bg-neutral-50">
               <tr className="border-b border-neutral-200">
@@ -320,7 +322,7 @@ export function DataTable<T>({
                     />
                   </th>
                 )}
-                {visibleColumns.map((col, i) => (
+                {visibleColumns.map((col) => (
                   <th
                     key={col.id}
                     scope="col"
@@ -337,7 +339,6 @@ export function DataTable<T>({
                     className={cn(
                       'whitespace-nowrap px-4 py-3 text-table-header uppercase text-neutral-500',
                       col.numeric ? 'text-right' : 'text-left',
-                      stickyFirstColumn && i === 0 && !bulkActions && 'sticky left-0 bg-neutral-50',
                     )}
                   >
                     {col.sortable ? (
@@ -411,16 +412,12 @@ export function DataTable<T>({
                           />
                         </td>
                       )}
-                      {visibleColumns.map((col, i) => (
+                      {visibleColumns.map((col) => (
                         <td
                           key={col.id}
                           className={cn(
                             'px-4 text-body text-neutral-700',
                             col.numeric && 'tnum text-right font-medium text-neutral-900',
-                            stickyFirstColumn &&
-                              i === 0 &&
-                              !bulkActions &&
-                              'sticky left-0 bg-inherit',
                           )}
                         >
                           {col.cell(row)}

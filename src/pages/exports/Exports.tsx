@@ -86,6 +86,8 @@ export default function Exports() {
     const useCols = cols.length ? cols : def.columns;
     const data = def.rows(store);
     const filename = downloadDataset(def.id, useCols, data, job.format);
+    // Keep the job row honest: report what the file actually contains.
+    if (job.rows !== data.length) actions.patchExportJob(job.id, { rows: data.length });
     toast({
       title: 'Download started',
       description: `${filename} · ${data.length.toLocaleString()} rows`,

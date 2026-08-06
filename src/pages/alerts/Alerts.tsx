@@ -254,7 +254,7 @@ export default function Alerts() {
           ) : (
             <Card className="overflow-hidden">
               {/* scrolls inside its own container, never the page body (§2.5) */}
-              <div className="overflow-x-auto">
+              <div className="scroll-x">
               <table className="w-full border-collapse">
                 <thead className="bg-neutral-50">
                   <tr className="border-b border-neutral-200">

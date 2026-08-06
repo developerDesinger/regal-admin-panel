@@ -258,13 +258,13 @@ export default function Settings() {
                 Scroll sideways to reach every admin column.
               </p>
             </div>
-            <div className="overflow-x-auto">
+            <div className="scroll-x">
               <table className="w-full border-collapse">
                 <thead className="bg-neutral-50">
                   <tr className="border-b border-neutral-200">
                     <th
                       scope="col"
-                      className="sticky left-0 z-10 min-w-[180px] bg-neutral-50 px-4 py-3 text-left text-table-header uppercase text-neutral-500"
+                      className="min-w-[180px] px-4 py-3 text-left text-table-header uppercase text-neutral-500"
                     >
                       Alert
                     </th>
@@ -286,7 +286,7 @@ export default function Settings() {
                         key={alertType}
                         className={cn('border-b border-neutral-200 last:border-0', i % 2 === 1 && 'bg-neutral-50')}
                       >
-                        <td className="sticky left-0 bg-inherit px-4 py-3 text-body capitalize text-neutral-900">
+                        <td className="whitespace-nowrap px-4 py-3 text-body capitalize text-neutral-900">
                           {alertType.split('_').join(' ')}
                         </td>
                         {adminUsers.map((a) => (

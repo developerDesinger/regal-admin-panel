@@ -1,63 +1,79 @@
+import { lazy } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { ToastProvider } from '@/components/ui/toast';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { AppShell } from '@/components/layout/AppShell';
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './pages/Login';
-import DashboardLayout from './components/layout/DashboardLayout';
-import UserManagement from './pages/UserManagement';
-import CategoryManagement from './pages/CategoryManagement';
-import TrendingDealsManagement from './pages/TrendingDealsManagement';
-import PlatformFeeManagement from './pages/PlatformFeeManagement';
-import ExecutiveDashboard from './pages/dashboard/ExecutiveDashboard';
-import EventsManagement from './pages/dashboard/EventsManagement';
-import TransactionsLedger from './pages/dashboard/TransactionsLedger';
-import Reports from './pages/dashboard/Reports';
-import RiskAlerts from './pages/dashboard/RiskAlerts';
+import Login from '@/pages/Login';
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const token = localStorage.getItem('admin_token');
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-  return <>{children}</>;
-};
+// Every authenticated route is code-split, so the login screen never downloads
+// the charting library and the dashboard's first paint stays small
+// (§21 Performance targets: LCP < 2.0s).
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const EventsList = lazy(() => import('@/pages/events/EventsList'));
+const EventDetail = lazy(() => import('@/pages/events/EventDetail'));
+const Contributions = lazy(() => import('@/pages/contributions/Contributions'));
+const UsersList = lazy(() => import('@/pages/users/UsersList'));
+const UserDetail = lazy(() => import('@/pages/users/UserDetail'));
+const CardAnalytics = lazy(() => import('@/pages/cards/CardAnalytics'));
+const CardCatalog = lazy(() => import('@/pages/cards/CardCatalog'));
+const CardDetail = lazy(() => import('@/pages/cards/CardDetail'));
+const Clovers = lazy(() => import('@/pages/clovers/Clovers'));
+const Withdrawals = lazy(() => import('@/pages/withdrawals/Withdrawals'));
+const Alerts = lazy(() => import('@/pages/alerts/Alerts'));
+const Exports = lazy(() => import('@/pages/exports/Exports'));
+const Audit = lazy(() => import('@/pages/audit/Audit'));
+const Admins = lazy(() => import('@/pages/admins/Admins'));
+const Settings = lazy(() => import('@/pages/settings/Settings'));
+const NotFound = lazy(() => import('@/pages/NotFound'));
 
-const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const token = localStorage.getItem('admin_token');
-  if (token) {
-    return <Navigate to="/" replace />; // Redirect to dashboard root which is now Executive Dashboard
-  }
-  return <>{children}</>;
-};
-
-function App() {
+/**
+ * Route map (§3). The spec's Next.js App Router tree is mirrored 1:1 onto
+ * React Router: `(auth)/login` and the `(dashboard)` group with its shell
+ * layout become the two top-level route branches below.
+ */
+export default function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={
-          <PublicRoute>
-            <LoginPage />
-          </PublicRoute>
-        } />
-        
-        <Route path="/" element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }>
-          <Route index element={<ExecutiveDashboard />} />
-          <Route path="users" element={<UserManagement />} />
-          <Route path="events" element={<EventsManagement />} />
-          <Route path="transactions" element={<TransactionsLedger />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="alerts" element={<RiskAlerts />} />
-          <Route path="categories" element={<CategoryManagement />} />
-          <Route path="trending-deals" element={<TrendingDealsManagement />} />
-          <Route path="platform-fee" element={<PlatformFeeManagement />} />
-        </Route>
+    <AuthProvider>
+      <TooltipProvider delayDuration={200} skipDelayDuration={300}>
+        <ToastProvider>
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-md focus:bg-brand-500 focus:px-4 focus:py-2 focus:text-white"
+          >
+            Skip to content
+          </a>
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </Router>
+          <Routes>
+            {/* (auth) — unauthenticated, no shell */}
+            <Route path="/login" element={<Login />} />
+
+            {/* (dashboard) — shell: sidebar + topbar + filter context */}
+            <Route element={<AppShell />}>
+              <Route index element={<Dashboard />} />
+              <Route path="events" element={<EventsList />} />
+              <Route path="events/:eventId" element={<EventDetail />} />
+              <Route path="events/:eventId/:tab" element={<EventDetail />} />
+              <Route path="contributions" element={<Contributions />} />
+              <Route path="users" element={<UsersList />} />
+              <Route path="users/:userId" element={<UserDetail />} />
+              <Route path="cards" element={<Navigate to="/cards/analytics" replace />} />
+              <Route path="cards/analytics" element={<CardAnalytics />} />
+              <Route path="cards/catalog" element={<CardCatalog />} />
+              <Route path="cards/catalog/:cardId" element={<CardDetail />} />
+              <Route path="clovers" element={<Clovers />} />
+              <Route path="withdrawals" element={<Withdrawals />} />
+              <Route path="alerts" element={<Alerts />} />
+              <Route path="exports" element={<Exports />} />
+              <Route path="audit" element={<Audit />} />
+              <Route path="admins" element={<Admins />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </ToastProvider>
+      </TooltipProvider>
+    </AuthProvider>
   );
 }
-
-export default App;

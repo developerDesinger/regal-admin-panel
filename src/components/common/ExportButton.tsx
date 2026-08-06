@@ -1,0 +1,109 @@
+import * as React from 'react';
+import { Download, FileJson, FileSpreadsheet } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
+import { downloadDataset, type ExportColumn } from '@/lib/export';
+import { actions } from '@/lib/store';
+
+/**
+ * Export button for list screens. Downloads exactly the rows currently in view
+ * (filters applied), records an audit entry, and drops a job on the Exports
+ * screen so the export is traceable (§13).
+ */
+export function ExportButton<T>({
+  name,
+  label,
+  columns,
+  rows,
+  filterSummary,
+  containsPii,
+  size = 'md',
+  variant = 'secondary',
+}: {
+  /** Slug used in the filename, e.g. "events" → regal-events-<ts>.csv */
+  name: string;
+  label: string;
+  columns: ExportColumn<T>[];
+  rows: T[];
+  filterSummary: string;
+  containsPii?: boolean;
+  size?: 'sm' | 'md';
+  variant?: 'secondary' | 'ghost';
+}) {
+  const { toast } = useToast();
+  const { admin, can } = useAuth();
+  const [busy, setBusy] = React.useState(false);
+
+  const run = (format: 'csv' | 'json') => {
+    if (rows.length === 0) {
+      toast({
+        title: 'Nothing to export',
+        description: 'No rows match the current filters.',
+        tone: 'warning',
+      });
+      return;
+    }
+    setBusy(true);
+    const filename = downloadDataset(name, columns, rows, format);
+    actions.createExportJob(admin, {
+      dataset: label,
+      format,
+      filters: filterSummary,
+      rows: rows.length,
+      status: 'ready',
+      progress: 100,
+      requestedBy: admin?.name ?? 'Admin',
+      requestedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 24 * 3600_000).toISOString(),
+      containsPii: Boolean(containsPii),
+    });
+    toast({
+      title: 'Download started',
+      description: `${filename} · ${rows.length.toLocaleString()} rows`,
+      tone: 'success',
+    });
+    setTimeout(() => setBusy(false), 500);
+  };
+
+  if (!can('exports:run')) return null;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant={variant} size={size} loading={busy}>
+          <Download className="h-4 w-4 text-neutral-400" />
+          Export
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>
+          {rows.length.toLocaleString()} row{rows.length === 1 ? '' : 's'} in view
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => run('csv')}>
+          <FileSpreadsheet className="h-4 w-4 text-neutral-400" />
+          Download CSV
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => run('json')}>
+          <FileJson className="h-4 w-4 text-neutral-400" />
+          Download JSON
+        </DropdownMenuItem>
+        {containsPii && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Contains PII · audited</DropdownMenuLabel>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

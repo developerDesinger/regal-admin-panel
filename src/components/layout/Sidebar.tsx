@@ -1,71 +1,247 @@
-import { NavLink } from 'react-router-dom';
-import { Users, LayoutGrid, Flame, LogOut, ShieldCheck, Coins, LayoutDashboard, Calendar, Receipt, FileBarChart, AlertTriangle } from 'lucide-react';
+import * as React from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import {
+  BadgeCheck,
+  Bell,
+  CalendarDays,
+  ChevronLeft,
+  Clover,
+  CreditCard,
+  Download,
+  FileClock,
+  LayoutDashboard,
+  Receipt,
+  Settings,
+  ShieldCheck,
+  Users,
+  Wallet,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { Tooltip } from '@/components/ui/tooltip';
+import { useAuth } from '@/hooks/use-auth';
+import type { Permission } from '@/lib/permissions';
+import { alerts } from '@/lib/mock/data';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { useLanguage } from '@/contexts/LanguageContext';
 
-const menuItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-  { icon: Users, label: 'User Management', path: '/users' },
-  { icon: LayoutGrid, label: 'Categories', path: '/categories' },
-  { icon: Flame, label: 'Trending Deals', path: '/trending-deals' },
-  { icon: Calendar, label: 'Events', path: '/events' },
-  { icon: Receipt, label: 'Transactions', path: '/transactions' },
-  { icon: FileBarChart, label: 'Reports', path: '/reports' },
-  { icon: AlertTriangle, label: 'Risk Alerts', path: '/alerts' },
-  { icon: Coins, label: 'Platform Fee', path: '/platform-fee' },
+/**
+ * Sidebar (§3) — 240px fixed, neutral-0, right border neutral-200. Collapsible
+ * to a 64px icon rail with the state persisted in localStorage. Active item:
+ * brand-50 background, brand-500 text, 3px left indicator bar.
+ *
+ * Nav items are hidden entirely when the admin's role lacks permission — never
+ * a disabled item they can't unlock.
+ */
+
+interface NavItem {
+  label: string;
+  to: string;
+  icon: LucideIcon;
+  permission: Permission;
+  end?: boolean;
+  children?: { label: string; to: string }[];
+  badge?: number;
+}
+
+const NAV_GROUPS: { items: NavItem[] }[] = [
+  {
+    items: [
+      { label: 'Dashboard', to: '/', icon: LayoutDashboard, permission: 'events:read', end: true },
+      { label: 'Events', to: '/events', icon: CalendarDays, permission: 'events:read' },
+      { label: 'Contributions', to: '/contributions', icon: Receipt, permission: 'contributions:read' },
+      { label: 'Users', to: '/users', icon: Users, permission: 'users:read' },
+      {
+        label: 'Gift Cards',
+        to: '/cards',
+        icon: CreditCard,
+        permission: 'cards:read',
+        children: [
+          { label: 'Analytics', to: '/cards/analytics' },
+          { label: 'Catalog', to: '/cards/catalog' },
+        ],
+      },
+      { label: 'Clovers', to: '/clovers', icon: Clover, permission: 'clovers:read' },
+      { label: 'Withdrawals', to: '/withdrawals', icon: Wallet, permission: 'financials:read' },
+      { label: 'Alerts', to: '/alerts', icon: Bell, permission: 'alerts:manage' },
+      { label: 'Exports', to: '/exports', icon: Download, permission: 'exports:run' },
+    ],
+  },
+  {
+    items: [
+      { label: 'Audit Trail', to: '/audit', icon: FileClock, permission: 'audit:read' },
+      { label: 'Admins', to: '/admins', icon: BadgeCheck, permission: 'admins:manage' },
+      { label: 'Settings', to: '/settings', icon: Settings, permission: 'settings:write' },
+    ],
+  },
 ];
 
-const Sidebar = ({ onClose }: { onClose?: () => void }) => {
-  const { t } = useLanguage();
-
-  const handleLogout = () => {
-    localStorage.removeItem('admin_token');
-    window.location.href = '/login';
-  };
+export function Sidebar({
+  collapsed,
+  onToggleCollapsed,
+  onNavigate,
+}: {
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
+  onNavigate?: () => void;
+}) {
+  const { can } = useAuth();
+  const location = useLocation();
+  const openAlerts = alerts.filter((a) => a.status === 'open').length;
 
   return (
-    <div className="flex flex-col w-64 bg-card border-r h-screen sticky top-0">
-      <div className="flex items-center gap-2 px-6 h-16 border-b">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-          <ShieldCheck className="w-5 h-5 text-primary-foreground" />
-        </div>
-        <span className="font-bold text-xl tracking-tight">Regal Admin</span>
-      </div>
-      
-      <div className="flex-1 py-6 px-4 space-y-2">
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            onClick={onClose}
-            className={({ isActive }) =>
-              cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
-                isActive 
-                  ? "bg-primary text-primary-foreground shadow-sm" 
-                  : "text-muted-foreground hover:bg-muted"
-              )
-            }
-          >
-            <item.icon className="w-5 h-5" />
-            <span className="font-medium">{t(item.label)}</span>
-          </NavLink>
-        ))}
+    <nav
+      aria-label="Main navigation"
+      className={cn(
+        'flex h-full flex-col border-r border-neutral-200 bg-neutral-0 transition-[width] duration-panel ease-standard',
+        collapsed ? 'w-16' : 'w-[240px]',
+      )}
+    >
+      <div
+        className={cn(
+          'flex h-16 shrink-0 items-center border-b border-neutral-200',
+          collapsed ? 'justify-center px-2' : 'gap-3 px-4',
+        )}
+      >
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-500">
+          <ShieldCheck className="h-5 w-5 text-white" aria-hidden />
+        </span>
+        {!collapsed && (
+          <span className="truncate text-[15px] font-semibold text-neutral-900">Regal Admin</span>
+        )}
       </div>
 
-      <div className="p-4 border-t">
-        <Button 
-          variant="ghost" 
-          className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-          onClick={handleLogout}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden py-4">
+        {NAV_GROUPS.map((group, gi) => {
+          const visible = group.items.filter((item) => can(item.permission));
+          if (visible.length === 0) return null;
+          return (
+            <React.Fragment key={gi}>
+              {gi > 0 && <hr className="mx-4 my-3 border-neutral-200" />}
+              <ul className="space-y-0.5 px-2">
+                {visible.map((item) => (
+                  <SidebarItem
+                    key={item.to}
+                    item={item}
+                    collapsed={collapsed}
+                    onNavigate={onNavigate}
+                    badge={item.label === 'Alerts' ? openAlerts : undefined}
+                    forceExpanded={location.pathname.startsWith(item.to) && item.to !== '/'}
+                  />
+                ))}
+              </ul>
+            </React.Fragment>
+          );
+        })}
+      </div>
+
+      <div className="shrink-0 border-t border-neutral-200 p-2">
+        <button
+          type="button"
+          onClick={onToggleCollapsed}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className={cn(
+            'flex w-full items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700',
+            collapsed && 'justify-center px-0',
+          )}
         >
-          <LogOut className="w-5 h-5 mr-3" />
-          {t('Logout')}
-        </Button>
+          <ChevronLeft
+            className={cn('h-4 w-4 shrink-0 transition-transform duration-panel', collapsed && 'rotate-180')}
+            aria-hidden
+          />
+          {!collapsed && 'Collapse'}
+        </button>
       </div>
-    </div>
+    </nav>
   );
-};
+}
 
-export default Sidebar;
+function SidebarItem({
+  item,
+  collapsed,
+  onNavigate,
+  badge,
+  forceExpanded,
+}: {
+  item: NavItem;
+  collapsed: boolean;
+  onNavigate?: () => void;
+  badge?: number;
+  forceExpanded: boolean;
+}) {
+  const Icon = item.icon;
+  const hasChildren = Boolean(item.children?.length);
+  // A parent with children navigates to its first child.
+  const target = hasChildren ? item.children![0].to : item.to;
+
+  const link = (
+    <NavLink
+      to={target}
+      end={item.end}
+      onClick={onNavigate}
+      className={({ isActive }) =>
+        cn(
+          'relative flex items-center gap-3 rounded-md py-2 text-[14px] font-medium leading-5 transition-colors duration-micro',
+          collapsed ? 'justify-center px-0' : 'px-3',
+          isActive || forceExpanded
+            ? 'bg-brand-50 text-brand-500'
+            : 'text-neutral-700 hover:bg-neutral-100',
+        )
+      }
+    >
+      {({ isActive }) => (
+        <>
+          {(isActive || forceExpanded) && (
+            <span
+              className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-500"
+              aria-hidden
+            />
+          )}
+          <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
+          {!collapsed && <span className="truncate">{item.label}</span>}
+          {!collapsed && badge !== undefined && badge > 0 && (
+            <span className="tnum ml-auto rounded-full bg-danger-500 px-1.5 py-px text-[11px] font-semibold text-white">
+              {badge}
+            </span>
+          )}
+          {collapsed && badge !== undefined && badge > 0 && (
+            <span className="absolute right-2 top-1.5 h-2 w-2 rounded-full bg-danger-500" aria-hidden />
+          )}
+        </>
+      )}
+    </NavLink>
+  );
+
+  return (
+    <li>
+      {collapsed ? (
+        <Tooltip content={item.label} side="right">
+          {link}
+        </Tooltip>
+      ) : (
+        link
+      )}
+
+      {hasChildren && !collapsed && forceExpanded && (
+        <ul className="mt-0.5 space-y-0.5 pl-9">
+          {item.children!.map((child) => (
+            <li key={child.to}>
+              <NavLink
+                to={child.to}
+                onClick={onNavigate}
+                className={({ isActive }) =>
+                  cn(
+                    'block rounded-md px-3 py-1.5 text-[13px] leading-5 transition-colors duration-micro',
+                    isActive
+                      ? 'font-medium text-brand-500'
+                      : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700',
+                  )
+                }
+              >
+                {child.label}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}

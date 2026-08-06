@@ -1,76 +1,182 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* =========================================================================
+   Regal Admin — Design Tokens (§2.2)
+   Every token is a CSS variable. Components must never hardcode a hex value.
+   Dark mode is a swap of these variables, not a rewrite (§2.2 Dark Mode).
+   ========================================================================= */
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Brand */
+    --brand-50: 243 240 255;
+    --brand-100: 230 219 255;
+    --brand-300: 193 172 255;
+    --brand-500: 134 94 255;
+    --brand-600: 122 85 230;
+    --brand-700: 110 75 204;
+    --brand-900: 86 55 153;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Clovers / gift cards */
+    --secondary-500: 241 189 66;
+    --accent-500: 254 110 207;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    /* Neutrals */
+    --neutral-0: 255 255 255;
+    --neutral-50: 249 250 251;
+    --neutral-100: 243 244 246;
+    --neutral-200: 229 231 235;
+    --neutral-300: 209 213 219;
+    --neutral-400: 156 163 175;
+    --neutral-500: 107 114 128;
+    --neutral-700: 55 65 81;
+    --neutral-900: 17 24 39;
+    --ink: 26 26 26;
 
-    --primary: 262.1 83.3% 57.8%;
-    --primary-foreground: 210 40% 98%;
+    /* Semantic / status */
+    --success-500: 34 197 94;
+    --success-50: 236 253 245;
+    --warning-500: 245 158 11;
+    --warning-50: 255 251 235;
+    --danger-500: 239 68 68;
+    --danger-50: 254 242 242;
+    --info-500: 59 130 246;
+    --info-50: 239 246 255;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Data-viz categorical series — use in this order, never randomize (§2.2) */
+    --chart-1: 134 94 255; /* brand purple — primary metric */
+    --chart-2: 59 130 246; /* blue         — comparison / previous period */
+    --chart-3: 34 197 94; /* green        — positive / confirmed */
+    --chart-4: 241 189 66; /* amber        — clovers */
+    --chart-5: 254 110 207; /* pink         — gift cards */
+    --chart-6: 20 184 166; /* teal         — fifth series */
+    --chart-7: 148 163 184; /* slate        — other / remainder */
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Surface indirection so dark mode swaps only these */
+    --surface: 255 255 255;
+    --surface-sunken: 249 250 251;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 262.1 83.3% 57.8%;
-
-    --radius: 0.5rem;
+    /* Radius (§2.4) */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+  [data-theme='dark'] {
+    --neutral-0: 23 25 35;
+    --neutral-50: 15 17 23;
+    --neutral-100: 32 35 47;
+    --neutral-200: 42 46 58;
+    --neutral-300: 58 63 77;
+    --neutral-400: 122 130 148;
+    --neutral-500: 156 163 175;
+    --neutral-700: 209 213 219;
+    --neutral-900: 243 244 246;
+    --ink: 246 247 249;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --surface: 23 25 35;
+    --surface-sunken: 15 17 23;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 263.4 70% 50.4%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 263.4 70% 50.4%;
+    --success-50: 6 40 26;
+    --warning-50: 45 32 6;
+    --danger-50: 47 17 17;
+    --info-50: 14 28 51;
+    --brand-50: 34 27 61;
+    --brand-100: 47 37 82;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: rgb(var(--neutral-200));
   }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-neutral-50 text-neutral-700 antialiased;
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
   }
+
+  /* Focus ring — never removed (§2.4) */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid rgb(var(--brand-500));
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: rgb(var(--brand-100));
+    color: rgb(var(--brand-900));
+  }
+}
+
+@layer components {
+  /* Digits align in columns — mandatory on every numeric cell and KPI (§2.3) */
+  .tnum {
+    font-feature-settings: 'tnum' 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .font-mono-token {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  }
+
+  /* Page shell (§2.5): max 1440, 24px gutters, 16px below 768 */
+  .page-container {
+    @apply mx-auto w-full max-w-[1440px] px-4 md:px-6;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded bg-neutral-100;
+  }
+}
+
+/* Respect reduced motion (§2.6) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Scrollbars — quiet, matching the "calm data console" direction */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--neutral-300));
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--neutral-400));
+  background-clip: content-box;
+}
+
+/* Recharts: grid neutral-200, axis labels neutral-500 12px (§2.2) */
+.recharts-cartesian-axis-tick text {
+  fill: rgb(var(--neutral-500));
+  font-size: 12px;
+}
+.recharts-cartesian-grid line {
+  stroke: rgb(var(--neutral-200));
+}
+.recharts-surface:focus {
+  outline: none;
 }

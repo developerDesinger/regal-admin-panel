@@ -72,7 +72,8 @@ src/
   pages/          one folder per screen
 docs/
   ADMIN_PANEL_API.md              the backend's endpoint reference
-  BACKEND_API_REQUIREMENTS.md     what the panel needs, written for the backend
+  BACKEND_API_REQUIREMENTS.md     the full contract, written for the backend
+  BACKEND_GAPS.md                 what is still missing, measured against production
 ```
 
 Screens read through `hooks/data` and never call axios directly. Money is

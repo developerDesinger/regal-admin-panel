@@ -11,7 +11,9 @@ import { cn } from '@/lib/utils';
 /**
  * Screen 01 — Login (§01)
  *
- * Split screen: left 45% brand panel (hidden <1024px), right 55% centered form.
+ * Full-bleed brand-500 (#865EFF) field with a single white card centred on it.
+ * This replaces the spec's 45/55 split panel at the client's request; the card
+ * is the only white surface, so the form stays the focal point at every width.
  *
  * Non-negotiables that belong to the server and are documented here so they are
  * not lost in handoff:
@@ -88,43 +90,41 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen bg-neutral-0">
-      {/* Left 45% — solid brand panel, hidden below 1024px */}
-      <div className="relative hidden w-[45%] shrink-0 overflow-hidden bg-brand-500 lg:block">
-        <div className="absolute inset-0 flex items-center justify-center" aria-hidden>
-          <span className="select-none text-[420px] leading-none text-white/[0.06]">🍀</span>
-        </div>
-        <div className="relative flex h-full flex-col justify-between p-12">
-          <div className="flex items-center gap-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-white/15">
-              <ShieldCheck className="h-5 w-5 text-white" aria-hidden />
-            </span>
-            <span className="text-[18px] font-semibold text-white">Regal</span>
-          </div>
-          <p className="max-w-[320px] text-[30px] font-semibold leading-9 text-white">
-            Regal Administration Panel
-          </p>
-          <p className="text-caption text-white/70">
-            Group gifting operations &amp; analytics console
-          </p>
-        </div>
-      </div>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-brand-500 px-4 py-12">
+      {/* Oversized clover watermark at 6% white, per the brand panel treatment */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-16 -top-16 select-none text-[420px] leading-none text-white/[0.06]"
+      >
+        🍀
+      </span>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -bottom-24 -left-20 select-none text-[380px] leading-none text-white/[0.05]"
+      >
+        🍀
+      </span>
 
-      {/* Right 55% — centered form card */}
-      <div className="flex flex-1 items-center justify-center px-4 py-12">
-        <div className="w-full max-w-[400px]">
-          <div className="mb-8 text-center">
-            <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-brand-500 lg:hidden">
-              <ShieldCheck className="h-6 w-6 text-white" aria-hidden />
-            </span>
+      <main className="relative w-full max-w-[440px]">
+        {/* Wordmark sits on the brand field, above the card */}
+        <div className="mb-6 flex items-center justify-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-md bg-white/15">
+            <ShieldCheck className="h-5 w-5 text-white" aria-hidden />
+          </span>
+          <span className="text-[20px] font-semibold text-white">Regal Admin</span>
+        </div>
+
+        {/* White card — the only surface that carries the form */}
+        <div className="rounded-lg bg-neutral-0 p-6 shadow-e2 sm:p-8">
+          <div className="mb-6 text-center">
             <h1 className="text-page-title text-neutral-900">
               {stage === '2fa' ? 'Two-factor authentication' : 'Sign in to continue'}
             </h1>
-            {stage === '2fa' && (
-              <p className="mt-1 text-body text-neutral-500">
-                Enter the 6-digit code from your authenticator app.
-              </p>
-            )}
+            <p className="mt-1 text-body text-neutral-500">
+              {stage === '2fa'
+                ? 'Enter the 6-digit code from your authenticator app.'
+                : 'Regal Administration Panel'}
+            </p>
           </div>
 
           {error && (
@@ -243,11 +243,13 @@ export default function Login() {
             />
           )}
 
-          <p className="mt-8 text-center text-caption text-neutral-500">
+          {/* Kept on the white surface: 12px on brand-500 tops out at 4.15:1,
+              below the 4.5:1 WCAG AA floor for normal text (§21). */}
+          <p className="mt-6 border-t border-neutral-200 pt-4 text-center text-caption text-neutral-500">
             Restricted access. All activity is logged.
           </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

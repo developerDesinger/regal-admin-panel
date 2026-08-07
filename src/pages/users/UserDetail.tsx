@@ -329,7 +329,6 @@ export default function UserDetail() {
         onOpenChange={(o) => !o && setAction(null)}
         title="Suspend this account"
         requireReason
-        requireTypedConfirmation={fullName}
         consequence={
           <>
             <strong>{fullName}</strong> will be unable to sign in, contribute, or organize events.

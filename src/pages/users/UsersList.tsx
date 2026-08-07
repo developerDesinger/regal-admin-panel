@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Eye, EyeOff, Lock } from 'lucide-react';
+import { Download, Eye, EyeOff, Lock, UserMinus, UserPlus } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { KpiCard, KpiGrid } from '@/components/common/KpiCard';
 import { DataTable, type Column } from '@/components/common/DataTable';
@@ -15,6 +15,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 
 import { useUsers, useUserKpis } from '@/hooks/data';
+import { useAdminMutations } from '@/hooks/data/mutations';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { ApiError } from '@/lib/api/client';
 import { userColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { rangeLabel } from '@/lib/date-ranges';
@@ -32,6 +35,9 @@ export default function UsersList() {
   const { toast } = useToast();
   const { can, piiUnmasked, togglePii } = useAuth();
   const { rows: users, isLoading, error, refetch, meta } = useUsers(all);
+  const mutations = useAdminMutations();
+  /** The row whose suspend/reactivate is awaiting confirmation. */
+  const [pending, setPending] = React.useState<RegalUser | null>(null);
   const { data: kpis } = useUserKpis({ range: all.range ?? '30d', compare: all.compare === '1' });
   const kpi = (key: keyof NonNullable<typeof kpis>, fmt: (v: number) => string) => {
     const v = kpis?.[key];
@@ -185,6 +191,27 @@ export default function UsersList() {
           label={u.isDeleted ? 'Deleted' : !u.isActive ? 'Suspended' : u.isVerified ? 'Active' : 'Unverified'}
         />
       ),
+    },
+    {
+      id: 'actions',
+      header: '',
+      width: '56px',
+      cell: (u) =>
+        can('users:read') && !u.isDeleted ? (
+          <div data-no-row-click onClick={(e) => e.stopPropagation()}>
+            <Tooltip content={u.isActive ? `Suspend ${u.firstName}` : `Reactivate ${u.firstName}`}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setPending(u)}
+                aria-label={u.isActive ? `Suspend ${u.firstName} ${u.lastName}` : `Reactivate ${u.firstName} ${u.lastName}`}
+                className={u.isActive ? 'text-neutral-400 hover:text-danger-500' : 'text-neutral-400 hover:text-success-500'}
+              >
+                {u.isActive ? <UserMinus className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+              </Button>
+            </Tooltip>
+          </div>
+        ) : null,
     },
   ];
 
@@ -359,6 +386,59 @@ export default function UsersList() {
           </Button>
         )}
       />
+
+      {pending && (
+        <ConfirmDialog
+          open
+          onOpenChange={(o) => !o && setPending(null)}
+          title={pending.isActive ? 'Suspend this account' : 'Reactivate this account'}
+          tone={pending.isActive ? 'danger' : 'primary'}
+          // The server rejects these without a reason (422), and it lands in
+          // the audit trail — so it stays required. The typed-name step does
+          // not: suspending is reversible from this same button.
+          requireReason
+          confirmLabel={pending.isActive ? 'Suspend account' : 'Reactivate account'}
+          consequence={
+            pending.isActive ? (
+              <>
+                <strong>
+                  {pending.firstName} {pending.lastName}
+                </strong>{' '}
+                will be unable to sign in, contribute or organize events. Their contributions and
+                clover balance are preserved, and you can reactivate them from this same button.
+              </>
+            ) : (
+              <>
+                <strong>
+                  {pending.firstName} {pending.lastName}
+                </strong>{' '}
+                will be able to sign in again immediately.
+              </>
+            )
+          }
+          onConfirm={(reason) => {
+            const wasActive = pending.isActive;
+            const name = `${pending.firstName} ${pending.lastName}`;
+            mutations
+              .setUserActive(pending.id, !wasActive, reason)
+              .then(() =>
+                toast({
+                  title: wasActive ? 'Account suspended' : 'Account reactivated',
+                  description: name,
+                  tone: 'success',
+                }),
+              )
+              .catch((err: ApiError) =>
+                toast({
+                  title: wasActive ? 'Could not suspend' : 'Could not reactivate',
+                  // 409 means it is already in that state — worth saying plainly.
+                  description: err.message,
+                  tone: 'danger',
+                }),
+              );
+          }}
+        />
+      )}
     </>
   );
 }

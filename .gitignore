@@ -26,3 +26,8 @@ temp_auto_push.bat
 temp_interactive_push.bat
 config.bat
 branch_structure.json
+
+# Local env overrides (Vite convention). .env.development is committed;
+# secrets and per-machine values belong in .env.local / .env.*.local.
+.env.local
+.env.*.local

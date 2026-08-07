@@ -19,7 +19,6 @@ export interface AuthContextValue {
   /** PII unmasking is itself an audited action (§06). */
   piiUnmasked: boolean;
   togglePii: () => void;
-  switchRole: (adminId: string) => void;
 }
 
 export const AuthContext = React.createContext<AuthContextValue | null>(null);

@@ -10,7 +10,8 @@ import { Avatar } from '@/components/ui/misc';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { actions, useStore } from '@/lib/store';
+import { useAdmins } from '@/hooks/data';
+import { adminsService } from '@/lib/api/services';
 import {
   PERMISSIONS,
   ROLE_DESCRIPTIONS,
@@ -19,7 +20,9 @@ import {
   type Permission,
 } from '@/lib/permissions';
 import { formatDate, formatRelative } from '@/lib/format';
-import type { AdminRole, AdminUser } from '@/lib/types';
+import type { AdminRole } from '@/lib/types';
+import type { AdminRow } from '@/lib/api/types';
+import { avatarColorFor } from '@/lib/api/adapters';
 import { cn } from '@/lib/utils';
 
 /** Screen 15 — Admin Users & Roles (§15). */
@@ -38,11 +41,11 @@ const PERMISSION_GROUPS: { label: string; permissions: Permission[] }[] = [
 export default function Admins() {
   const { toast } = useToast();
   const { admin: currentUser } = useAuth();
-  const { adminUsers } = useStore();
-  const [revoking, setRevoking] = React.useState<AdminUser | null>(null);
+  const { admins: adminUsers, refetch } = useAdmins();
+  const [revoking, setRevoking] = React.useState<AdminRow | null>(null);
   const [inviting, setInviting] = React.useState(false);
 
-  const columns: Column<AdminUser>[] = [
+  const columns: Column<AdminRow>[] = [
     {
       id: 'admin',
       header: 'Admin',
@@ -50,7 +53,7 @@ export default function Admins() {
       sortValue: (a) => a.name,
       cell: (a) => (
         <div className="flex min-w-0 items-center gap-3">
-          <Avatar name={a.name} color={a.avatarColor} size="md" />
+          <Avatar name={a.name} color={avatarColorFor(a.id)} size="md" />
           <div className="min-w-0">
             <p className="truncate font-medium text-neutral-900">
               {a.name}
@@ -284,7 +287,10 @@ export default function Admins() {
           }
           confirmLabel={revoking.isActive ? 'Revoke access' : 'Restore access'}
           onConfirm={(reason) => {
-            actions.setAdminActive(currentUser, revoking.id, !revoking.isActive, reason);
+            void (revoking.isActive
+              ? adminsService.revoke(revoking.id, reason)
+              : adminsService.restore(revoking.id, reason)
+            ).then(refetch);
             toast({
               title: revoking.isActive ? 'Access revoked' : 'Access restored',
               description: revoking.name,

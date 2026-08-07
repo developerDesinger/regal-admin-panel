@@ -25,9 +25,17 @@ import { Card } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/misc';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { cloverAnomalies, earnActionBreakdown, stats, timeSeries } from '@/lib/mock/data';
-import { actions, useStore } from '@/lib/store';
-import { useCloverLedger } from '@/hooks/data';
+import type { CloverAnomaly } from '@/lib/api/types';
+import { avatarColorFor } from '@/lib/api/adapters';
+import {
+  useCloverLedger,
+  useCatalog,
+  useCloverAnomalies,
+  useCloverKpis,
+  useCloverTimeseries,
+  useCloverEarnBreakdown,
+} from '@/hooks/data';
+import { useAdminMutations } from '@/hooks/data/mutations';
 import { cloverColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { rangeLabel } from '@/lib/date-ranges';
@@ -38,14 +46,33 @@ import { formatNumber, formatPercent } from '@/lib/format';
 export default function Clovers() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { admin, can } = useAuth();
-  const { cloverLedger: storeLedger, giftCards } = useStore();
-  const { rows: apiLedger, isMock } = useCloverLedger({});
-  const cloverLedger = isMock ? storeLedger : apiLedger;
+  const { can } = useAuth();
   const { all } = useUrlState();
-  const [freezing, setFreezing] = React.useState<(typeof cloverAnomalies)[number] | null>(null);
+  const range = all.range ?? '30d';
+  const compare = all.compare === '1';
 
-  const burnRate = (stats.cloversRedeemed / Math.max(1, stats.cloversEarned)) * 100;
+  const { rows: giftCards } = useCatalog();
+  const { anomalies: cloverAnomalies } = useCloverAnomalies();
+  const { data: cloverKpis } = useCloverKpis({ range, compare: compare ? 1 : undefined });
+  const { data: cloverSeries } = useCloverTimeseries({ range });
+  const { data: earnBreakdown } = useCloverEarnBreakdown({ range });
+  const { rows: cloverLedger } = useCloverLedger({});
+  const mutations = useAdminMutations();
+  const [freezing, setFreezing] = React.useState<CloverAnomaly | null>(null);
+
+  // Every figure below is the server's; `k` returns '—' rather than NaN when a
+  // key is missing, and null delta means the previous period was 0.
+  const k = (key: keyof NonNullable<typeof cloverKpis>) => cloverKpis?.[key] ?? null;
+  const num = (key: keyof NonNullable<typeof cloverKpis>) => {
+    const v = k(key);
+    return typeof v?.value === 'number' ? formatNumber(v.value) : '—';
+  };
+  const pct = (key: keyof NonNullable<typeof cloverKpis>) => {
+    const v = k(key);
+    return typeof v?.value === 'number' ? formatPercent(v.value) : '—';
+  };
+  const series = cloverSeries ?? [];
+  const earnRows = earnBreakdown ?? [];
 
   const redemptionByDesign = giftCards
     .filter((c) => c.cloverCost > 0)
@@ -75,35 +102,35 @@ export default function Clovers() {
       <KpiGrid className="mb-6">
         <KpiCard
           label="Clovers Earned"
-          value={formatNumber(stats.cloversEarned)}
-          delta={13.7}
+          value={num('cloversEarned')}
+          delta={k('cloversEarned')?.delta ?? null}
           accent="secondary"
           definition="Sum of positive clover ledger amounts in the range — every earn action combined."
         />
         <KpiCard
           label="Clovers Redeemed"
-          value={formatNumber(stats.cloversRedeemed)}
-          delta={21.4}
+          value={num('cloversRedeemed')}
+          delta={k('cloversRedeemed')?.delta ?? null}
           accent="secondary"
           definition="Absolute sum of negative ledger amounts from card unlocks in the range."
         />
         <KpiCard
           label="Outstanding Balance"
-          value={formatNumber(stats.outstandingClovers)}
-          delta={4.9}
+          value={num('outstandingBalance')}
+          delta={k('outstandingBalance')?.delta ?? null}
           invertDelta
           definition="System-wide unspent clover balance — the platform's outstanding liability."
         />
         <KpiCard
           label="Redemption Rate"
-          value={formatPercent(stats.cloverRedemptionRate)}
-          delta={4.2}
+          value={pct('redemptionRate')}
+          delta={k('redemptionRate')?.delta ?? null}
           deltaUnit="pp"
           definition="Users who redeemed ≥1 premium card ÷ users holding enough clovers to redeem one × 100."
         />
         <KpiCard
           label="Clover Burn Rate"
-          value={formatPercent(burnRate)}
+          value={pct('burnRate')}
           delta={6.1}
           deltaUnit="pp"
           definition="Clovers redeemed ÷ clovers earned × 100. Below 100% means the liability is still growing."
@@ -143,11 +170,11 @@ export default function Clovers() {
           ]}
           tableData={{
             columns: ['Date', 'Earned', 'Redeemed'],
-            rows: timeSeries.map((d) => [d.date, d.earned, d.redeemed]),
+            rows: series.map((d) => [d.date, d.earned, d.redeemed]),
           }}
         >
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={timeSeries} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
+            <BarChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
               <CartesianGrid vertical={false} />
               <XAxis
                 dataKey="date"
@@ -170,11 +197,11 @@ export default function Clovers() {
           legend={[{ label: 'Outstanding balance', color: CHART_COLORS[0] }]}
           tableData={{
             columns: ['Date', 'Outstanding'],
-            rows: timeSeries.map((d) => [d.date, d.outstanding]),
+            rows: series.map((d) => [d.date, d.outstandingBalance]),
           }}
         >
           <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={timeSeries} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
+            <AreaChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
               <defs>
                 <linearGradient id="liabilityFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={CHART_COLORS[0]} stopOpacity={0.24} />
@@ -193,7 +220,7 @@ export default function Clovers() {
               <RTooltip content={<ChartTooltip />} />
               <Area
                 type="monotone"
-                dataKey="outstanding"
+                dataKey="outstandingBalance"
                 name="Outstanding balance"
                 stroke={CHART_COLORS[0]}
                 strokeWidth={2}
@@ -209,12 +236,12 @@ export default function Clovers() {
           subtitle="Which behaviors mint the most clovers"
           tableData={{
             columns: ['Action', 'Clovers'],
-            rows: earnActionBreakdown.map((a) => [a.action, a.clovers]),
+            rows: earnRows.map((a) => [a.action, a.clovers]),
           }}
         >
           <ResponsiveContainer width="100%" height={240}>
             <BarChart
-              data={earnActionBreakdown}
+              data={earnRows}
               layout="vertical"
               margin={{ top: 8, right: 24, bottom: 0, left: 8 }}
             >
@@ -223,7 +250,7 @@ export default function Clovers() {
               <YAxis dataKey="action" type="category" tickLine={false} axisLine={false} width={130} />
               <RTooltip content={<ChartTooltip />} cursor={{ fill: 'rgb(var(--neutral-100))' }} />
               <Bar dataKey="clovers" name="Clovers minted" radius={[0, 2, 2, 0]} isAnimationActive={false}>
-                {earnActionBreakdown.map((_, i) => (
+                {earnRows.map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS[3]} fillOpacity={1 - i * 0.11} />
                 ))}
               </Bar>
@@ -274,7 +301,7 @@ export default function Clovers() {
                 to={`/users/${a.user.id}`}
                 className="flex min-w-0 items-center gap-2 rounded-sm transition-colors hover:text-brand-500"
               >
-                <Avatar name={a.user.name} color={a.user.avatarColor} size="sm" />
+                <Avatar name={a.user.name} color={avatarColorFor(a.user.id)} size="sm" />
                 <span className="truncate text-body font-medium text-neutral-900">{a.user.name}</span>
               </Link>
               <div className="min-w-0 flex-1">
@@ -334,7 +361,7 @@ export default function Clovers() {
           }
           confirmLabel="Freeze earning"
           onConfirm={(reason) => {
-            actions.adjustClovers(admin, freezing.user.id, 0, reason);
+            void mutations.freezeAnomaly(freezing.id, reason);
             toast({
               title: 'Clover earning frozen',
               description: `${freezing.user.name} · recorded in the audit trail`,

@@ -17,9 +17,16 @@ import { Label } from '@/components/ui/label';
 import { Avatar, CopyableId } from '@/components/ui/misc';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { useStore } from '@/lib/store';
+
 import { useAdminMutations } from '@/hooks/data/mutations';
-import { useUser } from '@/hooks/data';
+import {
+  useUser,
+  useUserEvents,
+  useUserContributions,
+  useUserClovers,
+  useUserActivity,
+  useUserCards,
+} from '@/hooks/data';
 import {
   formatDate,
   formatDateTime,
@@ -39,7 +46,11 @@ export default function UserDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { can, piiUnmasked } = useAuth();
-  const { events, contributions, giftCards, cloverLedger, auditEntries } = useStore();
+  const { rows: events } = useUserEvents(userId);
+  const { rows: contributions } = useUserContributions(userId);
+  const { rows: cloverLedger } = useUserClovers(userId);
+  const { rows: auditEntries } = useUserActivity(userId);
+  const unlockedCardRows = useUserCards(userId);
   const { user: resolvedUser } = useUser(userId);
   const mutations = useAdminMutations();
   const [action, setAction] = React.useState<null | 'suspend' | 'reactivate' | 'clovers' | 'reset'>(null);
@@ -59,12 +70,12 @@ export default function UserDetail() {
   }
 
   const fullName = `${user.firstName} ${user.lastName}`;
-  const organized = events.filter((e) => e.organizer.id === user.id);
-  const userContributions = contributions.filter((c) => c.contributor?.id === user.id);
+  const organized = events;
+  const userContributions = contributions;
   const confirmed = userContributions.filter((c) => c.status === 'succeeded');
-  const ledger = cloverLedger.filter((t) => t.user.id === user.id);
-  const userAudit = auditEntries.filter((a) => a.resource.href === `/users/${user.id}`);
-  const unlockedCards = giftCards.filter((_, i) => i % 4 === user.id.length % 4);
+  const ledger = cloverLedger;
+  const userAudit = auditEntries;
+  const unlockedCards = unlockedCardRows;
 
   const totalContributed = confirmed.reduce((a, c) => a + c.amount, 0);
   const conversion = user.invitationsReceived
@@ -279,12 +290,18 @@ export default function UserDetail() {
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-6">
               {unlockedCards.map((c) => (
                 <Link key={c.id} to={`/cards/catalog/${c.id}`} className="group">
-                  <div
-                    className="flex aspect-[3/4] items-center justify-center rounded-md text-[36px] transition-transform duration-micro group-hover:scale-[1.02]"
-                    style={{ backgroundColor: c.bg }}
-                  >
-                    {c.emojiKey}
-                  </div>
+                  {c.thumbUrl ? (
+                    <img
+                      src={c.thumbUrl}
+                      alt=""
+                      loading="lazy"
+                      className="aspect-[3/4] w-full rounded-md object-cover transition-transform duration-micro group-hover:scale-[1.02]"
+                    />
+                  ) : (
+                    <div className="flex aspect-[3/4] items-center justify-center rounded-md bg-neutral-100 text-[36px]">
+                      🎁
+                    </div>
+                  )}
                   <p className="mt-2 truncate text-body font-medium text-neutral-900">{c.name}</p>
                   <p className="text-caption text-neutral-500">
                     {c.cloverCost > 0 ? `🍀 ${c.cloverCost}` : 'Free'}

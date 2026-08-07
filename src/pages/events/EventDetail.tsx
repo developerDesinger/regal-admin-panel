@@ -37,8 +37,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { useEvent, useEventParticipants, useEventTimeline, useContributions } from '@/hooks/data';
-import { useStore } from '@/lib/store';
+import {
+  useEvent,
+  useEventParticipants,
+  useEventTimeline,
+  useContributions,
+  useCatalog,
+  useEventActivity,
+  useEventFinancials,
+} from '@/hooks/data';
+
 import { useAdminMutations } from '@/hooks/data/mutations';
 import { contributionColumns, eventColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -81,7 +89,9 @@ export default function EventDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { can } = useAuth();
-  const { giftCards, auditEntries } = useStore();
+  const { rows: giftCards } = useCatalog();
+  const { rows: auditEntries } = useEventActivity(eventId);
+  const { financials } = useEventFinancials(eventId);
   const mutations = useAdminMutations();
   const { event: resolvedEvent } = useEvent(eventId);
   const { rows: eventContributions } = useContributions({ eventId: eventId ?? '' });
@@ -113,22 +123,16 @@ export default function EventDetail() {
   const card = giftCards.find((c) => c.slug === event.cardSlug);
   const progress = (event.raisedAmount / event.goalAmount) * 100;
 
-  const byStatus = (s: string) => eventContributions.filter((c) => c.status === s);
-  const sumOf = (s: string) => byStatus(s).reduce((acc, c) => acc + c.amount, 0);
+  // Every figure here comes from /events/:id/financials — deriving it from the
+  // contributions table would only ever see the current page.
+  const byStatus = (s: string) => ({ count: financials?.byStatus?.[s as 'succeeded']?.count ?? 0 });
+  const sumOf = (s: string) => financials?.byStatus?.[s as 'succeeded']?.amount ?? 0;
 
-  const succeeded = byStatus('succeeded');
-  const uniqueContributors = new Set(
-    succeeded.map((c) => c.contributor?.id ?? c.guestEmail ?? c.id),
-  ).size;
-  const platformFees = succeeded.reduce((a, c) => a + c.platformFee, 0);
-  const stripeFees = succeeded.reduce((a, c) => a + c.stripeFee, 0);
-  const confirmedTotal = sumOf('succeeded');
-  const amounts = succeeded.map((c) => c.amount).sort((a, b) => a - b);
-  const medianContribution = amounts.length
-    ? amounts.length % 2
-      ? amounts[(amounts.length - 1) / 2]
-      : (amounts[amounts.length / 2 - 1] + amounts[amounts.length / 2]) / 2
-    : 0;
+  const uniqueContributors = financials?.uniqueContributors ?? 0;
+  const platformFees = financials?.platformFees ?? 0;
+  const stripeFees = financials?.stripeFees ?? 0;
+  const confirmedTotal = financials?.byStatus?.succeeded?.amount ?? 0;
+  const medianContribution = financials?.medianContribution ?? 0;
 
   const openedCount = participants.filter((p) => p.openedAt).length;
   // Participation counts CONFIRMED contributions only — a failed attempt is not
@@ -349,7 +353,9 @@ export default function EventDetail() {
                       ] as const
                     ).map(([label, status]) => {
                       const txns = byStatus(status);
-                      const unsupported = status === 'cancelled' && txns.length === 0;
+                      // The backend now models cancelled/refunded, so a zero is
+                      // a real zero rather than a missing enum value.
+                      const unsupported = false;
                       return (
                         <div key={status} className="bg-neutral-0 p-3">
                           <div className="flex items-center gap-2">
@@ -359,7 +365,7 @@ export default function EventDetail() {
                             {unsupported ? '—' : formatMoney(sumOf(status), event.currency, { showCurrency: false })}
                           </p>
                           <p className="tnum mt-0.5 text-caption text-neutral-500">
-                            {unsupported ? 'not yet in backend enum' : `${txns.length} txns`}
+                            {`${txns.count} txns`}
                           </p>
                         </div>
                       );
@@ -371,11 +377,11 @@ export default function EventDetail() {
                       <span className="tnum">{uniqueContributors}</span>
                     </DetailRow>
                     <DetailRow label="Contribution count">
-                      <span className="tnum">{succeeded.length}</span>
+                      <span className="tnum">{financials?.contributionCount ?? 0}</span>
                     </DetailRow>
                     <DetailRow label="Average contribution">
                       <MoneyValue
-                        amount={succeeded.length ? Math.round(confirmedTotal / succeeded.length) : 0}
+                        amount={financials?.averageContribution ?? 0}
                         currency={event.currency}
                       />
                     </DetailRow>

@@ -1,14 +1,13 @@
 /**
- * Mutations, resolved the same way as the reads: the API when
- * VITE_DATA_SOURCE=api, otherwise the in-browser store.
+ * Every admin action, routed to the API.
  *
- * Screens call these instead of `actions.*` directly, so a confirm dialog does
- * the right thing on either path without knowing which is active.
+ * Screens call these from their confirm dialogs. Each one invalidates the
+ * queries its change affects, so the table the admin is looking at refreshes
+ * without a manual reload — and the audit trail picks up the new entry.
  */
 
 import { useQueryClient } from '@tanstack/react-query';
 import * as React from 'react';
-import { usingMockData } from '@/lib/api/client';
 import {
   alertsService,
   catalogService,
@@ -17,22 +16,18 @@ import {
   usersService,
   withdrawalsService,
 } from '@/lib/api/services';
-import { actions } from '@/lib/store';
-import { useAuth } from '@/hooks/use-auth';
-import type { AdminUser, GiftCardDesign, RegalEvent } from '@/lib/types';
+import type { GiftCardDesign, RegalEvent } from '@/lib/types';
 
-/** Stable id per user-initiated retry, so a resend can't double-pay. */
+/** Stable id per user-initiated retry, so a resend can't pay twice. */
 function newIdempotencyKey(): string {
   return crypto.randomUUID();
 }
 
 export function useAdminMutations() {
   const qc = useQueryClient();
-  const { admin } = useAuth();
 
   const invalidate = React.useCallback(
     (...keys: string[]) => {
-      if (usingMockData) return;
       keys.forEach((k) => void qc.invalidateQueries({ queryKey: [k] }));
     },
     [qc],
@@ -42,47 +37,24 @@ export function useAdminMutations() {
     () => ({
       /* ---- events ---- */
       async overrideEventStatus(event: RegalEvent, status: string, reason: string) {
-        if (usingMockData) {
-          actions.updateEvent(
-            admin,
-            event.id,
-            { status: status as RegalEvent['status'], closedAt: new Date().toISOString() },
-            { action: 'event.status_override', reason },
-          );
-          return;
-        }
         await eventsService.statusOverride(event.id, status, reason);
-        invalidate('events', 'event', 'audit');
+        invalidate('events', 'event', 'event-activity', 'audit');
       },
 
       async forceCloseEvent(event: RegalEvent, reason: string) {
-        if (usingMockData) {
-          actions.updateEvent(
-            admin,
-            event.id,
-            { status: 'completed', closedAt: new Date().toISOString() },
-            { action: 'event.force_close', reason },
-          );
-          return;
-        }
         await eventsService.forceClose(event.id, reason);
-        invalidate('events', 'event', 'audit');
+        invalidate('events', 'event', 'event-activity', 'audit');
       },
 
       async resendReminders(event: RegalEvent, reason: string) {
-        if (usingMockData) return { queued: event.totalMembers };
         const res = await eventsService.resendReminders(event.id, reason);
-        invalidate('event', 'audit');
+        invalidate('event', 'event-activity', 'audit');
         return res.data;
       },
 
       async flagEvent(event: RegalEvent, reason: string) {
-        if (usingMockData) {
-          actions.updateEvent(admin, event.id, { status: 'paused' }, { action: 'event.flag_for_review', reason });
-          return;
-        }
         await eventsService.flag(event.id, reason);
-        invalidate('events', 'event', 'audit');
+        invalidate('events', 'event', 'event-activity', 'audit');
       },
 
       /**
@@ -111,31 +83,28 @@ export function useAdminMutations() {
       },
 
       /* ---- users ---- */
-      async setUserActive(userId: string, name: string, isActive: boolean, reason: string) {
-        if (usingMockData) {
-          actions.setUserActive(admin, userId, isActive, reason);
-          return;
-        }
+      async setUserActive(userId: string, isActive: boolean, reason: string) {
         await (isActive
           ? usersService.reactivate(userId, reason)
           : usersService.suspend(userId, reason));
-        invalidate('users', 'user', 'audit');
-        void name;
+        invalidate('users', 'user', 'user-activity', 'audit');
       },
 
-      /** `amount` is signed; the server rejects 0 and non-integers with a 422. */
+      /** `amount` is signed; the server rejects 0, non-integers and overdrafts. */
       async adjustClovers(userId: string, amount: number, reason: string) {
-        if (usingMockData) {
-          actions.adjustClovers(admin, userId, amount, reason);
-          return null;
-        }
         const res = await usersService.adjustClovers(userId, amount, reason);
-        invalidate('users', 'user', 'clover-ledger', 'clover-kpis', 'audit');
+        invalidate('users', 'user', 'user-clovers', 'clover-ledger', 'clover-kpis', 'audit');
         return res.data;
       },
 
+      async resetUserPassword(userId: string) {
+        const res = await usersService.passwordReset(userId);
+        invalidate('user-activity', 'audit');
+        return res.data;
+      },
+
+      /** Returns the unmasked contact details; the call itself is audited. */
       async unmaskPii(userId: string, reason: string) {
-        if (usingMockData) return null;
         const res = await usersService.unmaskPii(userId, reason);
         invalidate('user', 'audit');
         return res.data;
@@ -143,27 +112,20 @@ export function useAdminMutations() {
 
       /* ---- catalog ---- */
       async setCardActive(card: GiftCardDesign, isActive: boolean, reason: string) {
-        if (usingMockData) {
-          actions.setCardActive(admin, card.id, isActive, reason);
-          return;
-        }
         await (isActive
           ? catalogService.activate(card.id, reason)
           : catalogService.deactivate(card.id, reason));
-        invalidate('catalog', 'audit');
+        invalidate('catalog', 'catalog-card', 'audit');
       },
 
+      /** Never retroactive — nobody is charged or refunded for a price change. */
       async setCardPrice(card: GiftCardDesign, cloverCost: number, reason: string) {
-        if (usingMockData) {
-          actions.setCardPrice(admin, card.id, cloverCost, reason);
-          return;
-        }
-        await catalogService.setPrice(card.id, cloverCost, reason);
-        invalidate('catalog', 'audit');
+        const res = await catalogService.setPrice(card.id, cloverCost, reason);
+        invalidate('catalog', 'catalog-card', 'audit');
+        return res;
       },
 
       async duplicateCard(card: GiftCardDesign) {
-        if (usingMockData) return actions.duplicateCard(admin, card.id);
         const copy = await catalogService.duplicate(card.id);
         invalidate('catalog', 'audit');
         return copy;
@@ -171,112 +133,78 @@ export function useAdminMutations() {
 
       /** 409 when unlocks exist — the caller offers Deactivate instead. */
       async deleteCard(card: GiftCardDesign, reason: string) {
-        if (usingMockData) {
-          actions.deleteCard(admin, card.id, reason);
-          return;
-        }
         await catalogService.remove(card.id, reason);
         invalidate('catalog', 'audit');
       },
 
       async reorderCards(orderedIds: string[]) {
-        if (usingMockData) {
-          actions.saveCardOrder(admin, orderedIds);
-          return;
-        }
         await catalogService.reorder(orderedIds);
         invalidate('catalog', 'audit');
       },
 
       /* ---- alerts ---- */
       async acknowledgeAlert(id: string) {
-        if (usingMockData) {
-          actions.updateAlert(admin, id, { status: 'acknowledged' }, { action: 'alert.acknowledge' });
-          return;
-        }
         await alertsService.acknowledge(id);
-        invalidate('alerts', 'audit');
+        invalidate('alerts', 'alert-types', 'audit');
       },
 
-      async assignAlert(id: string, adminId: string, adminName: string) {
-        if (usingMockData) {
-          actions.updateAlert(admin, id, { assignedTo: adminName }, { action: 'alert.assign' });
-          return;
-        }
+      async assignAlert(id: string, adminId: string) {
         await alertsService.assign(id, adminId);
         invalidate('alerts', 'audit');
       },
 
       async snoozeAlert(id: string, duration: '1h' | '24h' | '7d') {
-        if (usingMockData) {
-          actions.updateAlert(admin, id, { status: 'snoozed' }, { action: 'alert.snooze', reason: duration });
-          return;
-        }
         await alertsService.snooze(id, duration);
-        invalidate('alerts', 'audit');
+        invalidate('alerts', 'alert-types', 'audit');
       },
 
       async resolveAlert(id: string, reason: string) {
-        if (usingMockData) {
-          actions.updateAlert(admin, id, { status: 'resolved' }, { action: 'alert.resolve', reason });
-          return;
-        }
         await alertsService.resolve(id, reason);
-        invalidate('alerts', 'audit');
+        invalidate('alerts', 'alert-types', 'audit');
       },
 
+      /** Dismiss means "the rule was wrong" — it feeds threshold tuning. */
       async dismissAlert(id: string, reason: string) {
-        if (usingMockData) {
-          actions.updateAlert(admin, id, { status: 'dismissed' }, { action: 'alert.dismiss', reason });
-          return;
-        }
         await alertsService.dismiss(id, reason);
-        invalidate('alerts', 'audit');
+        invalidate('alerts', 'alert-types', 'audit');
       },
 
       /* ---- withdrawals ---- */
       async retryPayout(id: string, reason: string) {
-        if (usingMockData) {
-          actions.updateWithdrawal(
-            admin,
-            id,
-            { status: 'processing', failureReason: null },
-            { action: 'withdrawal.retry', reason },
-          );
-          return;
-        }
         // 422 without the header; the key must be stable across transport retries.
         await withdrawalsService.retry(id, reason, newIdempotencyKey());
         invalidate('withdrawals', 'withdrawal-kpis', 'audit');
       },
 
+      /** Records that someone dealt with it out of band — moves no money. */
       async markPayoutResolved(id: string, reason: string) {
-        if (usingMockData) {
-          actions.updateWithdrawal(
-            admin,
-            id,
-            { status: 'completed', completedAt: new Date().toISOString(), failureReason: null },
-            { action: 'withdrawal.mark_resolved', reason },
-          );
-          return;
-        }
         await withdrawalsService.markResolved(id, reason);
         invalidate('withdrawals', 'withdrawal-kpis', 'audit');
       },
 
+      async contactBeneficiary(
+        id: string,
+        reason: string,
+        template: 'payout_failed' | 'payout_delayed' = 'payout_failed',
+      ) {
+        await withdrawalsService.contact(id, reason, template);
+        invalidate('withdrawals', 'audit');
+      },
+
       /* ---- clovers ---- */
-      async freezeAnomaly(anomalyId: string, userId: string, reason: string) {
-        if (usingMockData) {
-          actions.adjustClovers(admin, userId, 0, reason);
-          return;
-        }
+      /** Freeze suspends the account — there is no separate "can't earn" flag. */
+      async freezeAnomaly(anomalyId: string, reason: string) {
         await cloversService.freezeAnomaly(anomalyId, reason);
-        invalidate('clover-ledger', 'users', 'audit');
+        invalidate('clover-anomalies', 'clover-ledger', 'users', 'audit');
+      },
+
+      async dismissAnomaly(anomalyId: string, reason: string) {
+        await cloversService.dismissAnomaly(anomalyId, reason);
+        invalidate('clover-anomalies', 'audit');
       },
     }),
-    [admin, invalidate],
+    [invalidate],
   );
 }
 
 export type AdminMutations = ReturnType<typeof useAdminMutations>;
-export type { AdminUser };

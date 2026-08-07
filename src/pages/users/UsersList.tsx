@@ -13,9 +13,8 @@ import { Avatar } from '@/components/ui/misc';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { stats } from '@/lib/mock/data';
-import { useStore } from '@/lib/store';
-import { useUsers } from '@/hooks/data';
+
+import { useUsers, useUserKpis } from '@/hooks/data';
 import { userColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { rangeLabel } from '@/lib/date-ranges';
@@ -32,9 +31,15 @@ export default function UsersList() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { can, piiUnmasked, togglePii } = useAuth();
-  const { users: storeUsers } = useStore();
-  const { rows: apiRows, isLoading, error, refetch, isMock } = useUsers(all);
-  const users = isMock ? storeUsers : apiRows;
+  const { rows: users, isLoading, error, refetch, meta } = useUsers(all);
+  const { data: kpis } = useUserKpis({ range: all.range ?? '30d', compare: all.compare === '1' });
+  const kpi = (key: keyof NonNullable<typeof kpis>, fmt: (v: number) => string) => {
+    const v = kpis?.[key];
+    return {
+      value: typeof v?.value === 'number' ? fmt(v.value) : '—',
+      delta: v?.delta ?? null,
+    };
+  };
 
   const filtered = React.useMemo(
     () =>
@@ -222,7 +227,7 @@ export default function UsersList() {
               columns={userColumns}
               rows={filtered}
               containsPii
-              filterSummary={`${rangeLabel(all.range ?? '30d')} · ${filtered.length} of ${users.length} users`}
+              filterSummary={`${rangeLabel(all.range ?? '30d')} · ${filtered.length} of ${meta?.totalRows ?? users.length} users`}
             />
           </>
         }
@@ -231,40 +236,34 @@ export default function UsersList() {
       <KpiGrid columns={3} className="mb-6">
         <KpiCard
           label="Total Users"
-          value={formatNumber(stats.totalUsers)}
-          delta={9.1}
+          {...kpi('totalUsers', formatNumber)}
           definition="All registered accounts, excluding hard-deleted records."
           onDrillDown={() => navigate('/users')}
         />
         <KpiCard
           label="New Users"
-          value={formatNumber(stats.newUsers)}
-          delta={14.6}
+          {...kpi('newUsers', formatNumber)}
           definition="Accounts whose registration timestamp falls inside the selected range."
         />
         <KpiCard
           label="Active Contributors"
-          value={formatNumber(stats.activeContributors)}
-          delta={6.2}
+          {...kpi('activeContributors', formatNumber)}
           definition="Distinct users with ≥1 confirmed contribution in the selected range."
           onDrillDown={() => navigate('/users?activity=contributed')}
         />
         <KpiCard
           label="Recurrent Contributors"
-          value={formatNumber(stats.recurrentContributors)}
-          delta={3.4}
+          {...kpi('recurrentContributors', formatNumber)}
           definition="Users who contributed to 2 or more distinct events, lifetime."
         />
         <KpiCard
           label="Average Lifetime Contribution"
-          value={formatMoney(stats.avgLifetimeContribution)}
-          delta={2.1}
+          {...kpi('avgLifetimeContribution', (v) => formatMoney(v))}
           definition="Mean of total confirmed money contributed per user, lifetime."
         />
         <KpiCard
           label="Users with Clover Balance"
-          value={formatNumber(stats.usersWithClovers)}
-          delta={11.8}
+          {...kpi('usersWithCloverBalance', formatNumber)}
           accent="secondary"
           definition="Users whose current clover balance is greater than zero."
           onDrillDown={() => navigate('/users?clovers=has')}

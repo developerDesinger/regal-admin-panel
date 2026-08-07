@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { useStore } from '@/lib/store';
 import { useEvents } from '@/hooks/data';
 import { eventColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -31,10 +30,7 @@ import { cn } from '@/lib/utils';
 export default function EventsList() {
   const { all } = useUrlState();
   const { toast } = useToast();
-  const { events: storeEvents } = useStore();
-  // Resolves fixtures or the API depending on VITE_DATA_SOURCE.
-  const { rows: apiRows, isLoading, error, refetch, isMock } = useEvents(all);
-  const events = isMock ? storeEvents : apiRows;
+  const { rows: events, isLoading, error, refetch } = useEvents(all);
 
   const filtered = React.useMemo(() => {
     return events.filter((e) => {

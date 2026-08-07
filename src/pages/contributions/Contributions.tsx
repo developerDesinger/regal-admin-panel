@@ -20,14 +20,7 @@ import { CHART_COLORS } from '@/lib/chart-tokens';
 import { ContributionsTable } from './ContributionsTable';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import {
-  contributionSizeBuckets,
-  failureReasonBreakdown,
-  stats,
-  timeSeries,
-} from '@/lib/mock/data';
-import { useStore } from '@/lib/store';
-import { useContributions } from '@/hooks/data';
+import { useContributions, useContributionKpis, useContributionCharts } from '@/hooks/data';
 import { contributionColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { rangeLabel } from '@/lib/date-ranges';
@@ -40,9 +33,18 @@ export default function Contributions() {
   const { all } = useUrlState();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { contributions: storeRows } = useStore();
-  const { rows: apiRows, isLoading, error, refetch, isMock } = useContributions(all);
-  const contributions = isMock ? storeRows : apiRows;
+  const { rows: contributions, isLoading, error, refetch, meta } = useContributions(all);
+  const range = all.range ?? '30d';
+  const { data: kpis } = useContributionKpis({ range, compare: all.compare === '1' });
+  const { data: charts } = useContributionCharts({ range });
+
+  const kpi = (key: keyof NonNullable<typeof kpis>, fmt: (v: number) => string) => {
+    const v = kpis?.[key];
+    return { value: typeof v?.value === 'number' ? fmt(v.value) : '—', delta: v?.delta ?? null };
+  };
+  const statusSeries = charts?.volumeOverTime ?? [];
+  const sizeBuckets = charts?.sizeDistribution ?? [];
+  const failureReasons = charts?.failureReasons ?? [];
 
   const filtered = React.useMemo(
     () =>
@@ -75,13 +77,6 @@ export default function Contributions() {
     [all, contributions],
   );
 
-  const statusSeries = timeSeries.map((d) => ({
-    date: d.date,
-    succeeded: d.succeeded,
-    pending: d.pending,
-    failed: d.failed,
-    cancelled: d.cancelled,
-  }));
 
   return (
     <>
@@ -97,7 +92,7 @@ export default function Contributions() {
               columns={contributionColumns}
               rows={filtered}
               containsPii
-              filterSummary={`${rangeLabel(all.range ?? '30d')} · ${filtered.length} of ${contributions.length} contributions`}
+              filterSummary={`${rangeLabel(all.range ?? '30d')} · ${filtered.length} of ${meta?.totalRows ?? contributions.length} contributions`}
             />
           </>
         }
@@ -106,23 +101,20 @@ export default function Contributions() {
       <KpiGrid className="mb-6">
         <KpiCard
           label="Total Confirmed"
-          value={formatMoney(stats.totalConfirmed)}
-          delta={18.9}
+          {...kpi('totalConfirmed', (v) => formatMoney(v))}
           definition="Sum of contribution.amount where status = succeeded, in minor units ÷ 100."
           onDrillDown={() => navigate('/contributions?status=succeeded')}
         />
         <KpiCard
           label="Pending"
-          value={formatMoney(stats.totalPending)}
-          delta={-4.2}
+          {...kpi('totalPending', (v) => formatMoney(v))}
           invertDelta
           definition="Sum of amounts for payments still processing — 3DS challenges, OXXO vouchers, SPEI transfers."
           onDrillDown={() => navigate('/contributions?status=pending')}
         />
         <KpiCard
           label="Failed"
-          value={formatMoney(stats.totalFailed)}
-          delta={6.4}
+          {...kpi('totalFailed', (v) => formatMoney(v))}
           invertDelta
           accent="danger"
           definition="Sum of amounts for payments Stripe declined. See the failure-reason breakdown below."
@@ -130,26 +122,23 @@ export default function Contributions() {
         />
         <KpiCard
           label="Cancelled"
-          value={stats.totalCancelled > 0 ? formatMoney(stats.totalCancelled) : '—'}
+          {...kpi('totalCancelled', (v) => formatMoney(v))}
           definition="Backend gap: ContributionStatus is currently pending | succeeded | failed. Until cancelled/refunded is added to the enum this renders — rather than a misleading $0.00."
           onDrillDown={() => navigate('/contributions?status=cancelled')}
         />
         <KpiCard
           label="Average Contribution"
-          value={formatMoney(stats.avgContribution)}
-          delta={2.8}
+          {...kpi('averageContribution', (v) => formatMoney(v))}
           definition="Mean of confirmed contribution amounts in the range."
         />
         <KpiCard
           label="Median Contribution"
-          value={formatMoney(stats.medianContribution)}
-          delta={0}
+          {...kpi('medianContribution', (v) => formatMoney(v))}
           definition="50th percentile of confirmed contribution amounts — resistant to a single large outlier."
         />
         <KpiCard
           label="Failure Rate"
-          value={formatPercent(stats.failureRate)}
-          delta={1.9}
+          {...kpi('failureRate', formatPercent)}
           deltaUnit="pp"
           invertDelta
           accent="danger"
@@ -158,8 +147,7 @@ export default function Contributions() {
         />
         <KpiCard
           label="Total Fees Collected"
-          value={formatMoney(stats.totalFees)}
-          delta={17.2}
+          {...kpi('totalFees', (v) => formatMoney(v))}
           definition="Platform fee + Stripe fee across confirmed contributions. Hover any row's Fee cell to see the split."
         />
       </KpiGrid>
@@ -212,12 +200,12 @@ export default function Contributions() {
           subtitle="Confirmed contributions by amount bucket"
           tableData={{
             columns: ['Bucket', 'Contributions'],
-            rows: contributionSizeBuckets.map((b) => [b.bucket, b.count]),
+            rows: sizeBuckets.map((b) => [b.bucket, b.count]),
           }}
         >
           <ResponsiveContainer width="100%" height={240}>
             <BarChart
-              data={contributionSizeBuckets}
+              data={sizeBuckets}
               layout="vertical"
               margin={{ top: 8, right: 16, bottom: 0, left: 8 }}
             >
@@ -226,7 +214,7 @@ export default function Contributions() {
               <YAxis dataKey="bucket" type="category" tickLine={false} axisLine={false} width={88} />
               <RTooltip content={<ChartTooltip />} cursor={{ fill: 'rgb(var(--neutral-100))' }} />
               <Bar dataKey="count" name="Contributions" radius={[0, 2, 2, 0]} isAnimationActive={false}>
-                {contributionSizeBuckets.map((_, i) => (
+                {sizeBuckets.map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS[0]} />
                 ))}
               </Bar>
@@ -241,13 +229,13 @@ export default function Contributions() {
           subtitle="From Stripe decline codes — the actionable half of the failure rate"
           tableData={{
             columns: ['Decline code', 'Count'],
-            rows: failureReasonBreakdown.map((f) => [f.reason, f.count]),
+            rows: failureReasons.map((f) => [f.reason, f.count]),
           }}
           minHeight={200}
         >
           <ResponsiveContainer width="100%" height={180}>
             <BarChart
-              data={failureReasonBreakdown}
+              data={failureReasons}
               layout="vertical"
               margin={{ top: 0, right: 24, bottom: 0, left: 8 }}
             >
@@ -256,7 +244,7 @@ export default function Contributions() {
               <YAxis dataKey="reason" type="category" tickLine={false} axisLine={false} width={140} />
               <RTooltip content={<ChartTooltip />} cursor={{ fill: 'rgb(var(--neutral-100))' }} />
               <Bar dataKey="count" name="Failures" radius={[0, 2, 2, 0]} isAnimationActive={false}>
-                {failureReasonBreakdown.map((_, i) => (
+                {failureReasons.map((_, i) => (
                   <Cell key={i} fill="rgb(var(--danger-500))" fillOpacity={1 - i * 0.14} />
                 ))}
               </Bar>

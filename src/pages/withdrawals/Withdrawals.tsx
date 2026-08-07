@@ -14,14 +14,12 @@ import { Avatar, CopyableId } from '@/components/ui/misc';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { stats } from '@/lib/mock/data';
-import { useStore } from '@/lib/store';
+
 import { useAdminMutations } from '@/hooks/data/mutations';
-import { useWithdrawals } from '@/hooks/data';
+import { useWithdrawals, useWithdrawalKpis } from '@/hooks/data';
 import { withdrawalColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { rangeLabel } from '@/lib/date-ranges';
-import { NOW } from '@/lib/mock/seed';
 import { useUrlState } from '@/hooks/useUrlState';
 import { formatDate, formatDuration, formatMoney, formatNumber, shortId } from '@/lib/format';
 import type { Withdrawal } from '@/lib/types';
@@ -31,10 +29,13 @@ export default function Withdrawals() {
   const { all } = useUrlState();
   const { toast } = useToast();
   const { can } = useAuth();
-  const { withdrawals: storeRows } = useStore();
-  const { rows: apiRows, isLoading, error, refetch, isMock } = useWithdrawals(all);
+  const { rows: withdrawals, isLoading, error, refetch } = useWithdrawals(all);
+  const { data: kpis } = useWithdrawalKpis({ range: all.range ?? '30d', compare: all.compare === '1' });
+  const kpi = (key: keyof NonNullable<typeof kpis>, fmt: (v: number) => string) => {
+    const v = kpis?.[key];
+    return { value: typeof v?.value === 'number' ? fmt(v.value) : '—', delta: v?.delta ?? null };
+  };
   const mutations = useAdminMutations();
-  const withdrawals = isMock ? storeRows : apiRows;
   const [retrying, setRetrying] = React.useState<Withdrawal | null>(null);
   const [resolving, setResolving] = React.useState<Withdrawal | null>(null);
 
@@ -59,11 +60,9 @@ export default function Withdrawals() {
     [filtered],
   );
 
-  const sumBy = (status: Withdrawal['status']) =>
-    withdrawals.filter((w) => w.status === status).reduce((a, w) => a + w.amount, 0);
 
   const elapsedHours = (w: Withdrawal) =>
-    ((w.completedAt ? +new Date(w.completedAt) : +NOW) - +new Date(w.requestedAt)) / 3_600_000;
+    ((w.completedAt ? +new Date(w.completedAt) : Date.now()) - +new Date(w.requestedAt)) / 3_600_000;
 
   const columns: Column<Withdrawal>[] = [
     {
@@ -212,12 +211,6 @@ export default function Withdrawals() {
     },
   ];
 
-  const medianPayoutHours =
-    withdrawals
-      .filter((w) => w.status === 'completed')
-      .map(elapsedHours)
-      .sort((a, b) => a - b)[Math.floor(withdrawals.filter((w) => w.status === 'completed').length / 2)] ?? 0;
-
   return (
     <>
       <PageHeader
@@ -241,32 +234,30 @@ export default function Withdrawals() {
       <KpiGrid columns={3} className="mb-6">
         <KpiCard
           label="Available for Withdrawal"
-          value={formatMoney(stats.availableForWithdrawal)}
+          {...kpi('availableForWithdrawal', (v) => formatMoney(v))}
           definition="System-wide net balance on closed events where no withdrawal has been started."
         />
         <KpiCard
           label="Requested"
-          value={formatMoney(sumBy('requested') + sumBy('validated'))}
+          {...kpi('requested', formatNumber)}
           secondary={`${formatNumber(withdrawals.filter((w) => w.status === 'requested' || w.status === 'validated').length)} payouts`}
           definition="Payouts a beneficiary has requested but Stripe hasn't started processing."
         />
         <KpiCard
           label="Processing"
-          value={formatMoney(sumBy('processing'))}
+          {...kpi('processing', formatNumber)}
           secondary={`${formatNumber(withdrawals.filter((w) => w.status === 'processing').length)} payouts`}
           definition="Payouts in flight at Stripe, not yet settled in the beneficiary's bank."
         />
         <KpiCard
           label="Completed"
-          value={formatMoney(sumBy('completed'))}
-          delta={16.4}
+          {...kpi('completedInPeriod', formatNumber)}
           secondary={`${formatNumber(withdrawals.filter((w) => w.status === 'completed').length)} payouts`}
           definition="Payouts settled inside the selected range."
         />
         <KpiCard
           label="Failed"
-          value={formatMoney(sumBy('failed'))}
-          delta={2.1}
+          {...kpi('failed', formatNumber)}
           invertDelta
           accent="danger"
           secondary={`${formatNumber(withdrawals.filter((w) => w.status === 'failed').length)} payouts`}
@@ -274,8 +265,7 @@ export default function Withdrawals() {
         />
         <KpiCard
           label="Median Time to Payout"
-          value={formatDuration(medianPayoutHours)}
-          delta={-9.3}
+          {...kpi('medianTimeToPayoutHours', formatDuration)}
           invertDelta
           definition="Median of (completion timestamp − request timestamp) across completed payouts."
         />

@@ -95,13 +95,13 @@ export const authService = {
 
   async logout() {
     try {
-      await apiPost('/auth/logout');
+      await apiPost('/auth/logout', {});
     } finally {
       setCsrfToken(null);
     }
   },
 
-  heartbeat: () => apiPost<void>('/auth/heartbeat'),
+  heartbeat: () => apiPost<void>('/auth/heartbeat', {}),
 
   forgotPassword: (email: string) => apiPost<void>('/auth/forgot-password', { email }),
 

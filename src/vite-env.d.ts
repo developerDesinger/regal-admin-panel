@@ -7,8 +7,6 @@ interface ImportMetaEnv {
   readonly VITE_API_TUNNEL?: string;
   /** Topbar environment chip (§3). */
   readonly VITE_ENV?: 'PROD' | 'STAGING';
-  /** `mock` renders fixtures, `api` calls the backend. */
-  readonly VITE_DATA_SOURCE?: 'mock' | 'api';
 }
 
 interface ImportMeta {

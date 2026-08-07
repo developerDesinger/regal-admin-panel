@@ -8,8 +8,7 @@ import { DateRangePicker } from '@/components/common/DateRangePicker';
 import { Card } from '@/components/ui/card';
 import { Avatar, CopyableId } from '@/components/ui/misc';
 import { Tooltip } from '@/components/ui/tooltip';
-import { useStore } from '@/lib/store';
-import { useAuditTrail } from '@/hooks/data';
+import { useAuditTrail, useAuditFacets } from '@/hooks/data';
 import { auditColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { rangeLabel } from '@/lib/date-ranges';
@@ -26,9 +25,9 @@ import { cn } from '@/lib/utils';
 export default function Audit() {
   const { all } = useUrlState();
   const [expanded, setExpanded] = React.useState<string | null>(null);
-  const { auditEntries: storeRows, adminUsers } = useStore();
-  const { rows: apiRows, isLoading, error, refetch, isMock } = useAuditTrail(all);
-  const auditEntries = isMock ? storeRows : apiRows;
+  // Distinct admins actually present in the trail, for the filter dropdown.
+  const { admins: adminUsers } = useAuditFacets();
+  const { rows: auditEntries, isLoading, error, refetch } = useAuditTrail(all);
 
   const filtered = React.useMemo(
     () =>

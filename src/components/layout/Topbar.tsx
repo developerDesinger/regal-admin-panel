@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, LogOut, Menu, Moon, Search, Sun, UserCog } from 'lucide-react';
+import { Bell, LogOut, Menu, Moon, Search, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,15 +8,12 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar } from '@/components/ui/misc';
 import { useAuth } from '@/hooks/use-auth';
 import { ROLE_LABELS } from '@/lib/permissions';
-import { adminUsers, alerts } from '@/lib/mock/data';
+import { useAlerts } from '@/hooks/data';
 import { readLocal, writeLocal } from '@/hooks/useUrlState';
 import { formatRelative } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -35,9 +32,10 @@ export function Topbar({
   onOpenSearch: () => void;
   onOpenMobileNav: () => void;
 }) {
-  const { admin, signOut, switchRole } = useAuth();
+  const { admin, signOut } = useAuth();
   const navigate = useNavigate();
-  const unread = alerts.filter((a) => a.status === 'open').length;
+  const { rows: openAlerts, meta: alertMeta } = useAlerts({ state: 'open' });
+  const unread = alertMeta?.totalRows ?? openAlerts.length;
   const [theme, setTheme] = React.useState<'light' | 'dark'>(() =>
     readLocal<'light' | 'dark'>('regal:theme', 'light'),
   );
@@ -110,10 +108,7 @@ export function Topbar({
               <span className="tnum text-caption text-neutral-500">{unread} open</span>
             </div>
             <ul className="max-h-[320px] overflow-y-auto p-1">
-              {alerts
-                .filter((a) => a.status === 'open')
-                .slice(0, 6)
-                .map((a) => (
+              {openAlerts.slice(0, 6).map((a) => (
                   <li key={a.id}>
                     <Link
                       to={a.subject.href}
@@ -143,7 +138,7 @@ export function Topbar({
                       </span>
                     </Link>
                   </li>
-                ))}
+              ))}
             </ul>
             <div className="border-t border-neutral-200 p-1">
               <DropdownMenuItem onSelect={() => navigate('/alerts')}>
@@ -174,21 +169,6 @@ export function Topbar({
           <DropdownMenuContent align="end" className="w-[260px]">
             <DropdownMenuLabel>{admin?.email}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <UserCog className="h-4 w-4 text-neutral-400" />
-                Role: {admin ? ROLE_LABELS[admin.role] : '—'}
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
-                <DropdownMenuLabel>Preview another role</DropdownMenuLabel>
-                {adminUsers.map((a) => (
-                  <DropdownMenuItem key={a.id} onSelect={() => switchRole(a.id)}>
-                    {ROLE_LABELS[a.role]}
-                    <span className="ml-auto text-caption text-neutral-400">{a.name.split(' ')[0]}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               destructive

@@ -30,9 +30,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { useStore } from '@/lib/store';
 import { useAdminMutations } from '@/hooks/data/mutations';
-import { useAlerts } from '@/hooks/data';
+import { useAlerts, useAdmins } from '@/hooks/data';
 import { useUrlState } from '@/hooks/useUrlState';
 import { formatDateTime, formatRelative } from '@/lib/format';
 import type { Alert, AlertType } from '@/lib/types';
@@ -103,10 +102,9 @@ export default function Alerts() {
   const { all, set } = useUrlState();
   const { toast } = useToast();
   const { can } = useAuth();
-  const { alerts: storeAlerts, adminUsers } = useStore();
-  const { rows: apiAlerts, isMock } = useAlerts({});
+  const { admins: adminUsers } = useAdmins();
+  const { rows: alerts } = useAlerts({});
   const mutations = useAdminMutations();
-  const alerts = isMock ? storeAlerts : apiAlerts;
   const [expanded, setExpanded] = React.useState<string | null>(null);
   const [resolving, setResolving] = React.useState<Alert | null>(null);
   const [dismissing, setDismissing] = React.useState<Alert | null>(null);
@@ -368,7 +366,7 @@ export default function Alerts() {
                                     <DropdownMenuItem
                                       key={a.id}
                                       onSelect={() => {
-                                        void mutations.assignAlert(alert.id, a.id, a.name);
+                                        void mutations.assignAlert(alert.id, a.id);
                                         toast({ title: `Assigned to ${a.name}`, description: alert.subject.label, tone: 'success' });
                                       }}
                                     >

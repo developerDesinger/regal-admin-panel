@@ -21,10 +21,6 @@ import { DISPLAY_TZ } from '@/lib/format';
 export const API_ORIGIN = import.meta.env.VITE_API_BASE_URL ?? '';
 export const API_BASE_URL = `${API_ORIGIN}/api/v1/admin`;
 
-/** `mock` renders fixtures; `api` calls the backend. See .env.development. */
-export const DATA_SOURCE = (import.meta.env.VITE_DATA_SOURCE as 'mock' | 'api') ?? 'mock';
-export const usingMockData = DATA_SOURCE !== 'api';
-
 /* ------------------------------------------------------------------ csrf -- */
 
 let csrfToken = '';
@@ -263,9 +259,11 @@ export const apiDelete = <T>(url: string, data?: unknown) =>
 /** Strips empty/`all` values so we don't send noise the server has to ignore. */
 export function cleanParams(params: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
-    Object.entries(params).filter(
-      ([, v]) => v !== undefined && v !== null && v !== '' && v !== 'all',
-    ),
+    Object.entries(params)
+      // `false` would serialize as the string "false", which the server reads
+      // as truthy — drop it along with the other empty values.
+      .filter(([, v]) => v !== undefined && v !== null && v !== '' && v !== 'all' && v !== false)
+      .map(([k, v]) => [k, v === true ? 1 : v]),
   );
 }
 

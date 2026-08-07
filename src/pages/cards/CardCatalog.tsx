@@ -40,7 +40,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { useStore } from '@/lib/store';
 import { useAdminMutations } from '@/hooks/data/mutations';
 import { useCatalog } from '@/hooks/data';
 import { cardColumns } from '@/lib/datasets';
@@ -59,10 +58,8 @@ export default function CardCatalog() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { can } = useAuth();
-  const { giftCards: storeCards } = useStore();
-  const { rows: apiCards, isMock } = useCatalog();
+  const { rows: giftCards } = useCatalog();
   const mutations = useAdminMutations();
-  const giftCards = isMock ? storeCards : apiCards;
   const { get, set, all } = useUrlState();
 
   const [view, setView] = React.useState<'grid' | 'table'>(

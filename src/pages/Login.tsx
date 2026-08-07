@@ -84,7 +84,7 @@ export default function Login() {
         setDevCode(res.devCode ?? null);
         setStage('2fa');
         return;
-      }
+      } 
       navigate('/');
     } catch (err) {
       const api = err as ApiError;

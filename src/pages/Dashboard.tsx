@@ -17,6 +17,8 @@ import {
 import { AlertTriangle, ArrowRight, Clock, Download, Wallet } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/common/PageHeader';
 import { KpiCard, KpiGrid } from '@/components/common/KpiCard';
+import { useDashboardKpis } from '@/hooks/data';
+import { useUrlState } from '@/hooks/useUrlState';
 import { DateRangePicker } from '@/components/common/DateRangePicker';
 import { ChartCard, ChartTooltip } from '@/components/common/ChartCard';
 import { CHART_COLORS, COMPARISON_COLOR } from '@/lib/chart-tokens';
@@ -59,6 +61,11 @@ import { cn } from '@/lib/utils';
 export default function Dashboard() {
   const navigate = useNavigate();
   const [drill, setDrill] = React.useState<DrillTo | null>(null);
+  // The date-range picker writes these to the URL; the aggregates read them
+  // back so the whole page moves together and the view stays shareable.
+  const { get } = useUrlState();
+  const range = get('range', '30d');
+  const compare = get('compare') === '1';
 
   const openAlerts = alerts.filter((a) => a.status === 'open');
   const alertChips = [
@@ -117,12 +124,35 @@ export default function Dashboard() {
     }));
   }, []);
 
+
+  // The server owns these numbers when the API is the data source; the fixture
+  // computation below stays as the fallback so the panel still renders offline.
+  const { data: apiKpis, meta: kpiMeta } = useDashboardKpis({ range, compare: compare ? 1 : undefined });
+
+  const kpi = (
+    key: keyof NonNullable<typeof apiKpis>,
+    fallbackValue: string,
+    fallbackDelta: number,
+    definition: string,
+    format: (v: number) => string,
+  ) => {
+    // A missing or partial key falls back rather than rendering NaN.
+    const server = apiKpis?.[key];
+    const hasValue = typeof server?.value === 'number';
+    return {
+      value: hasValue ? format(server.value as number) : fallbackValue,
+      // delta is null when the previous period was 0 — render "—", not Infinity%.
+      delta: hasValue ? (server?.delta ?? null) : fallbackDelta,
+      definition: server?.definition ?? definition,
+    };
+  };
+
   return (
     <>
       <PageHeader
         title="Dashboard"
         subtitle="Platform health across events, money, participation and rewards."
-        dataAsOf={DATA_AS_OF}
+        dataAsOf={(kpiMeta?.dataAsOf as string | undefined) ?? DATA_AS_OF}
         actions={
           <>
             <DateRangePicker />
@@ -161,9 +191,8 @@ export default function Dashboard() {
       <KpiGrid className="mb-6">
         <KpiCard
           label="Active Events"
-          value={formatNumber(stats.activeEvents * 27)}
-          delta={12.4}
-          definition="Events with status = active at the end of the selected range."
+          {...kpi('activeEvents', formatNumber(stats.activeEvents * 27), 12.4,
+            'Events with status = active at the end of the selected range.', formatNumber)}
           sparkline={sparks.created}
           onDrillDown={() =>
             setDrill({ resource: 'events', label: 'Active events', filters: { status: 'active' } })
@@ -171,9 +200,8 @@ export default function Dashboard() {
         />
         <KpiCard
           label="Events Created"
-          value={formatNumber(stats.eventsCreated * 31)}
-          delta={8.1}
-          definition="Events whose creation timestamp falls inside the selected range, any status."
+          {...kpi('eventsCreated', formatNumber(stats.eventsCreated * 31), 8.1,
+            'Events whose creation timestamp falls inside the selected range, any status.', formatNumber)}
           sparkline={sparks.created}
           onDrillDown={() =>
             setDrill({ resource: 'events', label: 'Events created in range', filters: {} })
@@ -181,10 +209,9 @@ export default function Dashboard() {
         />
         <KpiCard
           label="Event Success Rate"
-          value={formatPercent(stats.successRate)}
-          delta={2.3}
+          {...kpi('eventSuccessRate', formatPercent(stats.successRate), 2.3,
+            'Events reaching goal_reached, completed or delivered ÷ all events closed in the range × 100.', formatPercent)}
           deltaUnit="pp"
-          definition="Events reaching goal_reached, completed or delivered ÷ all events closed in the range × 100."
           sparkline={sparks.completed}
           onDrillDown={() =>
             setDrill({ resource: 'events', label: 'Completed vs not completed', filters: { status: 'completed' } })
@@ -192,19 +219,17 @@ export default function Dashboard() {
         />
         <KpiCard
           label="Average Event Duration"
-          value={`${stats.avgDurationDays.toFixed(1)} days`}
-          delta={-3.1}
+          {...kpi('avgEventDurationDays', `${stats.avgDurationDays.toFixed(1)} days`, -3.1,
+            'Mean of (closure date − creation date) across events closed in the range. Median is shown in §Lifecycle timing.', (v) => `${v.toFixed(1)} days`)}
           invertDelta
-          definition="Mean of (closure date − creation date) across events closed in the range. Median is shown in §Lifecycle timing."
           onDrillDown={() =>
             setDrill({ resource: 'events', label: 'Events with duration', filters: {} })
           }
         />
         <KpiCard
           label="Total Confirmed Contributions"
-          value={formatMoney(stats.totalConfirmed * 12)}
-          delta={18.9}
-          definition="Sum of contribution.amount where status = succeeded, in minor units ÷ 100. Excludes fees."
+          {...kpi('totalConfirmed', formatMoney(stats.totalConfirmed * 12), 18.9,
+            'Sum of contribution.amount where status = succeeded, in minor units ÷ 100. Excludes fees.', (v) => formatMoney(v))}
           sparkline={sparks.volume}
           onDrillDown={() =>
             setDrill({
@@ -216,10 +241,9 @@ export default function Dashboard() {
         />
         <KpiCard
           label="Participation Rate"
-          value={formatPercent(stats.participationRate)}
-          delta={-1.4}
+          {...kpi('participationRate', formatPercent(stats.participationRate), -1.4,
+            'Distinct users with ≥1 confirmed contribution ÷ distinct users invited × 100.', formatPercent)}
           deltaUnit="pp"
-          definition="Distinct users with ≥1 confirmed contribution ÷ distinct users invited × 100."
           sparkline={sparks.count}
           onDrillDown={() =>
             setDrill({ resource: 'users', label: 'Invited vs contributed', filters: {} })
@@ -227,7 +251,13 @@ export default function Dashboard() {
         />
         <KpiCard
           label="Card Downloads"
-          value={`${formatNumber(stats.uniqueDownloads)} / ${formatNumber(stats.totalDownloads)}`}
+          value={
+            // Guard each field: a partial KPI payload must degrade to the
+            // fallback, not crash the whole dashboard.
+            apiKpis?.cardDownloads
+              ? `${formatNumber(apiKpis.cardDownloads.unique)} / ${formatNumber(apiKpis.cardDownloads.total)}`
+              : `${formatNumber(stats.uniqueDownloads)} / ${formatNumber(stats.totalDownloads)}`
+          }
           secondary="unique / total"
           delta={6.7}
           accent="accent"
@@ -236,11 +266,10 @@ export default function Dashboard() {
         />
         <KpiCard
           label="Clover Redemption Rate"
-          value={formatPercent(stats.cloverRedemptionRate)}
-          delta={4.2}
+          {...kpi('cloverRedemptionRate', formatPercent(stats.cloverRedemptionRate), 4.2,
+            'Users who redeemed ≥1 premium card ÷ users holding enough clovers to redeem one × 100.', formatPercent)}
           deltaUnit="pp"
           accent="secondary"
-          definition="Users who redeemed ≥1 premium card ÷ users holding enough clovers to redeem one × 100."
           onDrillDown={() =>
             setDrill({ resource: 'clovers', label: 'Eligible vs redeemed users', filters: {} })
           }

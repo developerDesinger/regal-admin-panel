@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { CopyableId } from '@/components/ui/misc';
 import { useAuth } from '@/hooks/use-auth';
 import { useStore } from '@/lib/store';
+import { useCatalog } from '@/hooks/data';
 import { formatDate, formatDateTime, formatNumber, formatPercent } from '@/lib/format';
 
 /** Card catalog detail (§09) — includes the version history strip. */
@@ -18,7 +19,9 @@ export default function CardDetail() {
   const { cardId } = useParams();
   const navigate = useNavigate();
   const { can } = useAuth();
-  const { giftCards, auditEntries } = useStore();
+  const { giftCards: storeCards, auditEntries } = useStore();
+  const { rows: apiCards, isMock } = useCatalog();
+  const giftCards = isMock ? storeCards : apiCards;
   const [editOpen, setEditOpen] = React.useState(false);
 
   const card = giftCards.find((c) => c.id === cardId);

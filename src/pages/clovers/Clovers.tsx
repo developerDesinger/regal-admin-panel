@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { cloverAnomalies, earnActionBreakdown, stats, timeSeries } from '@/lib/mock/data';
 import { actions, useStore } from '@/lib/store';
+import { useCloverLedger } from '@/hooks/data';
 import { cloverColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { rangeLabel } from '@/lib/date-ranges';
@@ -38,7 +39,9 @@ export default function Clovers() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { admin, can } = useAuth();
-  const { cloverLedger, giftCards } = useStore();
+  const { cloverLedger: storeLedger, giftCards } = useStore();
+  const { rows: apiLedger, isMock } = useCloverLedger({});
+  const cloverLedger = isMock ? storeLedger : apiLedger;
   const { all } = useUrlState();
   const [freezing, setFreezing] = React.useState<(typeof cloverAnomalies)[number] | null>(null);
 

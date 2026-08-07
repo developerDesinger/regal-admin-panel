@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/use-auth';
+import { isTwoFactorChallenge } from '@/lib/api/types';
+import { ApiError } from '@/lib/api/client';
+import { authService } from '@/lib/api/services';
 import { cn } from '@/lib/utils';
 
 /**
@@ -25,16 +28,20 @@ import { cn } from '@/lib/utils';
  *  · noindex, nofollow (set in index.html for all admin routes).
  */
 
-/** 2FA is specified either way — build the screen, feature-flag it on (§01). */
-const TWO_FACTOR_ENABLED = false;
-
+/**
+ * 2FA is driven by the server: login returns a `2fa_required` challenge when
+ * the account has it enabled, so there is no client-side feature flag.
+ */
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_SECONDS = 15 * 60;
 
 export default function Login() {
-  const { admin, signIn } = useAuth();
+  const { admin, signIn, verifyTwoFactor } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const [challengeId, setChallengeId] = React.useState<string | null>(null);
+  /** Present only outside production, so 2FA is testable without a mail server. */
+  const [devCode, setDevCode] = React.useState<string | null>(null);
 
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -62,31 +69,46 @@ export default function Login() {
   const locked = lockoutLeft > 0;
   const canSubmit = email.trim().length > 0 && password.length > 0 && !pending && !locked;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
     setPending(true);
     setError(null);
 
-    // UI-only build: any password is accepted. The real endpoint verifies
-    // credentials server-side and sets the session cookie.
-    setTimeout(() => {
-      setPending(false);
-      if (password.length < 4) {
-        const next = attempts + 1;
-        setAttempts(next);
-        // Never disclose which field was wrong (§01 States).
-        setError('Incorrect email or password.');
-        if (next >= MAX_ATTEMPTS) setLockoutLeft(LOCKOUT_SECONDS);
-        return;
-      }
-      if (TWO_FACTOR_ENABLED) {
+    try {
+      const res = await signIn(email, password, remember);
+
+      // 2FA: swap the form for the code input rather than signing in.
+      if (isTwoFactorChallenge(res)) {
+        setChallengeId(res.challengeId);
+        setDevCode(res.devCode ?? null);
         setStage('2fa');
         return;
       }
-      signIn(email);
       navigate('/');
-    }, 500);
+    } catch (err) {
+      const api = err as ApiError;
+
+      // The server enforces the lockout; this is only its countdown. Trust the
+      // server's remaining seconds over our local attempt tally.
+      if (api.code === 'RATE_LIMITED') {
+        setLockoutLeft(api.retryAfterSeconds ?? LOCKOUT_SECONDS);
+        setError(api.message);
+        return;
+      }
+      if (api.code === 'ACCOUNT_DISABLED') {
+        setError(api.message);
+        return;
+      }
+      // Never disclose which field was wrong (§01 States) — the server already
+      // returns one generic message for both cases.
+      const next = attempts + 1;
+      setAttempts(next);
+      setError(api.message || 'Incorrect email or password.');
+      if (next >= MAX_ATTEMPTS && !api.retryAfterSeconds) setLockoutLeft(LOCKOUT_SECONDS);
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
@@ -235,9 +257,16 @@ export default function Login() {
             </form>
           ) : (
             <TwoFactorForm
-              onBack={() => setStage('credentials')}
-              onVerified={() => {
-                signIn(email);
+              challengeId={challengeId}
+              devCode={devCode}
+              onError={setError}
+              onBack={() => {
+                setStage('credentials');
+                setError(null);
+              }}
+              onVerify={async (code) => {
+                if (!challengeId) throw new Error('Missing challenge. Sign in again.');
+                await verifyTwoFactor(challengeId, code);
                 navigate('/');
               }}
             />
@@ -255,9 +284,22 @@ export default function Login() {
 }
 
 /** 6-digit code: separate boxes, auto-advance, paste-fills-all (§01 2FA). */
-function TwoFactorForm({ onBack, onVerified }: { onBack: () => void; onVerified: () => void }) {
+function TwoFactorForm({
+  challengeId,
+  devCode,
+  onBack,
+  onVerify,
+  onError,
+}: {
+  challengeId: string | null;
+  devCode: string | null;
+  onBack: () => void;
+  onVerify: (code: string) => Promise<void>;
+  onError: (message: string) => void;
+}) {
   const [digits, setDigits] = React.useState(['', '', '', '', '', '']);
   const [cooldown, setCooldown] = React.useState(0);
+  const [pending, setPending] = React.useState(false);
   const refs = React.useRef<(HTMLInputElement | null)[]>([]);
 
   React.useEffect(() => {
@@ -285,14 +327,23 @@ function TwoFactorForm({ onBack, onVerified }: { onBack: () => void; onVerified:
 
   const complete = digits.every((d) => d !== '');
 
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!complete || pending) return;
+    setPending(true);
+    try {
+      await onVerify(digits.join(''));
+    } catch (err) {
+      onError((err as ApiError).message || 'That code was not accepted.');
+      setDigits(['', '', '', '', '', '']);
+      refs.current[0]?.focus();
+    } finally {
+      setPending(false);
+    }
+  };
+
   return (
-    <form
-      className="space-y-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (complete) onVerified();
-      }}
-    >
+    <form className="space-y-4" onSubmit={submit}>
       <div className="flex justify-between gap-2" role="group" aria-label="6-digit verification code">
         {digits.map((d, i) => (
           <input
@@ -318,9 +369,22 @@ function TwoFactorForm({ onBack, onVerified }: { onBack: () => void; onVerified:
         ))}
       </div>
 
-      <Button type="submit" variant="primary" className="h-11 w-full" disabled={!complete}>
-        Verify
+      <Button
+        type="submit"
+        variant="primary"
+        className="h-11 w-full"
+        disabled={!complete}
+        loading={pending}
+      >
+        {pending ? 'Verifying…' : 'Verify'}
       </Button>
+
+      {devCode && (
+        <p className="rounded-sm bg-warning-50 p-2 text-center text-caption text-warning-500">
+          Dev code: <span className="tnum font-mono font-semibold">{devCode}</span> — shown outside
+          production only.
+        </p>
+      )}
 
       <div className="flex items-center justify-between">
         <button
@@ -332,8 +396,16 @@ function TwoFactorForm({ onBack, onVerified }: { onBack: () => void; onVerified:
         </button>
         <button
           type="button"
-          disabled={cooldown > 0}
-          onClick={() => setCooldown(30)}
+          disabled={cooldown > 0 || !challengeId}
+          onClick={async () => {
+            if (!challengeId) return;
+            setCooldown(30);
+            try {
+              await authService.resendTwoFactor(challengeId);
+            } catch (err) {
+              onError((err as ApiError).message);
+            }
+          }}
           className="rounded-sm text-[13px] font-medium text-brand-500 hover:text-brand-600 disabled:text-neutral-400"
         >
           {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}

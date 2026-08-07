@@ -40,7 +40,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { actions, useStore } from '@/lib/store';
+import { useStore } from '@/lib/store';
+import { useAdminMutations } from '@/hooks/data/mutations';
+import { useCatalog } from '@/hooks/data';
 import { cardColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { useUrlState } from '@/hooks/useUrlState';
@@ -56,8 +58,11 @@ import { cn } from '@/lib/utils';
 export default function CardCatalog() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { admin, can } = useAuth();
-  const { giftCards } = useStore();
+  const { can } = useAuth();
+  const { giftCards: storeCards } = useStore();
+  const { rows: apiCards, isMock } = useCatalog();
+  const mutations = useAdminMutations();
+  const giftCards = isMock ? storeCards : apiCards;
   const { get, set, all } = useUrlState();
 
   const [view, setView] = React.useState<'grid' | 'table'>(
@@ -375,7 +380,7 @@ export default function CardCatalog() {
               size="sm"
               disabled={!dirty}
               onClick={() => {
-                actions.saveCardOrder(admin, order);
+                void mutations.reorderCards(order);
                 toast({
                   title: 'Order saved',
                   description: 'New sortOrder written to the audit trail.',
@@ -494,8 +499,8 @@ export default function CardCatalog() {
                           Change clover price
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onSelect={() => {
-                            const copy = actions.duplicateCard(admin, card.id);
+                          onSelect={async () => {
+                            const copy = await mutations.duplicateCard(card);
                             toast({
                               title: 'Design duplicated',
                               description: `${copy?.name} · created inactive so you can edit it first`,
@@ -515,7 +520,7 @@ export default function CardCatalog() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onSelect={() => {
-                            actions.setCardActive(admin, card.id, !card.isActive);
+                            void mutations.setCardActive(card, !card.isActive, '');
                             toast({
                               title: card.isActive ? 'Design deactivated' : 'Design activated',
                               description: `${card.name} · written to the audit trail`,
@@ -572,7 +577,7 @@ export default function CardCatalog() {
               </>
             }
             onConfirm={(reason) => {
-              actions.setCardActive(admin, deleting.id, false, reason);
+              void mutations.setCardActive(deleting, false, reason);
               toast({
                 title: 'Design deactivated',
                 description: `${deleting.name} · unlocks preserved`,
@@ -596,7 +601,7 @@ export default function CardCatalog() {
             }
             confirmLabel="Delete permanently"
             onConfirm={(reason) => {
-              actions.deleteCard(admin, deleting.id, reason);
+              void mutations.deleteCard(deleting, reason);
               toast({ title: 'Design deleted', description: deleting.name, tone: 'success' });
             }}
           />
@@ -621,7 +626,7 @@ export default function CardCatalog() {
           onConfirm={(reason) => {
             const next = Number(newPrice);
             if (!Number.isFinite(next) || next < 0) return;
-            actions.setCardPrice(admin, priceChange.id, Math.round(next), reason);
+            void mutations.setCardPrice(priceChange, Math.round(next), reason);
             toast({
               title: 'Clover price updated',
               description: `${priceChange.name} · 🍀 ${priceChange.cloverCost} → 🍀 ${Math.round(next)}`,

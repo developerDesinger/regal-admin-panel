@@ -22,12 +22,18 @@ export function ContributionsTable({
   hideEventColumn,
   toolbar,
   bulkActions,
+  loading,
+  error,
+  onRetry,
 }: {
   rows: Contribution[];
   storageKey?: string;
   hideEventColumn?: boolean;
   toolbar?: React.ReactNode;
   bulkActions?: (selected: Contribution[], clear: () => void) => React.ReactNode;
+  loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }) {
   const [detail, setDetail] = React.useState<Contribution | null>(null);
 
@@ -173,6 +179,9 @@ export function ContributionsTable({
         columns={columns}
         rows={rows}
         rowKey={(c) => c.id}
+        loading={loading}
+        error={error}
+        onRetry={onRetry}
         onRowClick={(c) => setDetail(c)}
         storageKey={storageKey}
         initialSort={{ id: 'createdAt', dir: 'desc' }}

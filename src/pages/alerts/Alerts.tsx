@@ -30,7 +30,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { actions, useStore } from '@/lib/store';
+import { useStore } from '@/lib/store';
+import { useAdminMutations } from '@/hooks/data/mutations';
+import { useAlerts } from '@/hooks/data';
 import { useUrlState } from '@/hooks/useUrlState';
 import { formatDateTime, formatRelative } from '@/lib/format';
 import type { Alert, AlertType } from '@/lib/types';
@@ -100,8 +102,11 @@ const ALERT_TYPES = Object.keys(ALERT_META) as AlertType[];
 export default function Alerts() {
   const { all, set } = useUrlState();
   const { toast } = useToast();
-  const { admin, can } = useAuth();
-  const { alerts, adminUsers } = useStore();
+  const { can } = useAuth();
+  const { alerts: storeAlerts, adminUsers } = useStore();
+  const { rows: apiAlerts, isMock } = useAlerts({});
+  const mutations = useAdminMutations();
+  const alerts = isMock ? storeAlerts : apiAlerts;
   const [expanded, setExpanded] = React.useState<string | null>(null);
   const [resolving, setResolving] = React.useState<Alert | null>(null);
   const [dismissing, setDismissing] = React.useState<Alert | null>(null);
@@ -351,7 +356,7 @@ export default function Alerts() {
                                   <DropdownMenuItem
                                     disabled={alert.status === 'acknowledged'}
                                     onSelect={() => {
-                                      actions.updateAlert(admin, alert.id, { status: 'acknowledged' }, { action: 'alert.acknowledge' });
+                                      void mutations.acknowledgeAlert(alert.id);
                                       toast({ title: 'Alert acknowledged', description: alert.subject.label, tone: 'success' });
                                     }}
                                   >
@@ -363,7 +368,7 @@ export default function Alerts() {
                                     <DropdownMenuItem
                                       key={a.id}
                                       onSelect={() => {
-                                        actions.updateAlert(admin, alert.id, { assignedTo: a.name }, { action: 'alert.assign' });
+                                        void mutations.assignAlert(alert.id, a.id, a.name);
                                         toast({ title: `Assigned to ${a.name}`, description: alert.subject.label, tone: 'success' });
                                       }}
                                     >
@@ -376,7 +381,7 @@ export default function Alerts() {
                                     <DropdownMenuItem
                                       key={s}
                                       onSelect={() => {
-                                        actions.updateAlert(admin, alert.id, { status: 'snoozed' }, { action: 'alert.snooze', reason: s });
+                                        void mutations.snoozeAlert(alert.id, s as '1h' | '24h' | '7d');
                                         toast({ title: `Snoozed for ${s}`, description: alert.subject.label, tone: 'info' });
                                       }}
                                     >
@@ -461,7 +466,7 @@ export default function Alerts() {
           }
           confirmLabel="Resolve"
           onConfirm={(reason) => {
-            actions.updateAlert(admin, resolving.id, { status: 'resolved' }, { action: 'alert.resolve', reason });
+            void mutations.resolveAlert(resolving.id, reason);
             toast({ title: 'Alert resolved', description: resolving.subject.label, tone: 'success' });
           }}
         />
@@ -482,7 +487,7 @@ export default function Alerts() {
           }
           confirmLabel="Dismiss"
           onConfirm={(reason) => {
-            actions.updateAlert(admin, dismissing.id, { status: 'dismissed' }, { action: 'alert.dismiss', reason });
+            void mutations.dismissAlert(dismissing.id, reason);
             toast({
               title: 'Dismissed as false positive',
               description: 'Feeds threshold tuning in Settings.',

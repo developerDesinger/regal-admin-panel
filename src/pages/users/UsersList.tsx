@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { stats } from '@/lib/mock/data';
 import { useStore } from '@/lib/store';
+import { useUsers } from '@/hooks/data';
 import { userColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { rangeLabel } from '@/lib/date-ranges';
@@ -31,7 +32,9 @@ export default function UsersList() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { can, piiUnmasked, togglePii } = useAuth();
-  const { users } = useStore();
+  const { users: storeUsers } = useStore();
+  const { rows: apiRows, isLoading, error, refetch, isMock } = useUsers(all);
+  const users = isMock ? storeUsers : apiRows;
 
   const filtered = React.useMemo(
     () =>
@@ -328,6 +331,9 @@ export default function UsersList() {
         columns={columns}
         rows={filtered}
         rowKey={(u) => u.id}
+        loading={isLoading}
+        error={error}
+        onRetry={refetch}
         rowHref={(u) => `/users/${u.id}`}
         storageKey="users"
         initialSort={{ id: 'registered', dir: 'desc' }}

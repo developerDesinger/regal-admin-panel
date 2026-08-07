@@ -17,7 +17,9 @@ import { Label } from '@/components/ui/label';
 import { Avatar, CopyableId } from '@/components/ui/misc';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { actions, useStore } from '@/lib/store';
+import { useStore } from '@/lib/store';
+import { useAdminMutations } from '@/hooks/data/mutations';
+import { useUser } from '@/hooks/data';
 import {
   formatDate,
   formatDateTime,
@@ -36,12 +38,14 @@ export default function UserDetail() {
   const { userId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { admin, can, piiUnmasked } = useAuth();
-  const { users, events, contributions, giftCards, cloverLedger, auditEntries } = useStore();
+  const { can, piiUnmasked } = useAuth();
+  const { events, contributions, giftCards, cloverLedger, auditEntries } = useStore();
+  const { user: resolvedUser } = useUser(userId);
+  const mutations = useAdminMutations();
   const [action, setAction] = React.useState<null | 'suspend' | 'reactivate' | 'clovers' | 'reset'>(null);
   const [adjustAmount, setAdjustAmount] = React.useState('');
 
-  const user = users.find((u) => u.id === userId);
+  const user = resolvedUser;
 
   if (!user) {
     return (
@@ -381,7 +385,7 @@ export default function UserDetail() {
             toast({ title: 'Enter a non-zero amount', tone: 'warning' });
             return;
           }
-          actions.adjustClovers(admin, user.id, amount, reason);
+          void mutations.adjustClovers(user.id, amount, reason);
           toast({
             title: 'Clover balance adjusted',
             description: `${amount > 0 ? '+' : ''}${amount} clovers · new balance ${Math.max(0, user.cloverBalance + amount)}`,

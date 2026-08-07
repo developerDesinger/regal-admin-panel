@@ -37,8 +37,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { participantsForEvent, timelineForEvent } from '@/lib/mock/data';
-import { actions, useStore } from '@/lib/store';
+import { useEvent, useEventParticipants, useEventTimeline, useContributions } from '@/hooks/data';
+import { useStore } from '@/lib/store';
+import { useAdminMutations } from '@/hooks/data/mutations';
 import { contributionColumns, eventColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import {
@@ -79,8 +80,13 @@ export default function EventDetail() {
   const { eventId, tab } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { admin, can } = useAuth();
-  const { events, contributions, giftCards, auditEntries } = useStore();
+  const { can } = useAuth();
+  const { giftCards, auditEntries } = useStore();
+  const mutations = useAdminMutations();
+  const { event: resolvedEvent } = useEvent(eventId);
+  const { rows: eventContributions } = useContributions({ eventId: eventId ?? '' });
+  const participants = useEventParticipants(eventId);
+  const timeline = useEventTimeline(eventId);
   const [confirm, setConfirm] = React.useState<null | {
     title: string;
     consequence: React.ReactNode;
@@ -90,7 +96,7 @@ export default function EventDetail() {
     patch?: Partial<RegalEvent>;
   }>(null);
 
-  const event = events.find((e) => e.id === eventId);
+  const event = resolvedEvent;
 
   if (!event) {
     return (
@@ -104,9 +110,6 @@ export default function EventDetail() {
   }
 
   const activeTab: TabId = (TABS.includes(tab as TabId) ? tab : 'overview') as TabId;
-  const eventContributions = contributions.filter((c) => c.eventId === event.id);
-  const participants = participantsForEvent(event.id);
-  const timeline = timelineForEvent(event.id);
   const card = giftCards.find((c) => c.slug === event.cardSlug);
   const progress = (event.raisedAmount / event.goalAmount) * 100;
 
@@ -139,7 +142,7 @@ export default function EventDetail() {
   const runAdminAction = (reason: string) => {
     if (!confirm) return;
     if (confirm.patch) {
-      actions.updateEvent(admin, event.id, confirm.patch, { action: confirm.action, reason });
+      void mutations.runEventAction(event, confirm.action, confirm.patch, reason);
     }
     toast({
       title: `${confirm.label} recorded`,

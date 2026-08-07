@@ -15,7 +15,9 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { stats } from '@/lib/mock/data';
-import { actions, useStore } from '@/lib/store';
+import { useStore } from '@/lib/store';
+import { useAdminMutations } from '@/hooks/data/mutations';
+import { useWithdrawals } from '@/hooks/data';
 import { withdrawalColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { rangeLabel } from '@/lib/date-ranges';
@@ -28,8 +30,11 @@ import type { Withdrawal } from '@/lib/types';
 export default function Withdrawals() {
   const { all } = useUrlState();
   const { toast } = useToast();
-  const { admin, can } = useAuth();
-  const { withdrawals } = useStore();
+  const { can } = useAuth();
+  const { withdrawals: storeRows } = useStore();
+  const { rows: apiRows, isLoading, error, refetch, isMock } = useWithdrawals(all);
+  const mutations = useAdminMutations();
+  const withdrawals = isMock ? storeRows : apiRows;
   const [retrying, setRetrying] = React.useState<Withdrawal | null>(null);
   const [resolving, setResolving] = React.useState<Withdrawal | null>(null);
 
@@ -308,6 +313,9 @@ export default function Withdrawals() {
         columns={columns}
         rows={sorted}
         rowKey={(w) => w.id}
+        loading={isLoading}
+        error={error}
+        onRetry={refetch}
         storageKey="withdrawals"
         rowClassName={(w) => (w.status === 'failed' ? 'bg-danger-50 hover:bg-danger-50/70' : undefined)}
         empty={{
@@ -333,16 +341,7 @@ export default function Withdrawals() {
           }
           confirmLabel="Retry payout"
           onConfirm={(reason) => {
-            actions.updateWithdrawal(
-              admin,
-              retrying.id,
-              {
-                status: 'processing',
-                failureReason: null,
-                stripePayoutId: `po_retry_${Date.now().toString(36).toUpperCase()}`,
-              },
-              { action: 'withdrawal.retry', reason },
-            );
+            void mutations.retryPayout(retrying.id, reason);
             toast({
               title: 'Payout retry queued',
               description: `${retrying.beneficiary.name} · now processing`,
@@ -368,12 +367,7 @@ export default function Withdrawals() {
           }
           confirmLabel="Mark resolved"
           onConfirm={(reason) => {
-            actions.updateWithdrawal(
-              admin,
-              resolving.id,
-              { status: 'completed', completedAt: new Date().toISOString(), failureReason: null },
-              { action: 'withdrawal.mark_resolved', reason },
-            );
+            void mutations.markPayoutResolved(resolving.id, reason);
             toast({
               title: 'Marked resolved',
               description: `${resolving.beneficiary.name} · removed from the pinned list`,

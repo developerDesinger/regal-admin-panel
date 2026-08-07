@@ -27,6 +27,7 @@ import {
   timeSeries,
 } from '@/lib/mock/data';
 import { useStore } from '@/lib/store';
+import { useContributions } from '@/hooks/data';
 import { contributionColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { rangeLabel } from '@/lib/date-ranges';
@@ -39,7 +40,9 @@ export default function Contributions() {
   const { all } = useUrlState();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { contributions } = useStore();
+  const { contributions: storeRows } = useStore();
+  const { rows: apiRows, isLoading, error, refetch, isMock } = useContributions(all);
+  const contributions = isMock ? storeRows : apiRows;
 
   const filtered = React.useMemo(
     () =>
@@ -330,6 +333,9 @@ export default function Contributions() {
 
       <ContributionsTable
         rows={filtered}
+        loading={isLoading}
+        error={error}
+        onRetry={refetch}
         bulkActions={(selected, clear) => (
           <Button
             variant="secondary"

@@ -24,6 +24,7 @@ import { CloverValue } from '@/components/common/MoneyValue';
 import { Button } from '@/components/ui/button';
 import { cardErrorSeries, cardFunnelStages, timeSeries } from '@/lib/mock/data';
 import { useStore } from '@/lib/store';
+import { useCatalog } from '@/hooks/data';
 import { cardColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { formatDuration, formatNumber, formatPercent } from '@/lib/format';
@@ -32,7 +33,9 @@ import type { GiftCardDesign } from '@/lib/types';
 /** Screen 08 — Gift Cards Analytics (§08). */
 export default function CardAnalytics() {
   const navigate = useNavigate();
-  const { giftCards } = useStore();
+  const { giftCards: storeCards } = useStore();
+  const { rows: apiCards, isMock } = useCatalog();
+  const giftCards = isMock ? storeCards : apiCards;
   const [errorDrill, setErrorDrill] = React.useState(false);
 
   const totalSelected = giftCards.reduce((a, c) => a + c.timesSelected, 0);

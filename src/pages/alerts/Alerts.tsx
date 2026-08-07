@@ -31,7 +31,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdminMutations } from '@/hooks/data/mutations';
-import { useAlerts, useAdmins } from '@/hooks/data';
+import { useAlerts, useAdmins, useAlertTypes } from '@/hooks/data';
 import { useUrlState } from '@/hooks/useUrlState';
 import { formatDateTime, formatRelative } from '@/lib/format';
 import type { Alert, AlertType } from '@/lib/types';
@@ -42,61 +42,29 @@ import { cn } from '@/lib/utils';
  * Every threshold below is admin-configurable in Settings, never hardcoded.
  */
 
-const ALERT_META: Record<
-  AlertType,
-  { label: string; icon: LucideIcon; trigger: string; actions: string[] }
-> = {
-  stagnant_event: {
-    label: 'Stagnant Event',
-    icon: Clock,
-    trigger: 'No confirmed contribution 72h after publication',
-    actions: ['Review setup', 'Prompt organizer to send reminders'],
-  },
-  at_risk_event: {
-    label: 'At-Risk Event',
-    icon: TrendingDown,
-    trigger: 'Goal progress < 40% with < 48h remaining',
-    actions: ['Trigger reminder', 'Notify organizer'],
-  },
-  inactive_event: {
-    label: 'Inactive Event',
-    icon: Bell,
-    trigger: 'No contribution activity for 7 days',
-    actions: ['Nudge organizer'],
-  },
-  payment_friction: {
-    label: 'Payment Friction',
-    icon: CreditCard,
-    trigger: 'Failed + pending rate > 15% on an event, or > 10% platform-wide in 24h',
-    actions: ['Investigate payment flow', 'Open support ticket'],
-  },
-  unrevealed_card: {
-    label: 'Unrevealed Card',
-    icon: Gift,
-    trigger: 'Event closed/due but card not revealed after 48h',
-    actions: ['Review fulfillment flow'],
-  },
-  premium_card_unused: {
-    label: 'Premium Card Not Used',
-    icon: Sparkles,
-    trigger: 'Premium card redeemed but not revealed/downloaded after 7 days',
-    actions: ['Review card value', 'Message user'],
-  },
-  withdrawal_pending: {
-    label: 'Withdrawal Pending',
-    icon: Wallet,
-    trigger: 'Funds available but withdrawal not started/completed after 72h',
-    actions: ['Follow up with beneficiary', 'Escalate to ops'],
-  },
-  clover_anomaly: {
-    label: 'Clover Anomaly',
-    icon: AlertTriangle,
-    trigger: 'Earn/adjust/redeem volume > 3× the user’s 30-day baseline',
-    actions: ['Authorized operational/security review'],
-  },
+/** Icons are presentation, not data — everything else comes from /alerts/types. */
+const ALERT_ICONS: Record<AlertType, LucideIcon> = {
+  stagnant_event: Clock,
+  at_risk_event: TrendingDown,
+  inactive_event: Bell,
+  payment_friction: CreditCard,
+  unrevealed_card: Gift,
+  premium_card_unused: Sparkles,
+  withdrawal_pending: Wallet,
+  clover_anomaly: AlertTriangle,
 };
 
-const ALERT_TYPES = Object.keys(ALERT_META) as AlertType[];
+/** Suggested next steps per type — UI copy the API doesn't model. */
+const ALERT_ACTIONS: Record<AlertType, string[]> = {
+  stagnant_event: ['Review setup', 'Prompt organizer to send reminders'],
+  at_risk_event: ['Trigger reminder', 'Notify organizer'],
+  inactive_event: ['Nudge organizer'],
+  payment_friction: ['Investigate payment flow', 'Open support ticket'],
+  unrevealed_card: ['Review fulfillment flow'],
+  premium_card_unused: ['Review card value', 'Message user'],
+  withdrawal_pending: ['Follow up with beneficiary', 'Escalate to ops'],
+  clover_anomaly: ['Authorized operational/security review'],
+};
 
 export default function Alerts() {
   const { all, set } = useUrlState();
@@ -104,6 +72,7 @@ export default function Alerts() {
   const { can } = useAuth();
   const { admins: adminUsers } = useAdmins();
   const { rows: alerts } = useAlerts({});
+  const alertTypes = useAlertTypes();
   const mutations = useAdminMutations();
   const [expanded, setExpanded] = React.useState<string | null>(null);
   const [resolving, setResolving] = React.useState<Alert | null>(null);
@@ -116,8 +85,10 @@ export default function Alerts() {
     return true;
   });
 
-  const countByType = (t: AlertType) =>
-    alerts.filter((a) => a.type === t && a.status === 'open').length;
+  const typeMeta = (t: AlertType) => alertTypes.find((x) => x.type === t);
+  const typeLabel = (t: AlertType) =>
+    typeMeta(t)?.label ?? t.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
+  const countByType = (t: AlertType) => typeMeta(t)?.openCount ?? 0;
   const totalOpen = alerts.filter((a) => a.status === 'open').length;
 
   return (
@@ -157,7 +128,7 @@ export default function Alerts() {
                 {totalOpen}
               </span>
             </button>
-            {ALERT_TYPES.map((t) => {
+            {alertTypes.map(({ type: t }) => {
               const count = countByType(t);
               return (
                 <button
@@ -171,7 +142,7 @@ export default function Alerts() {
                       : 'border-neutral-200 bg-neutral-0 text-neutral-700',
                   )}
                 >
-                  {ALERT_META[t].label}
+                  {typeLabel(t)}
                   {count > 0 && (
                     <span className="tnum rounded-full bg-danger-500 px-1.5 text-[11px] font-semibold text-white">
                       {count}
@@ -197,9 +168,8 @@ export default function Alerts() {
               </span>
             </button>
             <ul>
-              {ALERT_TYPES.map((t) => {
-                const meta = ALERT_META[t];
-                const Icon = meta.icon;
+              {alertTypes.map(({ type: t }) => {
+                const Icon = ALERT_ICONS[t];
                 const count = countByType(t);
                 const active = selectedType === t;
                 return (
@@ -213,7 +183,7 @@ export default function Alerts() {
                       )}
                     >
                       <Icon className="h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
-                      <span className="min-w-0 flex-1 truncate text-body">{meta.label}</span>
+                      <span className="min-w-0 flex-1 truncate text-body">{typeLabel(t)}</span>
                       {count > 0 && (
                         <span className="tnum shrink-0 rounded-full bg-danger-500 px-1.5 py-px text-[11px] font-semibold text-white">
                           {count}
@@ -231,12 +201,15 @@ export default function Alerts() {
         <div>
           {selectedType && (
             <div className="mb-4 rounded-md border border-neutral-200 bg-neutral-0 p-4">
-              <h2 className="text-card-title text-neutral-700">{ALERT_META[selectedType].label}</h2>
+              <h2 className="text-card-title text-neutral-700">{typeLabel(selectedType)}</h2>
               <p className="mt-1 text-caption text-neutral-500">
-                <strong>Default trigger:</strong> {ALERT_META[selectedType].trigger}
+                <strong>Current trigger:</strong>{' '}
+                {typeMeta(selectedType)?.currentTrigger ??
+                  typeMeta(selectedType)?.defaultTrigger ??
+                  '—'}
               </p>
               <p className="mt-1 text-caption text-neutral-500">
-                <strong>Actions offered:</strong> {ALERT_META[selectedType].actions.join(' · ')}
+                <strong>Actions offered:</strong> {ALERT_ACTIONS[selectedType].join(' · ')}
               </p>
             </div>
           )}
@@ -248,7 +221,7 @@ export default function Alerts() {
                 headline="Nothing needs attention here"
                 description={
                   selectedType
-                    ? `No ${ALERT_META[selectedType].label.toLowerCase()} alerts are currently firing. Thresholds can be tuned in Settings.`
+                    ? `No ${typeLabel(selectedType).toLowerCase()} alerts are currently firing. Thresholds can be tuned in Settings.`
                     : 'No alerts are firing across the platform right now.'
                 }
                 action={{ label: 'Review thresholds', href: '/settings' }}
@@ -283,7 +256,7 @@ export default function Alerts() {
                 </thead>
                 <tbody>
                   {rows.map((alert, i) => {
-                    const meta = ALERT_META[alert.type];
+                    const Icon = ALERT_ICONS[alert.type];
                     const isOpen = expanded === alert.id;
                     return (
                       <React.Fragment key={alert.id}>
@@ -314,9 +287,10 @@ export default function Alerts() {
                                 )}
                                 aria-hidden
                               />
+                              <Icon className="h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
                               <span className="min-w-0">
                                 <span className="block text-body font-medium text-neutral-900">
-                                  {meta.label}
+                                  {typeLabel(alert.type)}
                                 </span>
                                 <span className="block truncate text-caption text-neutral-500">
                                   {alert.subject.label}
@@ -422,7 +396,7 @@ export default function Alerts() {
                                   <Button variant="secondary" size="sm" asChild>
                                     <Link to={alert.subject.href}>Open {alert.subject.label}</Link>
                                   </Button>
-                                  {meta.actions.map((a) => (
+                                  {ALERT_ACTIONS[alert.type].map((a: string) => (
                                     <Button
                                       key={a}
                                       variant="ghost"
@@ -457,7 +431,7 @@ export default function Alerts() {
           requireReason
           consequence={
             <>
-              <strong>{ALERT_META[resolving.type].label}</strong> for{' '}
+              <strong>{typeLabel(resolving.type)}</strong> for{' '}
               <strong>{resolving.subject.label}</strong> will be closed. If the underlying condition
               still holds, the rule will fire again on the next evaluation.
             </>
@@ -479,7 +453,7 @@ export default function Alerts() {
           consequence={
             <>
               This closes the alert and feeds threshold tuning — repeated false positives on{' '}
-              <strong>{ALERT_META[dismissing.type].label}</strong> are a signal that its threshold is
+              <strong>{typeLabel(dismissing.type)}</strong> are a signal that its threshold is
               set too tightly in Settings.
             </>
           }

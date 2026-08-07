@@ -271,9 +271,12 @@ export default function Dashboard() {
               : '—'
           }
           secondary="unique / total"
-          delta={6.7}
+          delta={apiKpis?.cardDownloads?.delta ?? null}
           accent="accent"
-          definition="Unique downloaders and total download events from the card event log, in the selected range."
+          definition={
+            apiKpis?.cardDownloads?.definition ??
+            'Unique downloaders and total download events from the card event log, in the selected range.'
+          }
           onDrillDown={() => setDrill({ resource: 'cards', label: 'Download log', filters: {} })}
         />
         <KpiCard

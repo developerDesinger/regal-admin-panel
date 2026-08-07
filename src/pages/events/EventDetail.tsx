@@ -45,6 +45,7 @@ import {
   useCatalog,
   useEventActivity,
   useEventFinancials,
+  useEventCard,
 } from '@/hooks/data';
 
 import { useAdminMutations } from '@/hooks/data/mutations';
@@ -92,6 +93,8 @@ export default function EventDetail() {
   const { rows: giftCards } = useCatalog();
   const { rows: auditEntries } = useEventActivity(eventId);
   const { financials } = useEventFinancials(eventId);
+  // Reveal/download stats and card errors live on their own endpoint.
+  const { card: eventCard } = useEventCard(eventId);
   const mutations = useAdminMutations();
   const { event: resolvedEvent } = useEvent(eventId);
   const { rows: eventContributions } = useContributions({ eventId: eventId ?? '' });
@@ -718,32 +721,46 @@ export default function EventDetail() {
                     </Chip>
                   </DetailRow>
                   <DetailRow label="Clover cost paid">
-                    {card.cloverCost > 0 ? `🍀 ${card.cloverCost}` : '—'}
+                    {eventCard?.cloverCostPaid ? `🍀 ${eventCard.cloverCostPaid}` : '—'}
                   </DetailRow>
                   <DetailRow label="Revealed">
-                    {event.cardRevealed && event.closedAt ? (
-                      <span className="tnum">{formatDateTime(event.closedAt)}</span>
+                    {eventCard?.revealed ? (
+                      <span className="tnum">{formatDateTime(eventCard.revealedAt)}</span>
                     ) : (
                       <StatusBadge status="pending" label="Not revealed" />
                     )}
                   </DetailRow>
                   <DetailRow label="Unique downloads">
-                    <span className="tnum">{Math.round(card.uniqueDownloads / 40)}</span>
+                    <span className="tnum">{eventCard?.uniqueDownloads ?? 0}</span>
                   </DetailRow>
                   <DetailRow label="Total downloads">
-                    <span className="tnum">{Math.round(card.totalDownloads / 40)}</span>
+                    <span className="tnum">{eventCard?.totalDownloads ?? 0}</span>
                   </DetailRow>
                   <DetailRow label="Unique downloaders">
-                    <span className="tnum">{Math.round(card.uniqueDownloads / 48)}</span>
+                    <span className="tnum">{eventCard?.uniqueDownloaders ?? 0}</span>
                   </DetailRow>
                   <DetailRow label="Time to first view">
-                    <span className="tnum">{formatDuration(3.4)}</span>
+                    <span className="tnum">
+                      {eventCard?.timeToFirstViewHours != null
+                        ? formatDuration(eventCard.timeToFirstViewHours)
+                        : '—'}
+                    </span>
                   </DetailRow>
                   <DetailRow label="Time to first download">
-                    <span className="tnum">{formatDuration(9.1)}</span>
+                    <span className="tnum">
+                      {eventCard?.timeToFirstDownloadHours != null
+                        ? formatDuration(eventCard.timeToFirstDownloadHours)
+                        : '—'}
+                    </span>
                   </DetailRow>
                   <DetailRow label="Card error events">
-                    <span className="text-neutral-400">None</span>
+                    {eventCard?.errors?.length ? (
+                      <span className="text-danger-500">
+                        {eventCard.errors.length} — {eventCard.errors[0].type}
+                      </span>
+                    ) : (
+                      <span className="text-neutral-400">None</span>
+                    )}
                   </DetailRow>
                 </dl>
               </Card>

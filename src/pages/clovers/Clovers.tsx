@@ -29,11 +29,11 @@ import type { CloverAnomaly } from '@/lib/api/types';
 import { avatarColorFor } from '@/lib/api/adapters';
 import {
   useCloverLedger,
-  useCatalog,
   useCloverAnomalies,
   useCloverKpis,
   useCloverTimeseries,
   useCloverEarnBreakdown,
+  useCloverRedemptionByDesign,
 } from '@/hooks/data';
 import { useAdminMutations } from '@/hooks/data/mutations';
 import { cloverColumns } from '@/lib/datasets';
@@ -51,11 +51,11 @@ export default function Clovers() {
   const range = all.range ?? '30d';
   const compare = all.compare === '1';
 
-  const { rows: giftCards } = useCatalog();
   const { anomalies: cloverAnomalies } = useCloverAnomalies();
   const { data: cloverKpis } = useCloverKpis({ range, compare: compare ? 1 : undefined });
   const { data: cloverSeries } = useCloverTimeseries({ range });
   const { data: earnBreakdown } = useCloverEarnBreakdown({ range });
+  const { data: redemption } = useCloverRedemptionByDesign({ range });
   const { rows: cloverLedger } = useCloverLedger({});
   const mutations = useAdminMutations();
   const [freezing, setFreezing] = React.useState<CloverAnomaly | null>(null);
@@ -74,11 +74,8 @@ export default function Clovers() {
   const series = cloverSeries ?? [];
   const earnRows = earnBreakdown ?? [];
 
-  const redemptionByDesign = giftCards
-    .filter((c) => c.cloverCost > 0)
-    .map((c) => ({ name: c.name, clovers: c.cloverCost * c.unlocks, unlocks: c.unlocks }))
-    .sort((a, b) => b.clovers - a.clovers)
-    .slice(0, 8);
+  // Server-side: counts every redemption, not just what the catalog page holds.
+  const redemptionByDesign = (redemption ?? []).slice(0, 8);
 
   return (
     <>
@@ -131,21 +128,21 @@ export default function Clovers() {
         <KpiCard
           label="Clover Burn Rate"
           value={pct('burnRate')}
-          delta={6.1}
+          delta={k('burnRate')?.delta ?? null}
           deltaUnit="pp"
           definition="Clovers redeemed ÷ clovers earned × 100. Below 100% means the liability is still growing."
         />
         <KpiCard
           label="Repeat Redemption"
-          value={formatPercent(18.3)}
-          delta={2.7}
+          value={pct('repeatRedemption')}
+          delta={k('repeatRedemption')?.delta ?? null}
           deltaUnit="pp"
           definition="Users who have unlocked 2 or more premium designs ÷ all users with ≥1 unlock × 100."
         />
         <KpiCard
           label="Premium Card Download Rate"
-          value={formatPercent(64.8)}
-          delta={-2.2}
+          value={pct('premiumCardDownloadRate')}
+          delta={k('premiumCardDownloadRate')?.delta ?? null}
           deltaUnit="pp"
           accent="accent"
           definition="Premium cards downloaded at least once ÷ premium cards unlocked × 100."
@@ -263,7 +260,7 @@ export default function Clovers() {
           subtitle="Clovers burned per premium design"
           tableData={{
             columns: ['Design', 'Clovers', 'Unlocks'],
-            rows: redemptionByDesign.map((d) => [d.name, d.clovers, d.unlocks]),
+            rows: redemptionByDesign.map((d) => [d.name, d.clovers, d.redemptions]),
           }}
         >
           <ResponsiveContainer width="100%" height={240}>

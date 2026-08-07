@@ -36,10 +36,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [permissions, setPermissions] = React.useState<string[]>([]);
   const [isRestoring, setIsRestoring] = React.useState(true);
   const [piiUnmasked, setPiiUnmasked] = React.useState(false);
+  const [mustChangePassword, setMustChangePassword] = React.useState(false);
 
   const applySession = React.useCallback((session: AdminSession) => {
     setAdmin(toAdminUser(session));
     setPermissions(session.permissions);
+    setMustChangePassword(session.mustChangePassword);
   }, []);
 
   // Boot: restore the session from the cookie. A 401 here is the normal
@@ -102,12 +104,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [applySession],
   );
 
+  const changePassword = React.useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      // Re-mints the session and its CSRF token, so adopt the new one.
+      const session = await authService.changePassword(currentPassword, newPassword);
+      applySession(session);
+    },
+    [applySession],
+  );
+
   const signOut = React.useCallback(() => {
     void authService.logout().catch(() => {});
     setCsrfToken(null);
     setAdmin(null);
     setPermissions([]);
     setPiiUnmasked(false);
+    setMustChangePassword(false);
   }, []);
 
 
@@ -124,11 +136,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signIn,
       verifyTwoFactor,
       signOut,
+      mustChangePassword,
+      changePassword,
       can,
       piiUnmasked: piiUnmasked && can('pii:read'),
       togglePii: () => setPiiUnmasked((v) => !v),
     }),
-    [admin, isRestoring, signIn, verifyTwoFactor, signOut, can, piiUnmasked],
+    [admin, isRestoring, signIn, verifyTwoFactor, signOut, mustChangePassword, changePassword, can, piiUnmasked],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

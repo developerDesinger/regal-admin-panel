@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -231,12 +231,12 @@ export default function Login() {
                     Remember me
                   </Label>
                 </div>
-                <a
-                  href="/login/forgot"
+                <Link
+                  to="/login/forgot"
                   className="rounded-sm text-[13px] font-medium text-brand-500 transition-colors hover:text-brand-600"
                 >
                   Forgot password?
-                </a>
+                </Link>
               </div>
 
               <Button

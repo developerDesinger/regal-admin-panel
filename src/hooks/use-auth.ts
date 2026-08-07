@@ -14,6 +14,9 @@ export interface AuthContextValue {
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<LoginResponse>;
   verifyTwoFactor: (challengeId: string, code: string) => Promise<LoginResponse>;
   signOut: () => void;
+  /** Backend-issued credential — the panel is gated until they set their own. */
+  mustChangePassword: boolean;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   /** UI gating only — the API re-authorizes every call server-side (§15). */
   can: (permission: Permission) => boolean;
   /** PII unmasking is itself an audited action (§06). */

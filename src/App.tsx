@@ -6,6 +6,9 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { AppShell } from '@/components/layout/AppShell';
 
 import Login from '@/pages/Login';
+import ForgotPassword from '@/pages/ForgotPassword';
+import ResetPassword from '@/pages/ResetPassword';
+import ChangePassword from '@/pages/ChangePassword';
 
 // Every authenticated route is code-split, so the login screen never downloads
 // the charting library and the dashboard's first paint stays small
@@ -48,6 +51,9 @@ export default function App() {
           <Routes>
             {/* (auth) — unauthenticated, no shell */}
             <Route path="/login" element={<Login />} />
+            <Route path="/login/forgot" element={<ForgotPassword />} />
+            <Route path="/login/reset" element={<ResetPassword />} />
+            <Route path="/change-password" element={<ChangePassword />} />
 
             {/* (dashboard) — shell: sidebar + topbar + filter context */}
             <Route element={<AppShell />}>

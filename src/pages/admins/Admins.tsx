@@ -12,6 +12,16 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmins, useRoleMatrix } from '@/hooks/data';
 import { adminsService } from '@/lib/api/services';
+import { ApiError } from '@/lib/api/client';
+import { Input } from '@/components/ui/input';
+import { Label, FieldHelp } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 import { formatDate, formatRelative } from '@/lib/format';
 import type { AdminRole } from '@/lib/types';
@@ -58,6 +68,9 @@ export default function Admins() {
   }, [permissions]);
   const [revoking, setRevoking] = React.useState<AdminRow | null>(null);
   const [inviting, setInviting] = React.useState(false);
+  const [inviteName, setInviteName] = React.useState('');
+  const [inviteEmail, setInviteEmail] = React.useState('');
+  const [inviteRole, setInviteRole] = React.useState<AdminRole>('support');
 
   const columns: Column<AdminRow>[] = [
     {
@@ -319,16 +332,89 @@ export default function Admins() {
         onOpenChange={setInviting}
         title="Invite a new admin"
         tone="primary"
-        requireReason
         consequence={
           <>
-            An invitation email with a single-use signup link will be sent. The new admin must set a
-            password and, if 2FA is required, enroll an authenticator before their first sign-in.
+            The backend generates the credential and emails a single-use activation link — no
+            password is ever sent from this screen. The new admin must set their own before their
+            first sign-in.
           </>
         }
         confirmLabel="Send invitation"
-        onConfirm={(reason) => toast({ title: 'Invitation sent', description: reason, tone: 'success' })}
-      />
+        onConfirm={() => {
+          if (!inviteName.trim() || !inviteEmail.trim()) {
+            toast({ title: 'Name and email are required', tone: 'warning' });
+            return;
+          }
+          adminsService
+            .create({ name: inviteName.trim(), email: inviteEmail.trim(), role: inviteRole })
+            .then((created) => {
+              toast({
+                title: 'Invitation sent',
+                description: `${created.name} · ${roleLabel(created.role)}`,
+                tone: 'success',
+              });
+              setInviteName('');
+              setInviteEmail('');
+              refetch();
+            })
+            .catch((err: ApiError) => {
+              const fields = Object.entries(err.fieldErrors ?? {});
+              toast({
+                title: 'Could not send invitation',
+                description: fields.length
+                  ? fields.map(([k, v]) => `${k}: ${v}`).join(' · ')
+                  : err.message,
+                tone: 'danger',
+              });
+            });
+        }}
+      >
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="invite-name" required>
+              Full name
+            </Label>
+            <Input
+              id="invite-name"
+              value={inviteName}
+              onChange={(e) => setInviteName(e.target.value)}
+              placeholder="Ana Ramírez"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="invite-email" required>
+              Email
+            </Label>
+            <Input
+              id="invite-email"
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="ana@regal.app"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="invite-role" required>
+              Role
+            </Label>
+            <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as AdminRole)}>
+              <SelectTrigger id="invite-role" className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {roles.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {roleLabel(r)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FieldHelp>{matrix?.roles[inviteRole]?.description}</FieldHelp>
+          </div>
+        </div>
+      </ConfirmDialog>
     </>
   );
 }

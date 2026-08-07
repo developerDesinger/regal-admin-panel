@@ -15,7 +15,7 @@ import { readLocal, writeLocal } from '@/hooks/useUrlState';
  * drawer; the page body never scrolls sideways (§2.5).
  */
 export function AppShell() {
-  const { admin } = useAuth();
+  const { admin, isRestoring, mustChangePassword } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = React.useState(() => readLocal('regal:sidebar-collapsed', false));
   const [searchOpen, setSearchOpen] = React.useState(false);
@@ -41,7 +41,25 @@ export function AppShell() {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
+  // Boot-time /auth/me is in flight — redirecting here would bounce a signed-in
+  // admin to /login on every refresh.
+  if (isRestoring) {
+    return (
+      <div
+        className="flex min-h-screen items-center justify-center bg-neutral-50"
+        role="status"
+        aria-live="polite"
+      >
+        <span className="sr-only">Restoring your session…</span>
+        <span className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-200 border-t-brand-500" />
+      </div>
+    );
+  }
+
   if (!admin) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+
+  // A backend-issued credential must be replaced before anything else is reachable.
+  if (mustChangePassword) return <Navigate to="/change-password" replace />;
 
   return (
     <div className="flex min-h-screen bg-neutral-50">

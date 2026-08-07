@@ -1,8 +1,26 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
+      "//": "The session cookie is Secure + SameSite=Strict. A strict cookie is never sent on a cross-site request, and regal-admin-panel.vercel.app / ondigitalocean.app are different sites — calling the API directly from the browser would drop auth on every request. Proxying it through this domain makes the browser see a same-origin call, exactly as the vite proxy does in development. This rule must stay ABOVE the SPA fallback.",
+      "source": "/api/:path*",
+      "destination": "https://regal-backend-ypkwe.ondigitalocean.app/api/:path*"
+    },
+    {
+      "//": "SPA fallback: every other path renders the client-side router.",
       "source": "/(.*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "//": "Admin routes are never indexed and must not be cached (§21 Security).",
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
     }
   ]
 }

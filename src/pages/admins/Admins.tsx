@@ -10,39 +10,69 @@ import { Avatar } from '@/components/ui/misc';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { actions, useStore } from '@/lib/store';
+import { useAdmins, useRoleMatrix } from '@/hooks/data';
+import { adminsService } from '@/lib/api/services';
+import { ApiError } from '@/lib/api/client';
+import { Input } from '@/components/ui/input';
+import { Label, FieldHelp } from '@/components/ui/label';
 import {
-  PERMISSIONS,
-  ROLE_DESCRIPTIONS,
-  ROLE_LABELS,
-  ROLE_PERMISSIONS,
-  type Permission,
-} from '@/lib/permissions';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
 import { formatDate, formatRelative } from '@/lib/format';
-import type { AdminRole, AdminUser } from '@/lib/types';
+import type { AdminRole } from '@/lib/types';
+import type { AdminRow } from '@/lib/api/types';
+import { avatarColorFor } from '@/lib/api/adapters';
 import { cn } from '@/lib/utils';
 
 /** Screen 15 — Admin Users & Roles (§15). */
 
-const ROLES: AdminRole[] = ['super_admin', 'finance', 'operations', 'support', 'analyst'];
-
-const PERMISSION_GROUPS: { label: string; permissions: Permission[] }[] = [
-  { label: 'Events', permissions: ['events:read', 'events:write'] },
-  { label: 'Money', permissions: ['contributions:read', 'financials:read', 'payouts:write'] },
-  { label: 'People', permissions: ['users:read', 'pii:read', 'pii:export'] },
-  { label: 'Cards & clovers', permissions: ['cards:read', 'cards:write', 'clovers:read', 'clovers:adjust'] },
-  { label: 'Operations', permissions: ['alerts:manage', 'exports:run', 'audit:read'] },
-  { label: 'Administration', permissions: ['admins:manage', 'settings:write'] },
+/** Grouping is presentation; membership comes from the server's permission list. */
+const GROUP_ORDER: { label: string; match: (p: string) => boolean }[] = [
+  { label: 'Events', match: (p) => p.startsWith('events:') },
+  { label: 'Money', match: (p) => /^(contributions|financials|payouts):/.test(p) },
+  { label: 'People', match: (p) => /^(users|pii):/.test(p) },
+  { label: 'Cards & clovers', match: (p) => /^(cards|clovers):/.test(p) },
+  { label: 'Operations', match: (p) => /^(alerts|exports|audit):/.test(p) },
+  { label: 'Administration', match: (p) => /^(admins|settings):/.test(p) },
 ];
 
 export default function Admins() {
   const { toast } = useToast();
   const { admin: currentUser } = useAuth();
-  const { adminUsers } = useStore();
-  const [revoking, setRevoking] = React.useState<AdminUser | null>(null);
-  const [inviting, setInviting] = React.useState(false);
+  const { admins: adminUsers, refetch } = useAdmins();
+  // The same object the server enforces with — never a local copy (§15).
+  const matrix = useRoleMatrix();
+  const permissions = React.useMemo(() => matrix?.permissions ?? [], [matrix]);
+  const roles = React.useMemo(
+    () => (matrix ? (Object.keys(matrix.roles) as AdminRole[]) : []),
+    [matrix],
+  );
+  const roleLabel = (r: AdminRole) => matrix?.roles[r]?.label ?? r;
+  const rolePermissions = (r: AdminRole) => matrix?.roles[r]?.permissions ?? [];
 
-  const columns: Column<AdminUser>[] = [
+  /** Anything the server sends that no group claims still gets shown. */
+  const groups = React.useMemo(() => {
+    const claimed = new Set<string>();
+    const out = GROUP_ORDER.map((g) => {
+      const members = permissions.filter((p) => g.match(p));
+      members.forEach((p) => claimed.add(p));
+      return { label: g.label, permissions: members };
+    }).filter((g) => g.permissions.length > 0);
+    const rest = permissions.filter((p) => !claimed.has(p));
+    return rest.length ? [...out, { label: 'Other', permissions: rest }] : out;
+  }, [permissions]);
+  const [revoking, setRevoking] = React.useState<AdminRow | null>(null);
+  const [inviting, setInviting] = React.useState(false);
+  const [inviteName, setInviteName] = React.useState('');
+  const [inviteEmail, setInviteEmail] = React.useState('');
+  const [inviteRole, setInviteRole] = React.useState<AdminRole>('support');
+
+  const columns: Column<AdminRow>[] = [
     {
       id: 'admin',
       header: 'Admin',
@@ -50,7 +80,7 @@ export default function Admins() {
       sortValue: (a) => a.name,
       cell: (a) => (
         <div className="flex min-w-0 items-center gap-3">
-          <Avatar name={a.name} color={a.avatarColor} size="md" />
+          <Avatar name={a.name} color={avatarColorFor(a.id)} size="md" />
           <div className="min-w-0">
             <p className="truncate font-medium text-neutral-900">
               {a.name}
@@ -67,9 +97,9 @@ export default function Admins() {
       sortable: true,
       sortValue: (a) => a.role,
       cell: (a) => (
-        <Tooltip content={ROLE_DESCRIPTIONS[a.role]}>
+        <Tooltip content={matrix?.roles[a.role]?.description ?? ''}>
           <span className="cursor-help">
-            <Chip tone={a.role === 'super_admin' ? 'brand' : 'neutral'}>{ROLE_LABELS[a.role]}</Chip>
+            <Chip tone={a.role === 'super_admin' ? 'brand' : 'neutral'}>{roleLabel(a.role)}</Chip>
           </span>
         </Tooltip>
       ),
@@ -78,7 +108,7 @@ export default function Admins() {
       id: 'permissions',
       header: 'Permissions',
       numeric: true,
-      cell: (a) => <span className="tnum">{ROLE_PERMISSIONS[a.role].length}</span>,
+      cell: (a) => <span className="tnum">{rolePermissions(a.role).length}</span>,
     },
     {
       id: '2fa',
@@ -171,50 +201,50 @@ export default function Admins() {
         Permission matrix
       </SectionHeading>
       <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="scroll-x">
           <table className="w-full border-collapse">
             <thead className="sticky top-0 bg-neutral-50">
               <tr className="border-b border-neutral-200">
                 <th
                   scope="col"
-                  className="sticky left-0 z-10 min-w-[200px] bg-neutral-50 px-4 py-3 text-left text-table-header uppercase text-neutral-500"
+                  className="min-w-[200px] px-4 py-3 text-left text-table-header uppercase text-neutral-500"
                 >
                   Permission
                 </th>
-                {ROLES.map((r) => (
+                {roles.map((r) => (
                   <th
                     key={r}
                     scope="col"
                     className="min-w-[120px] px-4 py-3 text-center text-table-header uppercase text-neutral-500"
                   >
-                    {ROLE_LABELS[r]}
+                    {roleLabel(r)}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {PERMISSION_GROUPS.map((group) => (
+              {groups.map((group) => (
                 <React.Fragment key={group.label}>
                   <tr className="border-b border-neutral-200 bg-neutral-50">
                     <th
                       scope="rowgroup"
-                      colSpan={ROLES.length + 1}
-                      className="sticky left-0 px-4 py-2 text-left text-table-header uppercase text-neutral-500"
+                      colSpan={roles.length + 1}
+                      className="px-4 py-2 text-left text-table-header uppercase text-neutral-500"
                     >
                       {group.label}
                     </th>
                   </tr>
                   {group.permissions.map((p) => (
                     <tr key={p} className="border-b border-neutral-200 last:border-0">
-                      <td className="sticky left-0 bg-neutral-0 px-4 py-3">
+                      <td className="whitespace-nowrap px-4 py-3">
                         <code className="font-mono text-[13px] text-neutral-900">{p}</code>
                       </td>
-                      {ROLES.map((r) => {
-                        const granted = ROLE_PERMISSIONS[r].includes(p);
+                      {roles.map((r) => {
+                        const granted = rolePermissions(r).includes(p);
                         return (
                           <td key={r} className="px-4 py-3 text-center">
                             <span className="sr-only">
-                              {ROLE_LABELS[r]} {granted ? 'has' : 'does not have'} {p}
+                              {roleLabel(r)} {granted ? 'has' : 'does not have'} {p}
                             </span>
                             <span
                               className={cn(
@@ -244,15 +274,15 @@ export default function Admins() {
       {/* Role reference */}
       <SectionHeading className="mt-8">Role reference</SectionHeading>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {ROLES.map((r) => (
+        {roles.map((r) => (
           <Card key={r} className="p-4">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-card-title text-neutral-900">{ROLE_LABELS[r]}</h3>
+              <h3 className="text-card-title text-neutral-900">{roleLabel(r)}</h3>
               <span className="tnum text-caption text-neutral-500">
-                {ROLE_PERMISSIONS[r].length}/{PERMISSIONS.length}
+                {rolePermissions(r).length}/{permissions.length}
               </span>
             </div>
-            <p className="mt-2 text-body text-neutral-500">{ROLE_DESCRIPTIONS[r]}</p>
+            <p className="mt-2 text-body text-neutral-500">{matrix?.roles[r]?.description}</p>
             <p className="mt-3 text-caption text-neutral-400">
               {adminUsers.filter((a) => a.role === r).length} admin
               {adminUsers.filter((a) => a.role === r).length === 1 ? '' : 's'} with this role
@@ -277,14 +307,17 @@ export default function Admins() {
               </>
             ) : (
               <>
-                <strong>{revoking.name}</strong> regains {ROLE_LABELS[revoking.role]} access to this
+                <strong>{revoking.name}</strong> regains {roleLabel(revoking.role)} access to this
                 panel at their next sign-in.
               </>
             )
           }
           confirmLabel={revoking.isActive ? 'Revoke access' : 'Restore access'}
           onConfirm={(reason) => {
-            actions.setAdminActive(currentUser, revoking.id, !revoking.isActive, reason);
+            void (revoking.isActive
+              ? adminsService.revoke(revoking.id, reason)
+              : adminsService.restore(revoking.id, reason)
+            ).then(refetch);
             toast({
               title: revoking.isActive ? 'Access revoked' : 'Access restored',
               description: revoking.name,
@@ -299,16 +332,89 @@ export default function Admins() {
         onOpenChange={setInviting}
         title="Invite a new admin"
         tone="primary"
-        requireReason
         consequence={
           <>
-            An invitation email with a single-use signup link will be sent. The new admin must set a
-            password and, if 2FA is required, enroll an authenticator before their first sign-in.
+            The backend generates the credential and emails a single-use activation link — no
+            password is ever sent from this screen. The new admin must set their own before their
+            first sign-in.
           </>
         }
         confirmLabel="Send invitation"
-        onConfirm={(reason) => toast({ title: 'Invitation sent', description: reason, tone: 'success' })}
-      />
+        onConfirm={() => {
+          if (!inviteName.trim() || !inviteEmail.trim()) {
+            toast({ title: 'Name and email are required', tone: 'warning' });
+            return;
+          }
+          adminsService
+            .create({ name: inviteName.trim(), email: inviteEmail.trim(), role: inviteRole })
+            .then((created) => {
+              toast({
+                title: 'Invitation sent',
+                description: `${created.name} · ${roleLabel(created.role)}`,
+                tone: 'success',
+              });
+              setInviteName('');
+              setInviteEmail('');
+              refetch();
+            })
+            .catch((err: ApiError) => {
+              const fields = Object.entries(err.fieldErrors ?? {});
+              toast({
+                title: 'Could not send invitation',
+                description: fields.length
+                  ? fields.map(([k, v]) => `${k}: ${v}`).join(' · ')
+                  : err.message,
+                tone: 'danger',
+              });
+            });
+        }}
+      >
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="invite-name" required>
+              Full name
+            </Label>
+            <Input
+              id="invite-name"
+              value={inviteName}
+              onChange={(e) => setInviteName(e.target.value)}
+              placeholder="Ana Ramírez"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="invite-email" required>
+              Email
+            </Label>
+            <Input
+              id="invite-email"
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="ana@regal.app"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="invite-role" required>
+              Role
+            </Label>
+            <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as AdminRole)}>
+              <SelectTrigger id="invite-role" className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {roles.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {roleLabel(r)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FieldHelp>{matrix?.roles[inviteRole]?.description}</FieldHelp>
+          </div>
+        </div>
+      </ConfirmDialog>
     </>
   );
 }

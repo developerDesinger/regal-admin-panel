@@ -14,12 +14,12 @@ import { Avatar, CopyableId } from '@/components/ui/misc';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { stats } from '@/lib/mock/data';
-import { actions, useStore } from '@/lib/store';
+
+import { useAdminMutations } from '@/hooks/data/mutations';
+import { useWithdrawals, useWithdrawalKpis } from '@/hooks/data';
 import { withdrawalColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { rangeLabel } from '@/lib/date-ranges';
-import { NOW } from '@/lib/mock/seed';
 import { useUrlState } from '@/hooks/useUrlState';
 import { formatDate, formatDuration, formatMoney, formatNumber, shortId } from '@/lib/format';
 import type { Withdrawal } from '@/lib/types';
@@ -28,8 +28,14 @@ import type { Withdrawal } from '@/lib/types';
 export default function Withdrawals() {
   const { all } = useUrlState();
   const { toast } = useToast();
-  const { admin, can } = useAuth();
-  const { withdrawals } = useStore();
+  const { can } = useAuth();
+  const { rows: withdrawals, isLoading, error, refetch } = useWithdrawals(all);
+  const { data: kpis } = useWithdrawalKpis({ range: all.range ?? '30d', compare: all.compare === '1' });
+  const kpi = (key: keyof NonNullable<typeof kpis>, fmt: (v: number) => string) => {
+    const v = kpis?.[key];
+    return { value: typeof v?.value === 'number' ? fmt(v.value) : '—', delta: v?.delta ?? null };
+  };
+  const mutations = useAdminMutations();
   const [retrying, setRetrying] = React.useState<Withdrawal | null>(null);
   const [resolving, setResolving] = React.useState<Withdrawal | null>(null);
 
@@ -54,11 +60,9 @@ export default function Withdrawals() {
     [filtered],
   );
 
-  const sumBy = (status: Withdrawal['status']) =>
-    withdrawals.filter((w) => w.status === status).reduce((a, w) => a + w.amount, 0);
 
   const elapsedHours = (w: Withdrawal) =>
-    ((w.completedAt ? +new Date(w.completedAt) : +NOW) - +new Date(w.requestedAt)) / 3_600_000;
+    ((w.completedAt ? +new Date(w.completedAt) : Date.now()) - +new Date(w.requestedAt)) / 3_600_000;
 
   const columns: Column<Withdrawal>[] = [
     {
@@ -207,12 +211,6 @@ export default function Withdrawals() {
     },
   ];
 
-  const medianPayoutHours =
-    withdrawals
-      .filter((w) => w.status === 'completed')
-      .map(elapsedHours)
-      .sort((a, b) => a - b)[Math.floor(withdrawals.filter((w) => w.status === 'completed').length / 2)] ?? 0;
-
   return (
     <>
       <PageHeader
@@ -236,32 +234,30 @@ export default function Withdrawals() {
       <KpiGrid columns={3} className="mb-6">
         <KpiCard
           label="Available for Withdrawal"
-          value={formatMoney(stats.availableForWithdrawal)}
+          {...kpi('availableForWithdrawal', (v) => formatMoney(v))}
           definition="System-wide net balance on closed events where no withdrawal has been started."
         />
         <KpiCard
           label="Requested"
-          value={formatMoney(sumBy('requested') + sumBy('validated'))}
+          {...kpi('requested', formatNumber)}
           secondary={`${formatNumber(withdrawals.filter((w) => w.status === 'requested' || w.status === 'validated').length)} payouts`}
           definition="Payouts a beneficiary has requested but Stripe hasn't started processing."
         />
         <KpiCard
           label="Processing"
-          value={formatMoney(sumBy('processing'))}
+          {...kpi('processing', formatNumber)}
           secondary={`${formatNumber(withdrawals.filter((w) => w.status === 'processing').length)} payouts`}
           definition="Payouts in flight at Stripe, not yet settled in the beneficiary's bank."
         />
         <KpiCard
           label="Completed"
-          value={formatMoney(sumBy('completed'))}
-          delta={16.4}
+          {...kpi('completedInPeriod', formatNumber)}
           secondary={`${formatNumber(withdrawals.filter((w) => w.status === 'completed').length)} payouts`}
           definition="Payouts settled inside the selected range."
         />
         <KpiCard
           label="Failed"
-          value={formatMoney(sumBy('failed'))}
-          delta={2.1}
+          {...kpi('failed', formatNumber)}
           invertDelta
           accent="danger"
           secondary={`${formatNumber(withdrawals.filter((w) => w.status === 'failed').length)} payouts`}
@@ -269,8 +265,7 @@ export default function Withdrawals() {
         />
         <KpiCard
           label="Median Time to Payout"
-          value={formatDuration(medianPayoutHours)}
-          delta={-9.3}
+          {...kpi('medianTimeToPayoutHours', formatDuration)}
           invertDelta
           definition="Median of (completion timestamp − request timestamp) across completed payouts."
         />
@@ -308,6 +303,9 @@ export default function Withdrawals() {
         columns={columns}
         rows={sorted}
         rowKey={(w) => w.id}
+        loading={isLoading}
+        error={error}
+        onRetry={refetch}
         storageKey="withdrawals"
         rowClassName={(w) => (w.status === 'failed' ? 'bg-danger-50 hover:bg-danger-50/70' : undefined)}
         empty={{
@@ -333,16 +331,7 @@ export default function Withdrawals() {
           }
           confirmLabel="Retry payout"
           onConfirm={(reason) => {
-            actions.updateWithdrawal(
-              admin,
-              retrying.id,
-              {
-                status: 'processing',
-                failureReason: null,
-                stripePayoutId: `po_retry_${Date.now().toString(36).toUpperCase()}`,
-              },
-              { action: 'withdrawal.retry', reason },
-            );
+            void mutations.retryPayout(retrying.id, reason);
             toast({
               title: 'Payout retry queued',
               description: `${retrying.beneficiary.name} · now processing`,
@@ -368,12 +357,7 @@ export default function Withdrawals() {
           }
           confirmLabel="Mark resolved"
           onConfirm={(reason) => {
-            actions.updateWithdrawal(
-              admin,
-              resolving.id,
-              { status: 'completed', completedAt: new Date().toISOString(), failureReason: null },
-              { action: 'withdrawal.mark_resolved', reason },
-            );
+            void mutations.markPayoutResolved(resolving.id, reason);
             toast({
               title: 'Marked resolved',
               description: `${resolving.beneficiary.name} · removed from the pinned list`,

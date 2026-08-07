@@ -1,17 +1,22 @@
 import * as React from 'react';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/use-auth';
+import { isTwoFactorChallenge } from '@/lib/api/types';
+import { ApiError } from '@/lib/api/client';
+import { authService } from '@/lib/api/services';
 import { cn } from '@/lib/utils';
 
 /**
  * Screen 01 — Login (§01)
  *
- * Split screen: left 45% brand panel (hidden <1024px), right 55% centered form.
+ * Full-bleed brand-500 (#865EFF) field with a single white card centred on it.
+ * This replaces the spec's 45/55 split panel at the client's request; the card
+ * is the only white surface, so the form stays the focal point at every width.
  *
  * Non-negotiables that belong to the server and are documented here so they are
  * not lost in handoff:
@@ -23,16 +28,20 @@ import { cn } from '@/lib/utils';
  *  · noindex, nofollow (set in index.html for all admin routes).
  */
 
-/** 2FA is specified either way — build the screen, feature-flag it on (§01). */
-const TWO_FACTOR_ENABLED = false;
-
+/**
+ * 2FA is driven by the server: login returns a `2fa_required` challenge when
+ * the account has it enabled, so there is no client-side feature flag.
+ */
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_SECONDS = 15 * 60;
 
 export default function Login() {
-  const { admin, signIn } = useAuth();
+  const { admin, signIn, verifyTwoFactor } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const [challengeId, setChallengeId] = React.useState<string | null>(null);
+  /** Present only outside production, so 2FA is testable without a mail server. */
+  const [devCode, setDevCode] = React.useState<string | null>(null);
 
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -60,71 +69,84 @@ export default function Login() {
   const locked = lockoutLeft > 0;
   const canSubmit = email.trim().length > 0 && password.length > 0 && !pending && !locked;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
     setPending(true);
     setError(null);
 
-    // UI-only build: any password is accepted. The real endpoint verifies
-    // credentials server-side and sets the session cookie.
-    setTimeout(() => {
-      setPending(false);
-      if (password.length < 4) {
-        const next = attempts + 1;
-        setAttempts(next);
-        // Never disclose which field was wrong (§01 States).
-        setError('Incorrect email or password.');
-        if (next >= MAX_ATTEMPTS) setLockoutLeft(LOCKOUT_SECONDS);
-        return;
-      }
-      if (TWO_FACTOR_ENABLED) {
+    try {
+      const res = await signIn(email, password, remember);
+
+      // 2FA: swap the form for the code input rather than signing in.
+      if (isTwoFactorChallenge(res)) {
+        setChallengeId(res.challengeId);
+        setDevCode(res.devCode ?? null);
         setStage('2fa');
         return;
       }
-      signIn(email);
       navigate('/');
-    }, 500);
+    } catch (err) {
+      const api = err as ApiError;
+
+      // The server enforces the lockout; this is only its countdown. Trust the
+      // server's remaining seconds over our local attempt tally.
+      if (api.code === 'RATE_LIMITED') {
+        setLockoutLeft(api.retryAfterSeconds ?? LOCKOUT_SECONDS);
+        setError(api.message);
+        return;
+      }
+      if (api.code === 'ACCOUNT_DISABLED') {
+        setError(api.message);
+        return;
+      }
+      // Never disclose which field was wrong (§01 States) — the server already
+      // returns one generic message for both cases.
+      const next = attempts + 1;
+      setAttempts(next);
+      setError(api.message || 'Incorrect email or password.');
+      if (next >= MAX_ATTEMPTS && !api.retryAfterSeconds) setLockoutLeft(LOCKOUT_SECONDS);
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
-    <div className="flex min-h-screen bg-neutral-0">
-      {/* Left 45% — solid brand panel, hidden below 1024px */}
-      <div className="relative hidden w-[45%] shrink-0 overflow-hidden bg-brand-500 lg:block">
-        <div className="absolute inset-0 flex items-center justify-center" aria-hidden>
-          <span className="select-none text-[420px] leading-none text-white/[0.06]">🍀</span>
-        </div>
-        <div className="relative flex h-full flex-col justify-between p-12">
-          <div className="flex items-center gap-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-white/15">
-              <ShieldCheck className="h-5 w-5 text-white" aria-hidden />
-            </span>
-            <span className="text-[18px] font-semibold text-white">Regal</span>
-          </div>
-          <p className="max-w-[320px] text-[30px] font-semibold leading-9 text-white">
-            Regal Administration Panel
-          </p>
-          <p className="text-caption text-white/70">
-            Group gifting operations &amp; analytics console
-          </p>
-        </div>
-      </div>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-brand-500 px-4 py-12">
+      {/* Oversized clover watermark at 6% white, per the brand panel treatment */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-16 -top-16 select-none text-[420px] leading-none text-white/[0.06]"
+      >
+        🍀
+      </span>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -bottom-24 -left-20 select-none text-[380px] leading-none text-white/[0.05]"
+      >
+        🍀
+      </span>
 
-      {/* Right 55% — centered form card */}
-      <div className="flex flex-1 items-center justify-center px-4 py-12">
-        <div className="w-full max-w-[400px]">
-          <div className="mb-8 text-center">
-            <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-brand-500 lg:hidden">
-              <ShieldCheck className="h-6 w-6 text-white" aria-hidden />
-            </span>
+      <main className="relative w-full max-w-[440px]">
+        {/* Wordmark sits on the brand field, above the card */}
+        <div className="mb-6 flex items-center justify-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-md bg-white/15">
+            <ShieldCheck className="h-5 w-5 text-white" aria-hidden />
+          </span>
+          <span className="text-[20px] font-semibold text-white">Regal Admin</span>
+        </div>
+
+        {/* White card — the only surface that carries the form */}
+        <div className="rounded-lg bg-neutral-0 p-6 shadow-e2 sm:p-8">
+          <div className="mb-6 text-center">
             <h1 className="text-page-title text-neutral-900">
               {stage === '2fa' ? 'Two-factor authentication' : 'Sign in to continue'}
             </h1>
-            {stage === '2fa' && (
-              <p className="mt-1 text-body text-neutral-500">
-                Enter the 6-digit code from your authenticator app.
-              </p>
-            )}
+            <p className="mt-1 text-body text-neutral-500">
+              {stage === '2fa'
+                ? 'Enter the 6-digit code from your authenticator app.'
+                : 'Regal Administration Panel'}
+            </p>
           </div>
 
           {error && (
@@ -209,12 +231,12 @@ export default function Login() {
                     Remember me
                   </Label>
                 </div>
-                <a
-                  href="/login/forgot"
+                <Link
+                  to="/login/forgot"
                   className="rounded-sm text-[13px] font-medium text-brand-500 transition-colors hover:text-brand-600"
                 >
                   Forgot password?
-                </a>
+                </Link>
               </div>
 
               <Button
@@ -235,27 +257,49 @@ export default function Login() {
             </form>
           ) : (
             <TwoFactorForm
-              onBack={() => setStage('credentials')}
-              onVerified={() => {
-                signIn(email);
+              challengeId={challengeId}
+              devCode={devCode}
+              onError={setError}
+              onBack={() => {
+                setStage('credentials');
+                setError(null);
+              }}
+              onVerify={async (code) => {
+                if (!challengeId) throw new Error('Missing challenge. Sign in again.');
+                await verifyTwoFactor(challengeId, code);
                 navigate('/');
               }}
             />
           )}
 
-          <p className="mt-8 text-center text-caption text-neutral-500">
+          {/* Kept on the white surface: 12px on brand-500 tops out at 4.15:1,
+              below the 4.5:1 WCAG AA floor for normal text (§21). */}
+          <p className="mt-6 border-t border-neutral-200 pt-4 text-center text-caption text-neutral-500">
             Restricted access. All activity is logged.
           </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
 
 /** 6-digit code: separate boxes, auto-advance, paste-fills-all (§01 2FA). */
-function TwoFactorForm({ onBack, onVerified }: { onBack: () => void; onVerified: () => void }) {
+function TwoFactorForm({
+  challengeId,
+  devCode,
+  onBack,
+  onVerify,
+  onError,
+}: {
+  challengeId: string | null;
+  devCode: string | null;
+  onBack: () => void;
+  onVerify: (code: string) => Promise<void>;
+  onError: (message: string) => void;
+}) {
   const [digits, setDigits] = React.useState(['', '', '', '', '', '']);
   const [cooldown, setCooldown] = React.useState(0);
+  const [pending, setPending] = React.useState(false);
   const refs = React.useRef<(HTMLInputElement | null)[]>([]);
 
   React.useEffect(() => {
@@ -283,14 +327,23 @@ function TwoFactorForm({ onBack, onVerified }: { onBack: () => void; onVerified:
 
   const complete = digits.every((d) => d !== '');
 
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!complete || pending) return;
+    setPending(true);
+    try {
+      await onVerify(digits.join(''));
+    } catch (err) {
+      onError((err as ApiError).message || 'That code was not accepted.');
+      setDigits(['', '', '', '', '', '']);
+      refs.current[0]?.focus();
+    } finally {
+      setPending(false);
+    }
+  };
+
   return (
-    <form
-      className="space-y-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (complete) onVerified();
-      }}
-    >
+    <form className="space-y-4" onSubmit={submit}>
       <div className="flex justify-between gap-2" role="group" aria-label="6-digit verification code">
         {digits.map((d, i) => (
           <input
@@ -316,9 +369,22 @@ function TwoFactorForm({ onBack, onVerified }: { onBack: () => void; onVerified:
         ))}
       </div>
 
-      <Button type="submit" variant="primary" className="h-11 w-full" disabled={!complete}>
-        Verify
+      <Button
+        type="submit"
+        variant="primary"
+        className="h-11 w-full"
+        disabled={!complete}
+        loading={pending}
+      >
+        {pending ? 'Verifying…' : 'Verify'}
       </Button>
+
+      {devCode && (
+        <p className="rounded-sm bg-warning-50 p-2 text-center text-caption text-warning-500">
+          Dev code: <span className="tnum font-mono font-semibold">{devCode}</span> — shown outside
+          production only.
+        </p>
+      )}
 
       <div className="flex items-center justify-between">
         <button
@@ -330,8 +396,16 @@ function TwoFactorForm({ onBack, onVerified }: { onBack: () => void; onVerified:
         </button>
         <button
           type="button"
-          disabled={cooldown > 0}
-          onClick={() => setCooldown(30)}
+          disabled={cooldown > 0 || !challengeId}
+          onClick={async () => {
+            if (!challengeId) return;
+            setCooldown(30);
+            try {
+              await authService.resendTwoFactor(challengeId);
+            } catch (err) {
+              onError((err as ApiError).message);
+            }
+          }}
           className="rounded-sm text-[13px] font-medium text-brand-500 hover:text-brand-600 disabled:text-neutral-400"
         >
           {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}

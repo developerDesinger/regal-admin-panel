@@ -133,6 +133,15 @@
     @apply mx-auto w-full max-w-[1440px] px-4 md:px-6;
   }
 
+  /* Horizontally scrollable region for wide tables (§2.5).
+     `contain: paint` is the load-bearing part: without it Chromium still counts
+     the overflowing table in the *document's* scroll width, so the page itself
+     scrolls sideways even though the table is visually clipped. */
+  .scroll-x {
+    overflow-x: auto;
+    contain: paint;
+  }
+
   .skeleton {
     @apply animate-pulse rounded bg-neutral-100;
   }

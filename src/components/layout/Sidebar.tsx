@@ -20,7 +20,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/use-auth';
 import type { Permission } from '@/lib/permissions';
-import { alerts } from '@/lib/mock/data';
+import { useAlerts } from '@/hooks/data';
 import { cn } from '@/lib/utils';
 
 /**
@@ -85,7 +85,8 @@ export function Sidebar({
 }) {
   const { can } = useAuth();
   const location = useLocation();
-  const openAlerts = alerts.filter((a) => a.status === 'open').length;
+  const { meta } = useAlerts({ state: 'open' });
+  const openAlerts = meta?.totalRows ?? 0;
 
   return (
     <nav

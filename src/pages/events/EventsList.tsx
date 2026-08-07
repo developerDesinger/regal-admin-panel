@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { useStore } from '@/lib/store';
+import { useEvents } from '@/hooks/data';
 import { eventColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { rangeLabel } from '@/lib/date-ranges';
@@ -30,7 +30,7 @@ import { cn } from '@/lib/utils';
 export default function EventsList() {
   const { all } = useUrlState();
   const { toast } = useToast();
-  const { events } = useStore();
+  const { rows: events, isLoading, error, refetch } = useEvents(all);
 
   const filtered = React.useMemo(() => {
     return events.filter((e) => {
@@ -343,6 +343,9 @@ export default function EventsList() {
         columns={columns}
         rows={filtered}
         rowKey={(e) => e.id}
+        loading={isLoading}
+        error={error}
+        onRetry={refetch}
         rowHref={(e) => `/events/${e.id}`}
         storageKey="events"
         initialSort={{ id: 'created', dir: 'desc' }}

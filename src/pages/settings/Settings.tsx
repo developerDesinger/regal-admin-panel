@@ -19,8 +19,71 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { actions, useStore, SETTING_DEFAULTS, type SettingsState } from '@/lib/store';
+import { useSettings, useAdmins } from '@/hooks/data';
+import { ApiError } from '@/lib/api/client';
+import { settingsService } from '@/lib/api/services';
+import type { SettingsApi } from '@/lib/api/types';
 import { cn } from '@/lib/utils';
+
+/**
+ * The server groups settings (alertThresholds / cloverRules / financial / …)
+ * while this screen edits them as one flat map of ids. These two helpers are
+ * the only place that translation lives.
+ */
+type Draft = {
+  values: Record<string, string>;
+  defaultFeePayer: string;
+  digest: string;
+  notify: Record<string, string[]>;
+  supportEmail: string;
+  termsUrl: string;
+  privacyUrl: string;
+  maintenanceMode: boolean;
+};
+
+function toDraft(s: SettingsApi): Draft {
+  const values: Record<string, string> = {};
+  for (const [k, v] of Object.entries(s.alertThresholds ?? {})) values[k] = String(v);
+  for (const [k, v] of Object.entries(s.cloverRules ?? {})) values[k] = String(v);
+  values.platform_fee = String(s.financial?.platform_fee ?? '');
+  values.min_withdrawal = String(s.financial?.min_withdrawal ?? '');
+  return {
+    values,
+    defaultFeePayer: s.financial?.default_fee_payer ?? 'contributor',
+    digest: s.notifications?.digest ?? 'daily',
+    notify: s.notifications?.routing ?? {},
+    supportEmail: s.branding?.support_email ?? '',
+    termsUrl: s.branding?.terms_url ?? '',
+    privacyUrl: s.branding?.privacy_url ?? '',
+    maintenanceMode: s.branding?.maintenance_mode ?? false,
+  };
+}
+
+/** Sends back only the groups the admin actually touched. */
+function toPayload(d: Draft, base: SettingsApi): Partial<SettingsApi> {
+  const num = (k: string) => Number(d.values[k]);
+  const pick = (keys: string[]) =>
+    Object.fromEntries(keys.filter((k) => k in d.values).map((k) => [k, num(k)]));
+  return {
+    alertThresholds: pick(Object.keys(base.alertThresholds ?? {})),
+    cloverRules: pick(Object.keys(base.cloverRules ?? {})),
+    financial: {
+      ...base.financial,
+      platform_fee: num('platform_fee'),
+      min_withdrawal: num('min_withdrawal'),
+      default_fee_payer: d.defaultFeePayer,
+    },
+    notifications: { digest: d.digest, routing: d.notify },
+    branding: {
+      ...base.branding,
+      support_email: d.supportEmail,
+      terms_url: d.termsUrl,
+      privacy_url: d.privacyUrl,
+      maintenance_mode: d.maintenanceMode,
+    },
+  };
+}
+
 
 /**
  * Screen 16 — Settings (§16).
@@ -72,47 +135,51 @@ const TAB_FIELDS: Record<string, string[]> = {
 
 export default function Settings() {
   const { toast } = useToast();
-  const { admin, can } = useAuth();
-  const { settings, adminUsers } = useStore();
+  const { can } = useAuth();
+  const { settings: apiSettings, defaults, isLoading, error, refetch: refetchSettings } = useSettings();
+  const { admins: adminUsers } = useAdmins();
 
-  // Draft copy — the store only changes when Save is pressed.
-  const [draft, setDraft] = React.useState<SettingsState>(() => structuredClone(settings));
+  const saved = React.useMemo(() => (apiSettings ? toDraft(apiSettings) : null), [apiSettings]);
+  // Draft copy — the server only changes when Save is pressed.
+  const [draft, setDraft] = React.useState<Draft | null>(null);
   const [confirmSave, setConfirmSave] = React.useState(false);
-  const [confirmReset, setConfirmReset] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
 
-  // Re-sync when the store changes underneath (e.g. after a demo-data reset).
+  // Adopt the server's values once they arrive, and after every successful save.
   React.useEffect(() => {
-    setDraft(structuredClone(settings));
-  }, [settings]);
+    if (saved) setDraft(structuredClone(saved));
+  }, [saved]);
 
   const changedKeys = React.useMemo(() => {
-    const keys: string[] = [];
-    for (const [k, v] of Object.entries(draft.values)) {
-      if (settings.values[k] !== v) keys.push(k);
-    }
-    return keys;
-  }, [draft.values, settings.values]);
+    if (!draft || !saved) return [];
+    return Object.entries(draft.values)
+      .filter(([k, v]) => saved.values[k] !== v)
+      .map(([k]) => k);
+  }, [draft, saved]);
 
-  const otherChanged =
-    draft.defaultFeePayer !== settings.defaultFeePayer ||
-    draft.digest !== settings.digest ||
-    draft.maintenanceMode !== settings.maintenanceMode ||
-    draft.supportEmail !== settings.supportEmail ||
-    draft.termsUrl !== settings.termsUrl ||
-    draft.privacyUrl !== settings.privacyUrl ||
-    JSON.stringify(draft.notify) !== JSON.stringify(settings.notify);
+  const otherChanged = Boolean(
+    draft &&
+      saved &&
+      (draft.defaultFeePayer !== saved.defaultFeePayer ||
+        draft.digest !== saved.digest ||
+        draft.maintenanceMode !== saved.maintenanceMode ||
+        draft.supportEmail !== saved.supportEmail ||
+        draft.termsUrl !== saved.termsUrl ||
+        draft.privacyUrl !== saved.privacyUrl ||
+        JSON.stringify(draft.notify) !== JSON.stringify(saved.notify)),
+  );
 
   const dirty = changedKeys.length > 0 || otherChanged;
   const changeCount = changedKeys.length + (otherChanged ? 1 : 0);
   const readOnly = !can('settings:write');
 
   const setValue = (id: string, v: string) =>
-    setDraft((d) => ({ ...d, values: { ...d.values, [id]: v } }));
+    setDraft((d) => (d ? { ...d, values: { ...d.values, [id]: v } } : d));
 
-  const patch = (p: Partial<SettingsState>) => setDraft((d) => ({ ...d, ...p }));
+  const patch = (p: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...p } : d));
 
   const discard = () => {
-    setDraft(structuredClone(settings));
+    if (saved) setDraft(structuredClone(saved));
     toast({ title: 'Changes discarded', tone: 'info' });
   };
 
@@ -126,6 +193,25 @@ export default function Settings() {
 
   const tabDirtyCount = (tab: string) =>
     (TAB_FIELDS[tab] ?? []).filter((id) => changedKeys.includes(id)).length;
+
+  if (isLoading || !draft) {
+    return (
+      <>
+        <PageHeader title="Settings" subtitle="Thresholds, rules and platform configuration." />
+        {error ? (
+          <Card className="p-6">
+            <p className="text-body text-danger-500" role="alert">
+              {error}
+            </p>
+          </Card>
+        ) : (
+          <Card className="p-6">
+            <p className="text-body text-neutral-500">Loading settings…</p>
+          </Card>
+        )}
+      </>
+    );
+  }
 
   return (
     <>
@@ -141,7 +227,7 @@ export default function Settings() {
                 <Undo2 className="h-4 w-4 text-neutral-400" />
                 Discard
               </Button>
-              <Button variant="primary" disabled={!dirty} onClick={() => setConfirmSave(true)}>
+              <Button variant="primary" disabled={!dirty} loading={saving} onClick={() => setConfirmSave(true)}>
                 <Save className="h-4 w-4" />
                 Save changes
                 {changeCount > 0 && (
@@ -177,6 +263,7 @@ export default function Settings() {
           <SettingsList
             settings={ALERT_THRESHOLDS}
             values={draft.values}
+            defaults={defaults}
             onChange={setValue}
             disabled={readOnly}
           />
@@ -186,6 +273,7 @@ export default function Settings() {
           <SettingsList
             settings={CLOVER_RULES}
             values={draft.values}
+            defaults={defaults}
             onChange={setValue}
             unitLabel="clovers"
             disabled={readOnly}
@@ -196,6 +284,7 @@ export default function Settings() {
           <SettingsList
             settings={FINANCIAL}
             values={draft.values}
+            defaults={defaults}
             onChange={setValue}
             disabled={readOnly}
           />
@@ -258,13 +347,13 @@ export default function Settings() {
                 Scroll sideways to reach every admin column.
               </p>
             </div>
-            <div className="overflow-x-auto">
+            <div className="scroll-x">
               <table className="w-full border-collapse">
                 <thead className="bg-neutral-50">
                   <tr className="border-b border-neutral-200">
                     <th
                       scope="col"
-                      className="sticky left-0 z-10 min-w-[180px] bg-neutral-50 px-4 py-3 text-left text-table-header uppercase text-neutral-500"
+                      className="min-w-[180px] px-4 py-3 text-left text-table-header uppercase text-neutral-500"
                     >
                       Alert
                     </th>
@@ -286,7 +375,7 @@ export default function Settings() {
                         key={alertType}
                         className={cn('border-b border-neutral-200 last:border-0', i % 2 === 1 && 'bg-neutral-50')}
                       >
-                        <td className="sticky left-0 bg-inherit px-4 py-3 text-body capitalize text-neutral-900">
+                        <td className="whitespace-nowrap px-4 py-3 text-body capitalize text-neutral-900">
                           {alertType.split('_').join(' ')}
                         </td>
                         {adminUsers.map((a) => (
@@ -296,6 +385,7 @@ export default function Settings() {
                               checked={draft.notify[alertType]?.includes(a.id) ?? false}
                               onCheckedChange={(checked) =>
                                 setDraft((d) => {
+                                  if (!d) return d;
                                   const current = d.notify[alertType] ?? [];
                                   return {
                                     ...d,
@@ -404,17 +494,6 @@ export default function Settings() {
             </div>
           </Card>
 
-          <Card className="mt-4 p-4">
-            <Label>Demo data</Label>
-            <FieldHelp>
-              This build runs on fixtures held in your browser. Resetting restores the seeded events,
-              contributions, cards and settings, and clears everything you changed in this session.
-            </FieldHelp>
-            <Button variant="secondary" size="sm" className="mt-3" onClick={() => setConfirmReset(true)}>
-              <RotateCcw className="h-3 w-3 text-neutral-400" />
-              Reset demo data
-            </Button>
-          </Card>
         </TabsContent>
       </Tabs>
 
@@ -457,12 +536,31 @@ export default function Settings() {
         }
         confirmLabel="Save changes"
         onConfirm={(reason) => {
-          actions.saveSettings(admin, draft, reason);
-          toast({
-            title: 'Settings saved',
-            description: `${changeCount} ${changeCount === 1 ? 'change' : 'changes'} applied · view them in the Audit Trail`,
-            tone: 'success',
-          });
+          if (!apiSettings) return;
+          setSaving(true);
+          settingsService
+            .update({ ...toPayload(draft, apiSettings), reason })
+            .then(() => {
+              toast({
+                title: 'Settings saved',
+                description: `${changeCount} ${changeCount === 1 ? 'change' : 'changes'} applied · view them in the Audit Trail`,
+                tone: 'success',
+              });
+              void refetchSettings();
+            })
+            .catch((err: ApiError) => {
+              // 422 details are keyed per setting, e.g.
+              // { "alertThresholds.stagnant_hours": "must be between 1 and 8760" }
+              const fields = Object.entries(err.fieldErrors ?? {});
+              toast({
+                title: 'Could not save settings',
+                description: fields.length
+                  ? fields.map(([k, v]) => `${k.split('.').pop()}: ${v}`).join(' · ')
+                  : err.message,
+                tone: 'danger',
+              });
+            })
+            .finally(() => setSaving(false));
         }}
       >
         {changedKeys.length > 0 && (
@@ -475,7 +573,7 @@ export default function Settings() {
                 <li key={k} className="flex items-center gap-2 px-2 py-1.5 text-caption">
                   <code className="min-w-0 flex-1 truncate font-mono text-neutral-700">{k}</code>
                   <code className="tnum rounded-sm bg-danger-50 px-1.5 py-0.5 font-mono text-danger-500">
-                    {settings.values[k]}
+                    {saved?.values[k] ?? "—"}
                   </code>
                   <span className="text-neutral-400">→</span>
                   <code className="tnum rounded-sm bg-success-50 px-1.5 py-0.5 font-mono text-success-500">
@@ -487,25 +585,6 @@ export default function Settings() {
           </div>
         )}
       </ConfirmDialog>
-
-      <ConfirmDialog
-        open={confirmReset}
-        onOpenChange={setConfirmReset}
-        title="Reset demo data"
-        requireTypedConfirmation="RESET"
-        consequence={
-          <>
-            Every change made in this browser — saved settings, catalog edits, resolved alerts,
-            clover adjustments and audit entries — will be discarded and the seeded fixtures
-            restored. This cannot be undone.
-          </>
-        }
-        confirmLabel="Reset everything"
-        onConfirm={() => {
-          actions.resetDemoData();
-          toast({ title: 'Demo data reset', description: 'Seeded fixtures restored.', tone: 'success' });
-        }}
-      />
     </>
   );
 }
@@ -525,12 +604,15 @@ function DirtyDot({ count }: { count: number }) {
 function SettingsList({
   settings,
   values,
+  defaults,
   onChange,
   unitLabel,
   disabled,
 }: {
   settings: SettingDef[];
   values: Record<string, string>;
+  /** From `meta.defaults` — the server owns them, we don't keep a second copy. */
+  defaults: Record<string, number | string>;
   onChange: (id: string, v: string) => void;
   unitLabel?: string;
   disabled?: boolean;
@@ -538,7 +620,7 @@ function SettingsList({
   return (
     <Card className="divide-y divide-neutral-200">
       {settings.map((s) => {
-        const defaultValue = SETTING_DEFAULTS[s.id];
+        const defaultValue = String(defaults[s.id] ?? '');
         const changed = values[s.id] !== defaultValue;
         return (
           <div

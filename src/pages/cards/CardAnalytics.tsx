@@ -22,34 +22,52 @@ import { DrillDownDrawer } from '@/components/common/DrillDownDrawer';
 import { Chip } from '@/components/common/StatusBadge';
 import { CloverValue } from '@/components/common/MoneyValue';
 import { Button } from '@/components/ui/button';
-import { cardErrorSeries, cardFunnelStages, timeSeries } from '@/lib/mock/data';
-import { useStore } from '@/lib/store';
+
+import {
+  useCatalog,
+  useCardKpis,
+  useCardTimeseries,
+  useCardFunnel,
+  useCardErrors,
+  useCardTemplates,
+} from '@/hooks/data';
+import { useUrlState } from '@/hooks/useUrlState';
+import type { CardTemplateRow } from '@/lib/api/types';
 import { cardColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { formatDuration, formatNumber, formatPercent } from '@/lib/format';
-import type { GiftCardDesign } from '@/lib/types';
+
 
 /** Screen 08 — Gift Cards Analytics (§08). */
 export default function CardAnalytics() {
   const navigate = useNavigate();
-  const { giftCards } = useStore();
+  const { all } = useUrlState();
+  const range = all.range ?? '30d';
+  const { rows: giftCards } = useCatalog();
+  const { data: kpis } = useCardKpis({ range, compare: all.compare === '1' });
+  const { data: cardSeries } = useCardTimeseries({ range });
+  const { data: funnel } = useCardFunnel({ range });
+  const { data: errors } = useCardErrors({ range });
+  const { data: templates } = useCardTemplates({ range });
+
+  const kpi = (key: keyof NonNullable<typeof kpis>, fmt: (v: number) => string) => {
+    const v = kpis?.[key];
+    return { value: typeof v?.value === 'number' ? fmt(v.value) : '—', delta: v?.delta ?? null };
+  };
+  const series = cardSeries ?? [];
+  const funnelStages = funnel ?? [];
+  const errorSeries = errors?.series ?? [];
+  const errorRecords = errors?.records ?? [];
+  void errorRecords;
+  const templateRows = templates ?? [];
   const [errorDrill, setErrorDrill] = React.useState(false);
 
-  const totalSelected = giftCards.reduce((a, c) => a + c.timesSelected, 0);
-  const premium = giftCards.filter((c) => c.cloverCost > 0);
-  const standard = giftCards.filter((c) => c.cloverCost === 0);
-  const premiumSelected = premium.reduce((a, c) => a + c.timesSelected, 0);
-  const totalUnlocks = premium.reduce((a, c) => a + c.unlocks, 0);
-  const uniqueDownloads = giftCards.reduce((a, c) => a + c.uniqueDownloads, 0);
-  const totalDownloads = giftCards.reduce((a, c) => a + c.totalDownloads, 0);
-  const avgRevealRate =
-    giftCards.reduce((a, c) => a + c.revealRate * c.timesSelected, 0) / Math.max(1, totalSelected);
-  const totalErrors = cardErrorSeries.reduce(
+  const totalErrors = errorSeries.reduce(
     (a, d) => a + d.generation + d.loading + d.reveal + d.download,
     0,
   );
 
-  const templateColumns: Column<GiftCardDesign>[] = [
+  const templateColumns: Column<CardTemplateRow>[] = [
     {
       id: 'design',
       header: 'Design',
@@ -58,13 +76,16 @@ export default function CardAnalytics() {
       sortValue: (c) => c.name,
       cell: (c) => (
         <div className="flex min-w-0 items-center gap-3">
-          <span
-            className="flex h-10 w-8 shrink-0 items-center justify-center rounded-sm text-[16px]"
-            style={{ backgroundColor: c.bg }}
-            aria-hidden
-          >
-            {c.emojiKey}
-          </span>
+          {c.thumbUrl ? (
+            <img
+              src={c.thumbUrl}
+              alt=""
+              className="h-10 w-8 shrink-0 rounded-sm object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <span className="h-10 w-8 shrink-0 rounded-sm bg-neutral-100" aria-hidden />
+          )}
           <div className="min-w-0">
             <p className="truncate font-medium text-neutral-900">{c.name}</p>
             <p className="truncate font-mono text-caption text-neutral-500">{c.slug}</p>
@@ -94,8 +115,8 @@ export default function CardAnalytics() {
       header: 'Selection share',
       numeric: true,
       sortable: true,
-      sortValue: (c) => c.timesSelected / totalSelected,
-      cell: (c) => <span className="tnum">{formatPercent((c.timesSelected / totalSelected) * 100)}</span>,
+      sortValue: (c) => c.selectionSharePercent,
+      cell: (c) => <span className="tnum">{formatPercent(c.selectionSharePercent)}</span>,
     },
     {
       id: 'revealRate',
@@ -126,12 +147,8 @@ export default function CardAnalytics() {
       header: 'Downloads / reveal',
       numeric: true,
       sortable: true,
-      sortValue: (c) => c.totalDownloads / Math.max(1, c.timesSelected * (c.revealRate / 100)),
-      cell: (c) => (
-        <span className="tnum">
-          {(c.totalDownloads / Math.max(1, c.timesSelected * (c.revealRate / 100))).toFixed(2)}
-        </span>
-      ),
+      sortValue: (c) => c.downloadsPerReveal,
+      cell: (c) => <span className="tnum">{c.downloadsPerReveal.toFixed(2)}</span>,
     },
     {
       id: 'cloverCost',
@@ -151,10 +168,10 @@ export default function CardAnalytics() {
       header: 'Revenue in clovers',
       numeric: true,
       sortable: true,
-      sortValue: (c) => c.cloverCost * c.unlocks,
+      sortValue: (c) => c.revenueInClovers,
       cell: (c) =>
         c.cloverCost > 0 ? (
-          <CloverValue amount={c.cloverCost * c.unlocks} className="justify-end" />
+          <CloverValue amount={c.revenueInClovers} className="justify-end" />
         ) : (
           <span className="text-neutral-400">—</span>
         ),
@@ -188,55 +205,52 @@ export default function CardAnalytics() {
       <KpiGrid className="mb-6">
         <KpiCard
           label="Cards Created"
-          value={formatNumber(totalSelected)}
-          delta={11.2}
+          {...kpi('cardsCreated', formatNumber)}
           accent="accent"
           definition="Cards attached to an event in the selected range, standard and premium combined."
         />
         <KpiCard
           label="Standard vs Premium"
-          value={`${formatPercent(((totalSelected - premiumSelected) / totalSelected) * 100, 0)} / ${formatPercent((premiumSelected / totalSelected) * 100, 0)}`}
-          secondary={`${standard.length} standard · ${premium.length} premium designs`}
+          value={
+            kpis
+              ? `${formatNumber(kpis.standardCount?.value ?? 0)} / ${formatNumber(kpis.premiumCount?.value ?? 0)}`
+              : '—'
+          }
+          secondary="standard / premium"
           definition="Share of cards created from free designs versus clover-unlocked premium designs."
         />
         <KpiCard
           label="Premium Redeemed with Clovers"
-          value={formatNumber(totalUnlocks)}
-          delta={19.4}
+          {...kpi('premiumRedeemedWithClovers', formatNumber)}
           accent="secondary"
           definition="CardUnlock rows created in the range — one per user per premium design."
           onDrillDown={() => navigate('/clovers')}
         />
         <KpiCard
           label="Reveal Rate"
-          value={formatPercent(avgRevealRate)}
-          delta={2.1}
+          {...kpi('revealRate', formatPercent)}
           deltaUnit="pp"
           definition="Cards revealed by the beneficiary ÷ cards available × 100."
         />
         <KpiCard
           label="Unique Downloads"
-          value={formatNumber(uniqueDownloads)}
-          delta={7.8}
+          {...kpi('uniqueDownloads', formatNumber)}
           definition="Distinct (user, card) pairs with at least one download event."
         />
         <KpiCard
           label="Total Downloads"
-          value={formatNumber(totalDownloads)}
-          delta={9.6}
+          {...kpi('totalDownloads', formatNumber)}
           definition="All download events, including repeats by the same user."
         />
         <KpiCard
           label="Median Time to First View"
-          value={formatDuration(4.2)}
-          delta={-8.3}
+          {...kpi('medianTimeToFirstViewHours', formatDuration)}
           invertDelta
           definition="Median of (first view timestamp − card available timestamp)."
         />
         <KpiCard
           label="Card Errors"
-          value={formatNumber(totalErrors)}
-          delta={-14.2}
+          {...kpi('cardErrors', formatNumber)}
           invertDelta
           accent="danger"
           definition="Generation, loading, reveal and download failures logged in the card event log."
@@ -254,11 +268,11 @@ export default function CardAnalytics() {
           ]}
           tableData={{
             columns: ['Date', 'Standard', 'Premium'],
-            rows: timeSeries.map((d) => [d.date, d.standard, d.premium]),
+            rows: series.map((d) => [d.date, d.standard, d.premium]),
           }}
         >
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={timeSeries} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+            <BarChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
               <CartesianGrid vertical={false} />
               <XAxis
                 dataKey="date"
@@ -287,17 +301,17 @@ export default function CardAnalytics() {
           subtitle="Where cards drop out of the delivery path"
           tableData={{
             columns: ['Stage', 'Count', 'Conversion'],
-            rows: cardFunnelStages.map((s, i) => [
+            rows: funnelStages.map((s, i) => [
               s.stage,
               s.value,
-              i === 0 ? '—' : `${((s.value / cardFunnelStages[i - 1].value) * 100).toFixed(1)}%`,
+              i === 0 ? '—' : `${((s.value / funnelStages[i - 1].value) * 100).toFixed(1)}%`,
             ]),
           }}
         >
           <div className="flex h-full flex-col justify-center gap-2 py-2">
-            {cardFunnelStages.map((stage, i) => {
-              const pct = (stage.value / cardFunnelStages[0].value) * 100;
-              const conv = i === 0 ? 100 : (stage.value / cardFunnelStages[i - 1].value) * 100;
+            {funnelStages.map((stage, i) => {
+              const pct = (stage.value / funnelStages[0].value) * 100;
+              const conv = i === 0 ? 100 : (stage.value / funnelStages[i - 1].value) * 100;
               return (
                 <div key={stage.stage} className="flex items-center gap-3">
                   <span className="w-[80px] shrink-0 text-body text-neutral-700">{stage.stage}</span>
@@ -335,13 +349,13 @@ export default function CardAnalytics() {
           ]}
           tableData={{
             columns: ['Date', 'Generation', 'Loading', 'Reveal', 'Download'],
-            rows: cardErrorSeries.map((d) => [d.date, d.generation, d.loading, d.reveal, d.download]),
+            rows: errorSeries.map((d) => [d.date, d.generation, d.loading, d.reveal, d.download]),
           }}
           onViewRecords={() => setErrorDrill(true)}
           minHeight={240}
         >
           <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={cardErrorSeries} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+            <LineChart data={errorSeries} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
               <CartesianGrid vertical={false} />
               <XAxis
                 dataKey="date"
@@ -366,7 +380,7 @@ export default function CardAnalytics() {
       </SectionHeading>
       <DataTable
         columns={templateColumns}
-        rows={giftCards}
+        rows={templateRows}
         rowKey={(c) => c.id}
         rowHref={(c) => `/cards/catalog/${c.id}`}
         storageKey="template-performance"
@@ -388,7 +402,7 @@ export default function CardAnalytics() {
         fullPageHref="/cards/analytics"
       >
         <ul className="divide-y divide-neutral-200">
-          {cardErrorSeries
+          {errorSeries
             .slice()
             .reverse()
             .flatMap((d) =>

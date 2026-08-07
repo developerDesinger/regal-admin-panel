@@ -17,12 +17,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { DateRangePicker } from '@/components/common/DateRangePicker';
-import { rangeLabel } from '@/lib/date-ranges';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { actions, useStore, type AppState } from '@/lib/store';
+import { useExportJobs } from '@/hooks/data';
+import { exportsService } from '@/lib/api/services';
+import { API_BASE_URL, ApiError } from '@/lib/api/client';
 import { useUrlState } from '@/hooks/useUrlState';
-import { downloadDataset, type ExportColumn } from '@/lib/export';
+import type { ExportColumn } from '@/lib/export';
 import {
   auditColumns,
   cardColumns,
@@ -34,7 +35,7 @@ import {
   PII_COLUMNS,
 } from '@/lib/datasets';
 import { formatDateTime, formatNumber, formatRelative } from '@/lib/format';
-import type { ExportJob } from '@/lib/types';
+import type { ExportJobRow } from '@/lib/api/types';
 
 /** Screen 13 — Exports (§13). */
 
@@ -43,24 +44,22 @@ interface DatasetDef {
   label: string;
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   columns: ExportColumn<any>[];
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  rows: (s: AppState) => any[];
 }
 
 const DATASETS: DatasetDef[] = [
-  { id: 'events', label: 'Events', columns: eventColumns, rows: (s) => s.events },
-  { id: 'contributions', label: 'Contributions', columns: contributionColumns, rows: (s) => s.contributions },
-  { id: 'users', label: 'Users', columns: userColumns, rows: (s) => s.users },
-  { id: 'cards', label: 'Cards', columns: cardColumns, rows: (s) => s.giftCards },
-  { id: 'clover_ledger', label: 'Clover ledger', columns: cloverColumns, rows: (s) => s.cloverLedger },
-  { id: 'withdrawals', label: 'Withdrawals', columns: withdrawalColumns, rows: (s) => s.withdrawals },
-  { id: 'audit_log', label: 'Audit log', columns: auditColumns, rows: (s) => s.auditEntries },
+  { id: 'events', label: 'Events', columns: eventColumns },
+  { id: 'contributions', label: 'Contributions', columns: contributionColumns },
+  { id: 'users', label: 'Users', columns: userColumns },
+  { id: 'cards', label: 'Cards', columns: cardColumns },
+  { id: 'clover_ledger', label: 'Clover ledger', columns: cloverColumns },
+  { id: 'withdrawals', label: 'Withdrawals', columns: withdrawalColumns },
+  { id: 'audit_log', label: 'Audit log', columns: auditColumns },
 ];
 
 export default function Exports() {
   const { toast } = useToast();
-  const { admin, can } = useAuth();
-  const store = useStore();
+  const { can } = useAuth();
+  const { jobs, refetch } = useExportJobs();
   const { get } = useUrlState();
 
   const [dataset, setDataset] = React.useState<DatasetDef>(DATASETS[0]);
@@ -75,66 +74,55 @@ export default function Exports() {
     setSelectedColumns(dataset.columns.map((c) => c.key));
   }, [dataset]);
 
-  const rows = dataset.rows(store);
   const piiColumns = selectedColumns.filter((c) => PII_COLUMNS.has(c));
-  const filterLabel = `${rangeLabel(get('range', '30d'))} · ${selectedColumns.length} columns`;
 
-  /** Build the file from the columns the admin actually ticked. */
-  const buildAndDownload = (job: ExportJob) => {
-    const def = DATASETS.find((d) => d.label === job.dataset) ?? dataset;
-    const cols = def.columns.filter((c) => selectedColumns.includes(c.key));
-    const useCols = cols.length ? cols : def.columns;
-    const data = def.rows(store);
-    const filename = downloadDataset(def.id, useCols, data, job.format);
-    toast({
-      title: 'Download started',
-      description: `${filename} · ${data.length.toLocaleString()} rows`,
-      tone: 'success',
-    });
+  /** Server-generated, single-use link — a second call is 410. */
+  const download = async (job: ExportJobRow) => {
+    setDownloading(job.id);
+    try {
+      const { blob, filename } = await exportsService.download(job.id, API_BASE_URL);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast({ title: 'Download started', description: filename, tone: 'success' });
+      void refetch();
+    } catch (err) {
+      toast({
+        title: 'Download failed',
+        description: (err as Error).message,
+        tone: 'danger',
+      });
+    } finally {
+      setDownloading(null);
+    }
   };
 
-  /** Queue a job and run it through queued → running → ready. */
+  /** 202 + a queued job; useExportJobs polls until it settles. */
   const runExport = (reason = '') => {
-    const rowCount = rows.length;
-    const id = actions.createExportJob(admin, {
-      dataset: dataset.label,
-      format,
-      filters: reason ? `${filterLabel} · ${reason}` : filterLabel,
-      rows: null,
-      status: 'queued',
-      progress: 0,
-      requestedBy: admin?.name ?? 'Admin',
-      requestedAt: new Date().toISOString(),
-      expiresAt: null,
-      containsPii: piiColumns.length > 0,
-    });
-
-    toast({
-      title: 'Export queued',
-      description: `${dataset.label} · ${format.toUpperCase()} · ${rowCount.toLocaleString()} rows`,
-      tone: 'info',
-    });
-
-    let progress = 0;
-    const tick = setInterval(() => {
-      progress += 25;
-      if (progress >= 100) {
-        clearInterval(tick);
-        actions.patchExportJob(id, {
-          status: 'ready',
-          progress: 100,
-          rows: rowCount,
-          expiresAt: new Date(Date.now() + 24 * 3600_000).toISOString(),
-        });
+    exportsService
+      .create({
+        dataset: dataset.id,
+        format,
+        columns: selectedColumns,
+        filters: { range: get('range', '30d') },
+        reason: reason || `${dataset.label} export`,
+      })
+      .then((job) => {
         toast({
-          title: 'Export ready',
-          description: `${dataset.label} · press Download in the jobs table`,
-          tone: 'success',
+          title: 'Export queued',
+          description: `${job.dataset} · ${job.format.toUpperCase()}`,
+          tone: 'info',
         });
-      } else {
-        actions.patchExportJob(id, { status: 'running', progress });
-      }
-    }, 450);
+        void refetch();
+      })
+      .catch((err: ApiError) =>
+        toast({ title: 'Could not queue export', description: err.message, tone: 'danger' }),
+      );
   };
 
   const generate = () => {
@@ -145,7 +133,7 @@ export default function Exports() {
     runExport();
   };
 
-  const columns: Column<ExportJob>[] = [
+  const columns: Column<ExportJobRow>[] = [
     {
       id: 'dataset',
       header: 'Dataset',
@@ -227,9 +215,7 @@ export default function Exports() {
               size="sm"
               loading={downloading === j.id}
               onClick={() => {
-                setDownloading(j.id);
-                buildAndDownload(j);
-                setTimeout(() => setDownloading(null), 600);
+                void download(j);
               }}
             >
               <Download className="h-3 w-3 text-neutral-400" />
@@ -240,18 +226,15 @@ export default function Exports() {
               variant="secondary"
               size="sm"
               onClick={() => {
-                actions.patchExportJob(j.id, { status: 'running', progress: 40 });
-                setTimeout(
-                  () =>
-                    actions.patchExportJob(j.id, {
-                      status: 'ready',
-                      progress: 100,
-                      rows: store.auditEntries.length,
-                      expiresAt: new Date(Date.now() + 24 * 3600_000).toISOString(),
-                    }),
-                  1200,
-                );
-                toast({ title: 'Export re-queued', description: j.dataset, tone: 'info' });
+                exportsService
+                  .retry(j.id)
+                  .then(() => {
+                    toast({ title: 'Export re-queued', description: j.dataset, tone: 'info' });
+                    void refetch();
+                  })
+                  .catch((err: ApiError) =>
+                    toast({ title: 'Could not retry', description: err.message, tone: 'danger' }),
+                  );
               }}
             >
               <RefreshCw className="h-3 w-3 text-neutral-400" />
@@ -303,7 +286,7 @@ export default function Exports() {
               </Select>
               <p className="mt-1 text-caption text-neutral-500">
                 <span className="tnum font-medium text-neutral-700">
-                  {rows.length.toLocaleString()}
+                  —
                 </span>{' '}
                 rows available
               </p>
@@ -414,7 +397,7 @@ export default function Exports() {
           </SectionHeading>
           <DataTable
             columns={columns}
-            rows={store.exportJobs}
+            rows={jobs}
             rowKey={(j) => j.id}
             storageKey="exports"
             initialSort={{ id: 'requestedAt', dir: 'desc' }}

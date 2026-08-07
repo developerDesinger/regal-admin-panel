@@ -144,8 +144,8 @@ export function daysUntil(iso: string, now = new Date()): number {
   return (new Date(iso).getTime() - now.getTime()) / 86_400_000;
 }
 
-export function initials(name: string): string {
-  return name
+export function initials(name: string | null | undefined): string {
+  return (name ?? '')
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
@@ -154,17 +154,19 @@ export function initials(name: string): string {
 }
 
 /** Privacy masking (§06). `alishba@gmail.com` → `a•••@gmail.com`. */
-export function maskEmail(email: string): string {
-  const [local, domain] = email.split('@');
+export function maskEmail(email: string | null | undefined): string {
+  const [local, domain] = (email ?? '').split('@');
   if (!domain) return '•••';
   return `${local.slice(0, 1)}•••@${domain}`;
 }
 
-export function maskPhone(phone: string): string {
+export function maskPhone(phone: string | null | undefined): string {
+  if (!phone) return '—';
   return `••• ••• ${phone.slice(-4)}`;
 }
 
 /** Truncate an id for display while keeping it copyable in full. */
-export function shortId(id: string, keep = 8): string {
+export function shortId(id: string | null | undefined, keep = 8): string {
+  if (!id) return '—';
   return id.length <= keep + 3 ? id : `${id.slice(0, keep)}…`;
 }

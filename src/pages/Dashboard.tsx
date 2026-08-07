@@ -17,6 +17,18 @@ import {
 import { AlertTriangle, ArrowRight, Clock, Download, Wallet } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/common/PageHeader';
 import { KpiCard, KpiGrid } from '@/components/common/KpiCard';
+import {
+  useDashboardKpis,
+  useDashboardTimeseries,
+  useDashboardFunnel,
+  useStatusDistribution,
+  useLifecycleTiming,
+  useAttentionLists,
+  useAlerts,
+  useEvents,
+  useContributions,
+} from '@/hooks/data';
+import { useUrlState } from '@/hooks/useUrlState';
 import { DateRangePicker } from '@/components/common/DateRangePicker';
 import { ChartCard, ChartTooltip } from '@/components/common/ChartCard';
 import { CHART_COLORS, COMPARISON_COLOR } from '@/lib/chart-tokens';
@@ -28,19 +40,6 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { ProgressBar } from '@/components/ui/misc';
 import { Card } from '@/components/ui/card';
 import {
-  DATA_AS_OF,
-  alerts,
-  contributions,
-  events,
-  eventsAtRisk,
-  funnelStages,
-  largestActiveEvents,
-  lifecycleTiming,
-  recentlyCompleted,
-  stats,
-  timeSeries,
-} from '@/lib/mock/data';
-import {
   formatDate,
   formatMoney,
   formatMoneyCompact,
@@ -48,7 +47,8 @@ import {
   formatPercent,
   formatRelative,
 } from '@/lib/format';
-import type { DrillTo, RegalEvent } from '@/lib/types';
+import type { DrillTo } from '@/lib/types';
+import type { Currency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 /**
@@ -59,8 +59,27 @@ import { cn } from '@/lib/utils';
 export default function Dashboard() {
   const navigate = useNavigate();
   const [drill, setDrill] = React.useState<DrillTo | null>(null);
+  // The date-range picker writes these to the URL; the aggregates read them
+  // back so the whole page moves together and the view stays shareable.
+  const { get } = useUrlState();
+  const range = get('range', '30d');
+  const compare = get('compare') === '1';
 
-  const openAlerts = alerts.filter((a) => a.status === 'open');
+  const { rows: openAlerts } = useAlerts({ state: 'open' });
+
+  const { data: apiKpis, meta: kpiMeta } = useDashboardKpis({ range, compare: compare ? 1 : undefined });
+  const { data: seriesData } = useDashboardTimeseries({ range });
+  const { data: funnelData } = useDashboardFunnel({ range });
+  const { data: statusData } = useStatusDistribution({ range });
+  const { data: timingData } = useLifecycleTiming({ range });
+  const { data: attention } = useAttentionLists({ range });
+
+  const timeSeries = seriesData ?? [];
+  const funnelStages = funnelData ?? [];
+  const lifecycleTiming = timingData ?? [];
+  const eventsAtRisk = attention?.atRisk ?? [];
+  const largestActiveEvents = attention?.largestActive ?? [];
+  const recentlyCompleted = attention?.recentlyCompleted ?? [];
   const alertChips = [
     {
       type: 'stagnant_event',
@@ -89,40 +108,49 @@ export default function Dashboard() {
   ].filter((c) => c.count > 0);
 
   const sparks = {
-    created: timeSeries.slice(-14).map((d) => d.created),
-    completed: timeSeries.slice(-14).map((d) => d.completed),
-    volume: timeSeries.slice(-14).map((d) => d.volume),
-    count: timeSeries.slice(-14).map((d) => d.count),
+    created: timeSeries.slice(-14).map((d) => d.eventsCreated),
+    completed: timeSeries.slice(-14).map((d) => d.eventsCompleted),
+    volume: timeSeries.slice(-14).map((d) => d.contributionVolume),
+    count: timeSeries.slice(-14).map((d) => d.contributionCount),
   };
 
-  const statusDistribution = React.useMemo(() => {
-    const buckets: Record<string, number> = {};
-    events.forEach((e) => {
-      const key = ['completed', 'delivered', 'goal_reached'].includes(e.status)
-        ? 'Completed'
-        : e.status === 'active' || e.status === 'published'
-          ? 'Active'
-          : e.status === 'cancelled'
-            ? 'Cancelled'
-            : 'Paused / Draft';
-      buckets[key] = (buckets[key] ?? 0) + 1;
-    });
-    const total = events.length;
-    const order = ['Active', 'Completed', 'Cancelled', 'Paused / Draft'];
-    return order.map((label, i) => ({
-      label,
-      count: buckets[label] ?? 0,
-      pct: ((buckets[label] ?? 0) / total) * 100,
-      color: CHART_COLORS[i === 0 ? 0 : i === 1 ? 2 : i === 2 ? 6 : 3],
-    }));
-  }, []);
+  const statusDistribution = React.useMemo(
+    () =>
+      (statusData ?? []).map((row, i) => ({
+        label: row.status,
+        count: row.count,
+        pct: row.percent,
+        color: CHART_COLORS[i % CHART_COLORS.length],
+      })),
+    [statusData],
+  );
+
+
+  // The server owns these numbers when the API is the data source; the fixture
+  // computation below stays as the fallback so the panel still renders offline.
+
+  const kpi = (
+    key: keyof NonNullable<typeof apiKpis>,
+    definition: string,
+    format: (v: number) => string,
+  ) => {
+    const server = apiKpis?.[key];
+    const hasValue = typeof server?.value === 'number';
+    return {
+      // '—' rather than NaN when the server omits a key.
+      value: hasValue ? format(server.value as number) : '—',
+      // delta is null when the previous period was 0 — render "—", not Infinity%.
+      delta: server?.delta ?? null,
+      definition: server?.definition ?? definition,
+    };
+  };
 
   return (
     <>
       <PageHeader
         title="Dashboard"
         subtitle="Platform health across events, money, participation and rewards."
-        dataAsOf={DATA_AS_OF}
+        dataAsOf={kpiMeta?.dataAsOf as string | undefined}
         actions={
           <>
             <DateRangePicker />
@@ -161,9 +189,7 @@ export default function Dashboard() {
       <KpiGrid className="mb-6">
         <KpiCard
           label="Active Events"
-          value={formatNumber(stats.activeEvents * 27)}
-          delta={12.4}
-          definition="Events with status = active at the end of the selected range."
+          {...kpi('activeEvents', 'Events with status = active at the end of the selected range.', formatNumber)}
           sparkline={sparks.created}
           onDrillDown={() =>
             setDrill({ resource: 'events', label: 'Active events', filters: { status: 'active' } })
@@ -171,9 +197,11 @@ export default function Dashboard() {
         />
         <KpiCard
           label="Events Created"
-          value={formatNumber(stats.eventsCreated * 31)}
-          delta={8.1}
-          definition="Events whose creation timestamp falls inside the selected range, any status."
+          {...kpi(
+            'eventsCreated',
+            'Events whose creation timestamp falls inside the selected range, any status.',
+            formatNumber,
+          )}
           sparkline={sparks.created}
           onDrillDown={() =>
             setDrill({ resource: 'events', label: 'Events created in range', filters: {} })
@@ -181,10 +209,12 @@ export default function Dashboard() {
         />
         <KpiCard
           label="Event Success Rate"
-          value={formatPercent(stats.successRate)}
-          delta={2.3}
+          {...kpi(
+            'eventSuccessRate',
+            'Events reaching goal_reached, completed or delivered ÷ all events closed in the range × 100.',
+            formatPercent,
+          )}
           deltaUnit="pp"
-          definition="Events reaching goal_reached, completed or delivered ÷ all events closed in the range × 100."
           sparkline={sparks.completed}
           onDrillDown={() =>
             setDrill({ resource: 'events', label: 'Completed vs not completed', filters: { status: 'completed' } })
@@ -192,19 +222,23 @@ export default function Dashboard() {
         />
         <KpiCard
           label="Average Event Duration"
-          value={`${stats.avgDurationDays.toFixed(1)} days`}
-          delta={-3.1}
+          {...kpi(
+            'avgEventDurationDays',
+            'Mean of (closure date − creation date) across events closed in the range. Median is shown in §Lifecycle timing.',
+            (v: number) => `${v.toFixed(1)} days`,
+          )}
           invertDelta
-          definition="Mean of (closure date − creation date) across events closed in the range. Median is shown in §Lifecycle timing."
           onDrillDown={() =>
             setDrill({ resource: 'events', label: 'Events with duration', filters: {} })
           }
         />
         <KpiCard
           label="Total Confirmed Contributions"
-          value={formatMoney(stats.totalConfirmed * 12)}
-          delta={18.9}
-          definition="Sum of contribution.amount where status = succeeded, in minor units ÷ 100. Excludes fees."
+          {...kpi(
+            'totalConfirmed',
+            'Sum of contribution.amount where status = succeeded, in minor units ÷ 100. Excludes fees.',
+            (v: number) => formatMoney(v),
+          )}
           sparkline={sparks.volume}
           onDrillDown={() =>
             setDrill({
@@ -216,10 +250,12 @@ export default function Dashboard() {
         />
         <KpiCard
           label="Participation Rate"
-          value={formatPercent(stats.participationRate)}
-          delta={-1.4}
+          {...kpi(
+            'participationRate',
+            'Distinct users with ≥1 confirmed contribution ÷ distinct users invited × 100.',
+            formatPercent,
+          )}
           deltaUnit="pp"
-          definition="Distinct users with ≥1 confirmed contribution ÷ distinct users invited × 100."
           sparkline={sparks.count}
           onDrillDown={() =>
             setDrill({ resource: 'users', label: 'Invited vs contributed', filters: {} })
@@ -227,20 +263,31 @@ export default function Dashboard() {
         />
         <KpiCard
           label="Card Downloads"
-          value={`${formatNumber(stats.uniqueDownloads)} / ${formatNumber(stats.totalDownloads)}`}
+          value={
+            // Guard each field: a partial KPI payload must degrade to the
+            // fallback, not crash the whole dashboard.
+            apiKpis?.cardDownloads
+              ? `${formatNumber(apiKpis.cardDownloads.unique)} / ${formatNumber(apiKpis.cardDownloads.total)}`
+              : '—'
+          }
           secondary="unique / total"
-          delta={6.7}
+          delta={apiKpis?.cardDownloads?.delta ?? null}
           accent="accent"
-          definition="Unique downloaders and total download events from the card event log, in the selected range."
+          definition={
+            apiKpis?.cardDownloads?.definition ??
+            'Unique downloaders and total download events from the card event log, in the selected range.'
+          }
           onDrillDown={() => setDrill({ resource: 'cards', label: 'Download log', filters: {} })}
         />
         <KpiCard
           label="Clover Redemption Rate"
-          value={formatPercent(stats.cloverRedemptionRate)}
-          delta={4.2}
+          {...kpi(
+            'cloverRedemptionRate',
+            'Users who redeemed ≥1 premium card ÷ users holding enough clovers to redeem one × 100.',
+            formatPercent,
+          )}
           deltaUnit="pp"
           accent="secondary"
-          definition="Users who redeemed ≥1 premium card ÷ users holding enough clovers to redeem one × 100."
           onDrillDown={() =>
             setDrill({ resource: 'clovers', label: 'Eligible vs redeemed users', filters: {} })
           }
@@ -259,7 +306,7 @@ export default function Dashboard() {
           ]}
           tableData={{
             columns: ['Date', 'Created', 'Completed'],
-            rows: timeSeries.map((d) => [d.date, d.created, d.completed]),
+            rows: timeSeries.map((d) => [d.date, d.eventsCreated, d.eventsCompleted]),
           }}
           onViewRecords={() => navigate('/events')}
         >
@@ -269,11 +316,11 @@ export default function Dashboard() {
               <XAxis dataKey="date" tickLine={false} axisLine={false} tickFormatter={(v) => String(v).slice(5)} minTickGap={24} />
               <YAxis tickLine={false} axisLine={false} width={40} />
               <RTooltip content={<ChartTooltip />} cursor={{ fill: 'rgb(var(--neutral-100))' }} />
-              <Bar dataKey="created" name="Created" fill={CHART_COLORS[0]} radius={[2, 2, 0, 0]} isAnimationActive={false} />
-              <Bar dataKey="completed" name="Completed" fill={CHART_COLORS[2]} radius={[2, 2, 0, 0]} isAnimationActive={false} />
+              <Bar dataKey="eventsCreated" name="Created" fill={CHART_COLORS[0]} radius={[2, 2, 0, 0]} isAnimationActive={false} />
+              <Bar dataKey="eventsCompleted" name="Completed" fill={CHART_COLORS[2]} radius={[2, 2, 0, 0]} isAnimationActive={false} />
               <Line
                 type="monotone"
-                dataKey="prevVolume"
+                dataKey="previousVolume"
                 name="Previous period"
                 stroke={COMPARISON_COLOR}
                 strokeWidth={2}
@@ -296,7 +343,7 @@ export default function Dashboard() {
           ]}
           tableData={{
             columns: ['Date', 'Volume', 'Reminder sent'],
-            rows: timeSeries.map((d) => [d.date, formatMoney(d.volume), d.reminder ? 'Yes' : 'No']),
+            rows: timeSeries.map((d) => [d.date, formatMoney(d.contributionVolume), d.reminderSent ? 'Yes' : 'No']),
           }}
           onViewRecords={() => navigate('/contributions?status=succeeded')}
         >
@@ -322,7 +369,7 @@ export default function Dashboard() {
               />
               <Area
                 type="monotone"
-                dataKey="prevVolume"
+                dataKey="previousVolume"
                 name="Previous period"
                 stroke={COMPARISON_COLOR}
                 strokeDasharray="4 4"
@@ -333,7 +380,7 @@ export default function Dashboard() {
               />
               <Area
                 type="monotone"
-                dataKey="volume"
+                dataKey="contributionVolume"
                 name="Confirmed volume"
                 stroke={CHART_COLORS[0]}
                 strokeWidth={2}
@@ -341,12 +388,12 @@ export default function Dashboard() {
                 isAnimationActive={false}
               />
               {timeSeries
-                .filter((d) => d.reminder)
+                .filter((d) => d.reminderSent)
                 .map((d) => (
                   <ReferenceDot
                     key={d.date}
                     x={d.date}
-                    y={d.volume}
+                    y={d.contributionVolume}
                     r={4}
                     fill={CHART_COLORS[3]}
                     stroke="rgb(var(--neutral-0))"
@@ -451,7 +498,7 @@ export default function Dashboard() {
             </p>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="scroll-x">
           <table className="w-full border-collapse">
             <thead className="bg-neutral-50">
               <tr className="border-y border-neutral-200">
@@ -573,7 +620,19 @@ export default function Dashboard() {
   );
 }
 
-function AttentionList({
+/** The attention lists are server aggregates, lighter than a full event row. */
+interface AttentionRow {
+  id: string;
+  name: string;
+  goalAmount?: number;
+  raisedAmount: number;
+  progressPercent?: number;
+  endDate?: string;
+  closedAt?: string;
+  currency: Currency;
+}
+
+function AttentionList<T extends AttentionRow>({
   title,
   icon: Icon,
   tone,
@@ -585,8 +644,8 @@ function AttentionList({
   icon: typeof AlertTriangle;
   tone: 'warning' | 'brand' | 'success';
   viewAllHref: string;
-  events: RegalEvent[];
-  render: (e: RegalEvent) => React.ReactNode;
+  events: T[];
+  render: (e: T) => React.ReactNode;
 }) {
   const toneClass = {
     warning: 'bg-warning-50 text-warning-500',
@@ -621,7 +680,6 @@ function AttentionList({
                 <span className="min-w-0 flex-1 truncate text-body font-medium text-neutral-900">
                   {e.name}
                 </span>
-                <StatusBadge status={e.status} />
               </div>
               {render(e)}
             </Link>
@@ -634,13 +692,20 @@ function AttentionList({
 
 /** Every KPI opens its underlying records without losing page context (§21). */
 export function KpiDrillDown({ drill, onClose }: { drill: DrillTo | null; onClose: () => void }) {
+  const isContributions = drill?.resource === 'contributions';
+  // Both hooks must run unconditionally; only the matching one is enabled by
+  // passing the drill's filters, and the other returns an empty page.
+  const { rows: drillContributions } = useContributions(
+    isContributions ? { ...drill?.filters, pageSize: 40 } : { pageSize: 1 },
+  );
+  const { rows: drillEvents } = useEvents(
+    !isContributions ? { ...drill?.filters, pageSize: 40 } : { pageSize: 1 },
+  );
+
   if (!drill) return null;
 
-  const rows =
-    drill.resource === 'contributions'
-      ? contributions
-          .filter((c) => !drill.filters.status || c.status === drill.filters.status)
-          .slice(0, 40)
+  const rows = isContributions
+      ? drillContributions
           .map((c) => ({
             id: c.id,
             primary: c.contributor?.name ?? c.guestName ?? 'Guest',
@@ -649,9 +714,7 @@ export function KpiDrillDown({ drill, onClose }: { drill: DrillTo | null; onClos
             status: c.status,
             href: `/contributions?q=${c.id}`,
           }))
-      : events
-          .filter((e) => !drill.filters.status || e.status === drill.filters.status)
-          .slice(0, 40)
+      : drillEvents
           .map((e) => ({
             id: e.id,
             primary: e.name,

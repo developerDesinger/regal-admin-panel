@@ -12,7 +12,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { downloadDataset, type ExportColumn } from '@/lib/export';
-import { actions } from '@/lib/store';
+import { exportsService } from '@/lib/api/services';
 
 /**
  * Export button for list screens. Downloads exactly the rows currently in view
@@ -40,7 +40,7 @@ export function ExportButton<T>({
   variant?: 'secondary' | 'ghost';
 }) {
   const { toast } = useToast();
-  const { admin, can } = useAuth();
+  const { can } = useAuth();
   const [busy, setBusy] = React.useState(false);
 
   const run = (format: 'csv' | 'json') => {
@@ -54,18 +54,17 @@ export function ExportButton<T>({
     }
     setBusy(true);
     const filename = downloadDataset(name, columns, rows, format);
-    actions.createExportJob(admin, {
-      dataset: label,
-      format,
-      filters: filterSummary,
-      rows: rows.length,
-      status: 'ready',
-      progress: 100,
-      requestedBy: admin?.name ?? 'Admin',
-      requestedAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 24 * 3600_000).toISOString(),
-      containsPii: Boolean(containsPii),
-    });
+    // Record it server-side so the Exports screen and the audit trail see it.
+    void exportsService
+      .create({
+        dataset: name,
+        format,
+        filters: { summary: filterSummary },
+        reason: `Downloaded ${label} from the ${label} screen`,
+      })
+      .catch(() => {
+        /* the file already downloaded; a failed bookkeeping call must not block it */
+      });
     toast({
       title: 'Download started',
       description: `${filename} · ${rows.length.toLocaleString()} rows`,

@@ -16,9 +16,11 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/misc';
 import { useToast } from '@/hooks/use-toast';
-import { actions, useStore } from '@/lib/store';
+import { catalogService, uploadArtwork } from '@/lib/api/services';
+import { useCatalog } from '@/hooks/data';
+import { useQueryClient } from '@tanstack/react-query';
 import type { GiftCardDesign, Occasion } from '@/lib/types';
-import { useAuth } from '@/hooks/use-auth';
+import { ApiError } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
 
 /**
@@ -61,8 +63,8 @@ export function CardUploadDialog({
   editing?: GiftCardDesign | null;
 }) {
   const { toast } = useToast();
-  const { admin } = useAuth();
-  const { giftCards, users } = useStore();
+  const { rows: giftCards } = useCatalog();
+  const qc = useQueryClient();
   const isEdit = Boolean(editing);
 
   const [name, setName] = React.useState('');
@@ -78,6 +80,8 @@ export function CardUploadDialog({
   const [availableUntil, setAvailableUntil] = React.useState('');
   const [fileError, setFileError] = React.useState<string | null>(null);
   const [fileName, setFileName] = React.useState<string | null>(null);
+  // The bytes themselves, needed for the presigned upload on save.
+  const [file, setFile] = React.useState<File | null>(null);
   const [dragging, setDragging] = React.useState(false);
 
   React.useEffect(() => {
@@ -95,6 +99,7 @@ export function CardUploadDialog({
     setAvailableUntil(editing?.availableUntil?.slice(0, 10) ?? '');
     setFileError(null);
     setFileName(null);
+    setFile(null);
   }, [open, editing, giftCards.length]);
 
   React.useEffect(() => {
@@ -102,8 +107,22 @@ export function CardUploadDialog({
   }, [name, slugEdited, isEdit]);
 
   const cost = cardType === 'premium' ? Number(cloverCost) || 0 : 0;
-  // Live estimate of how many users could afford it right now (§09).
-  const eligibleUsers = users.filter((u) => u.cloverBalance >= cost).length * 190;
+  // Live estimate of how many users could afford it right now (§09) — the
+  // server counts it, debounced so typing a price doesn't spam the endpoint.
+  const [eligibleUsers, setEligibleUsers] = React.useState<number | null>(null);
+  React.useEffect(() => {
+    if (cost <= 0) {
+      setEligibleUsers(null);
+      return;
+    }
+    const t = setTimeout(() => {
+      catalogService
+        .eligibleCount(cost)
+        .then((r) => setEligibleUsers(r.eligibleUsers))
+        .catch(() => setEligibleUsers(null));
+    }, 350);
+    return () => clearTimeout(t);
+  }, [cost]);
 
   const slugTaken =
     !isEdit && giftCards.some((c) => c.slug === slug && c.id !== editing?.id) && slug.length > 0;
@@ -113,6 +132,7 @@ export function CardUploadDialog({
 
   const validateFile = (file: File) => {
     setFileName(file.name);
+    setFile(file);
     if (!ACCEPTED_MIME.includes(file.type)) {
       setFileError(`Unsupported file type "${file.type || 'unknown'}". Use PNG, JPG, WEBP or SVG.`);
       return;
@@ -204,7 +224,10 @@ export function CardUploadDialog({
                       {fileName}
                       <button
                         type="button"
-                        onClick={() => setFileName(null)}
+                        onClick={() => {
+                          setFileName(null);
+                          setFile(null);
+                        }}
                         aria-label="Remove file"
                         className="rounded-sm p-0.5 hover:bg-neutral-100"
                       >
@@ -362,7 +385,7 @@ export function CardUploadDialog({
                 <FieldHelp>
                   {cardType === 'standard'
                     ? 'Standard designs are always free — this field is locked at 0.'
-                    : `Users spend this many clovers to unlock this design permanently. ≈ ${eligibleUsers.toLocaleString()} users currently have enough clovers to unlock this.`}
+                    : `Users spend this many clovers to unlock this design permanently. ≈ ${(eligibleUsers ?? 0).toLocaleString()} users currently have enough clovers to unlock this.`}
                 </FieldHelp>
               </div>
 
@@ -453,36 +476,45 @@ export function CardUploadDialog({
           <Button
             variant="primary"
             disabled={!canSave}
-            onClick={() => {
-              const card: GiftCardDesign = {
-                id: editing?.id ?? `gc_live_${Date.now()}`,
-                slug: editing?.slug ?? slug,
-                name: name.trim(),
-                categories,
-                bg,
-                imageUrl: editing?.imageUrl ?? null,
-                emojiKey: editing?.emojiKey ?? '🎁',
-                cloverCost: cost,
-                sortOrder: Number(sortOrder) || giftCards.length + 1,
-                isActive,
-                availableFrom: availableFrom ? new Date(availableFrom).toISOString() : null,
-                availableUntil: availableUntil ? new Date(availableUntil).toISOString() : null,
-                // Editing artwork creates a new version; unlocks of v1 are untouched.
-                version: editing ? editing.version + (fileName ? 1 : 0) : 1,
-                timesSelected: editing?.timesSelected ?? 0,
-                unlocks: editing?.unlocks ?? 0,
-                revealRate: editing?.revealRate ?? 0,
-                uniqueDownloads: editing?.uniqueDownloads ?? 0,
-                totalDownloads: editing?.totalDownloads ?? 0,
-                createdAt: editing?.createdAt ?? new Date().toISOString(),
-              };
-              actions.upsertCard(admin, card, !editing);
+            onClick={async () => {
+              try {
+                // Artwork is never mutated in place — supplying a new assetId
+                // creates a new version, so v1 unlockers keep what they paid for.
+                let assetId: string | undefined;
+                if (file) {
+                  const target = await catalogService.uploadUrl(file.name, file.type, file.size);
+                  await uploadArtwork(target, file);
+                  assetId = target.assetId;
+                }
+                const payload = {
+                  assetId,
+                  name: name.trim(),
+                  categories,
+                  bg,
+                  tier: cardType,
+                  cloverCost: cost,
+                  sortOrder: Number(sortOrder) || undefined,
+                  isActive,
+                  availableFrom: availableFrom ? new Date(availableFrom).toISOString() : null,
+                  availableUntil: availableUntil ? new Date(availableUntil).toISOString() : null,
+                };
+                const card = editing
+                  ? await catalogService.update(editing.id, payload)
+                  : await catalogService.create({ ...payload, slug });
+                void qc.invalidateQueries({ queryKey: ['catalog'] });
               toast({
                 title: isEdit ? 'Design updated' : 'Design published',
                 description: `${card.name} · ${cost > 0 ? `🍀 ${cost}` : 'free'} · written to the audit trail`,
                 tone: 'success',
               });
-              onOpenChange(false);
+                onOpenChange(false);
+              } catch (err) {
+                toast({
+                  title: isEdit ? 'Could not update design' : 'Could not publish design',
+                  description: (err as ApiError).message,
+                  tone: 'danger',
+                });
+              }
             }}
           >
             {isEdit ? 'Save changes' : 'Publish design'}

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Clock, CornerDownLeft, Search } from 'lucide-react';
-import { contributions, events, giftCards, users } from '@/lib/mock/data';
+import { useSearch } from '@/hooks/data';
 import { readLocal, writeLocal } from '@/hooks/useUrlState';
 import { cn } from '@/lib/utils';
 
@@ -12,6 +12,9 @@ import { cn } from '@/lib/utils';
  * (name, slug). Grouped results with type badges; ↑↓ to navigate, ⏎ to open.
  * Recent searches persisted locally.
  */
+
+const typeLabel = (t: string): Result['type'] =>
+  t === 'event' ? 'Event' : t === 'user' ? 'User' : t === 'contribution' ? 'Contribution' : 'Card';
 
 interface Result {
   id: string;
@@ -28,68 +31,6 @@ const TYPE_TONE: Record<Result['type'], string> = {
   Card: 'bg-accent-500/10 text-accent-500',
 };
 
-function search(query: string): Result[] {
-  const q = query.trim().toLowerCase();
-  if (q.length < 2) return [];
-
-  const out: Result[] = [];
-
-  for (const e of events) {
-    if (
-      e.name.toLowerCase().includes(q) ||
-      e.id.toLowerCase().includes(q) ||
-      e.shareSlug.toLowerCase().includes(q)
-    ) {
-      out.push({
-        id: e.id,
-        type: 'Event',
-        title: e.name,
-        subtitle: `${e.organizer.name} · ${e.shareSlug}`,
-        href: `/events/${e.id}`,
-      });
-    }
-    if (out.length >= 24) break;
-  }
-
-  for (const u of users) {
-    const name = `${u.firstName} ${u.lastName}`;
-    if (
-      name.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
-      u.id.toLowerCase().includes(q)
-    ) {
-      out.push({ id: u.id, type: 'User', title: name, subtitle: u.email, href: `/users/${u.id}` });
-    }
-    if (out.length >= 36) break;
-  }
-
-  for (const c of contributions) {
-    if (c.id.toLowerCase().includes(q) || c.stripePaymentIntentId.toLowerCase().includes(q)) {
-      out.push({
-        id: c.id,
-        type: 'Contribution',
-        title: c.stripePaymentIntentId,
-        subtitle: `${c.eventName} · ${c.status}`,
-        href: `/contributions?q=${c.id}`,
-      });
-    }
-    if (out.length >= 44) break;
-  }
-
-  for (const card of giftCards) {
-    if (card.name.toLowerCase().includes(q) || card.slug.toLowerCase().includes(q)) {
-      out.push({
-        id: card.id,
-        type: 'Card',
-        title: card.name,
-        subtitle: `${card.slug} · ${card.cloverCost === 0 ? 'Free' : `${card.cloverCost} clovers`}`,
-        href: `/cards/catalog/${card.id}`,
-      });
-    }
-  }
-
-  return out.slice(0, 12);
-}
 
 export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const navigate = useNavigate();
@@ -97,7 +38,13 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
   const [active, setActive] = React.useState(0);
   const [recent, setRecent] = React.useState<Result[]>(() => readLocal<Result[]>('regal:recent-search', []));
 
-  const results = React.useMemo(() => search(query), [query]);
+  // Server-side: results already respect the caller's permissions and
+  // emails stay masked even for admins who could unmask (§19).
+  const { hits } = useSearch(query);
+  const results = React.useMemo(
+    () => hits.map((h) => ({ id: h.id, type: typeLabel(h.type), title: h.title, subtitle: h.subtitle, href: h.href })),
+    [hits],
+  );
   const showing = query.trim().length >= 2 ? results : recent;
 
   React.useEffect(() => {

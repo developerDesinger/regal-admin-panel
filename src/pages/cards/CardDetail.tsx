@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CopyableId } from '@/components/ui/misc';
 import { useAuth } from '@/hooks/use-auth';
-import { useStore } from '@/lib/store';
+import { useCatalogCard, useCardVersions, useAuditTrail } from '@/hooks/data';
 import { formatDate, formatDateTime, formatNumber, formatPercent } from '@/lib/format';
 
 /** Card catalog detail (§09) — includes the version history strip. */
@@ -18,10 +18,11 @@ export default function CardDetail() {
   const { cardId } = useParams();
   const navigate = useNavigate();
   const { can } = useAuth();
-  const { giftCards, auditEntries } = useStore();
+  const { rows: auditEntries } = useAuditTrail({ resourceType: 'Gift card' });
+  const { card } = useCatalogCard(cardId);
+  const versions = useCardVersions(cardId);
   const [editOpen, setEditOpen] = React.useState(false);
 
-  const card = giftCards.find((c) => c.id === cardId);
 
   if (!card) {
     return (
@@ -158,35 +159,46 @@ export default function CardDetail() {
       </SectionHeading>
       <Card>
         <ul className="divide-y divide-neutral-200">
-          {Array.from({ length: card.version }, (_, i) => card.version - i).map((v) => (
-            <li key={v} className="flex items-center gap-4 p-4">
-              <span
-                className="flex h-10 w-8 shrink-0 items-center justify-center rounded-sm text-[16px]"
-                style={{ backgroundColor: card.bg, opacity: v === card.version ? 1 : 0.5 }}
-                aria-hidden
-              >
-                {card.emojiKey}
-              </span>
+          {versions.map((v) => (
+            <li key={v.version} className="flex items-center gap-4 p-4">
+              {v.images?.thumb ? (
+                <img
+                  src={v.images.thumb}
+                  alt=""
+                  loading="lazy"
+                  className="h-10 w-8 shrink-0 rounded-sm object-cover"
+                  style={{ opacity: v.isCurrent ? 1 : 0.5 }}
+                />
+              ) : (
+                <span
+                  className="flex h-10 w-8 shrink-0 items-center justify-center rounded-sm bg-neutral-100"
+                  aria-hidden
+                />
+              )}
               <div className="min-w-0 flex-1">
                 <p className="text-body font-medium text-neutral-900">
-                  Version {v}
-                  {v === card.version && (
+                  Version {v.version}
+                  {v.isCurrent && (
                     <span className="ml-2 rounded-sm bg-success-50 px-1.5 py-px text-[11px] font-medium text-success-500">
                       Current
                     </span>
                   )}
                 </p>
                 <p className="mt-0.5 text-caption text-neutral-500">
-                  {v === card.version
+                  {v.isCurrent
                     ? 'Live in the app now'
                     : 'Retained for users who unlocked this version'}
+                  {v.createdBy ? ` · by ${v.createdBy}` : ''}
                 </p>
               </div>
               <span className="tnum shrink-0 text-caption text-neutral-400">
-                {formatDate(card.createdAt)}
+                {formatDate(v.createdAt)}
               </span>
             </li>
           ))}
+          {versions.length === 0 && (
+            <li className="p-4 text-body text-neutral-500">No version history recorded yet.</li>
+          )}
         </ul>
       </Card>
 

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle2, Copy, Download, ExternalLink, MoreHorizontal, Receipt } from 'lucide-react';
@@ -28,6 +29,7 @@ import { cn } from '@/lib/utils';
 
 /** Screen 03 — Events List (§03). */
 export default function EventsList() {
+  const { t } = useTranslation();
   const { all } = useUrlState();
   const { toast } = useToast();
   const { rows: events, isLoading, error, refetch } = useEvents(all);
@@ -64,7 +66,7 @@ export default function EventsList() {
   const columns: Column<RegalEvent>[] = [
     {
       id: 'event',
-      header: 'Event',
+      header: t('fields.event'),
       width: '260px',
       sortable: true,
       sortValue: (e) => e.name,
@@ -72,7 +74,7 @@ export default function EventsList() {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="truncate font-medium text-neutral-900">{e.name}</span>
-            <Chip>{e.occasion}</Chip>
+            <Chip>{t(`occasion.${e.occasion}`, { defaultValue: e.occasion })}</Chip>
           </div>
           <p className="truncate text-caption text-neutral-500">{e.organizer.name}</p>
         </div>
@@ -80,14 +82,14 @@ export default function EventsList() {
     },
     {
       id: 'status',
-      header: 'Status',
+      header: t('fields.status'),
       sortable: true,
       sortValue: (e) => e.status,
       cell: (e) => <StatusBadge status={e.status} />,
     },
     {
       id: 'organizer',
-      header: 'Organizer',
+      header: t('fields.organizer'),
       cell: (e) => (
         <Link
           to={`/users/${e.organizer.id}`}
@@ -102,17 +104,17 @@ export default function EventsList() {
     },
     {
       id: 'beneficiary',
-      header: 'Beneficiary',
+      header: t('fields.beneficiary'),
       cell: (e) => (
         <div className="flex items-center gap-2">
           <span className="truncate">{e.beneficiaryName}</span>
-          {e.beneficiaryType === 'self' && <Chip tone="brand">self</Chip>}
+          {e.beneficiaryType === 'self' && <Chip tone="brand">{t('source.self')}</Chip>}
         </div>
       ),
     },
     {
       id: 'goal',
-      header: 'Goal',
+      header: t('fields.goal'),
       numeric: true,
       sortable: true,
       sortValue: (e) => e.goalAmount,
@@ -120,7 +122,7 @@ export default function EventsList() {
     },
     {
       id: 'raised',
-      header: 'Raised',
+      header: t('fields.raised'),
       numeric: true,
       sortable: true,
       sortValue: (e) => e.raisedAmount,
@@ -128,7 +130,7 @@ export default function EventsList() {
     },
     {
       id: 'progress',
-      header: 'Progress',
+      header: t('fields.progress'),
       width: '140px',
       sortable: true,
       sortValue: (e) => e.raisedAmount / e.goalAmount,
@@ -143,7 +145,7 @@ export default function EventsList() {
               <ProgressBar
                 value={pct}
                 tone={pct >= 100 ? 'success' : urgent ? 'warning' : 'brand'}
-                label={`${e.name} goal progress`}
+                label={t('events.goalProgress', { name: e.name })}
               />
               {pct >= 100 && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success-500" aria-hidden />}
             </div>
@@ -154,7 +156,7 @@ export default function EventsList() {
     },
     {
       id: 'contributors',
-      header: 'Contributors',
+      header: t('fields.contributors'),
       numeric: true,
       sortable: true,
       sortValue: (e) => e.contributorsCount,
@@ -166,7 +168,7 @@ export default function EventsList() {
     },
     {
       id: 'created',
-      header: 'Created',
+      header: t('fields.created'),
       sortable: true,
       sortValue: (e) => e.createdAt,
       cell: (e) => (
@@ -178,7 +180,7 @@ export default function EventsList() {
     },
     {
       id: 'ends',
-      header: 'Ends',
+      header: t('fields.ends'),
       sortable: true,
       sortValue: (e) => e.endDate,
       cell: (e) => {
@@ -196,7 +198,7 @@ export default function EventsList() {
     },
     {
       id: 'card',
-      header: 'Card',
+      header: t('fields.card'),
       cell: (e) =>
         e.cardSlug ? (
           <span
@@ -218,7 +220,7 @@ export default function EventsList() {
           <DropdownMenu>
             <DropdownMenuTrigger
               className="rounded-sm p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-              aria-label={`Actions for ${e.name}`}
+              aria-label={t('events.actionsFor', { name: e.name })}
             >
               <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
@@ -226,32 +228,32 @@ export default function EventsList() {
               <DropdownMenuItem asChild>
                 <Link to={`/events/${e.id}`}>
                   <ExternalLink className="h-4 w-4 text-neutral-400" />
-                  View event
+                  {t('events.viewEvent')}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to={`/contributions?event=${e.id}`}>
                   <Receipt className="h-4 w-4 text-neutral-400" />
-                  Open contributions
+                  {t('events.openContributions')}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => {
                   const file = downloadDataset('event', eventColumns, [e], 'csv');
-                  toast({ title: 'Download started', description: file, tone: 'success' });
+                  toast({ title: t('common.downloadStarted'), description: file, tone: 'success' });
                 }}
               >
                 <Download className="h-4 w-4 text-neutral-400" />
-                Export this event
+                {t('events.exportThisEvent')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => {
                   void navigator.clipboard?.writeText(e.id);
-                  toast({ title: 'Event ID copied', description: e.id, tone: 'success' });
+                  toast({ title: t('events.idCopied'), description: e.id, tone: 'success' });
                 }}
               >
                 <Copy className="h-4 w-4 text-neutral-400" />
-                Copy ID
+                {t('events.copyId')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -263,17 +265,24 @@ export default function EventsList() {
   return (
     <>
       <PageHeader
-        title="Events"
-        subtitle={`${filtered.length.toLocaleString()} of ${events.length.toLocaleString()} events match the current filters.`}
+        title={t('events.title')}
+        subtitle={t('events.subtitle', {
+          shown: filtered.length.toLocaleString(),
+          total: events.length.toLocaleString(),
+        })}
         actions={
           <>
             <DateRangePicker />
             <ExportButton
               name="events"
-              label="Events"
+              label={t('events.exportLabel')}
               columns={eventColumns}
               rows={filtered}
-              filterSummary={`${rangeLabel(all.range ?? '30d')} · ${filtered.length} of ${events.length} events`}
+              filterSummary={t('events.filterSummary', {
+                range: t(rangeLabel(all.range ?? '30d')),
+                shown: filtered.length,
+                total: events.length,
+              })}
             />
           </>
         }
@@ -281,40 +290,47 @@ export default function EventsList() {
 
       <FilterBar
         className="mb-4"
-        searchPlaceholder="Search name, organizer, ID, slug…"
+        searchPlaceholder={t('events.searchPlaceholder')}
         filters={[
           {
             id: 'status',
-            label: 'Status',
+            label: t('fields.status'),
             options: [
-              { value: 'active', label: 'Active' },
-              { value: 'published', label: 'Published' },
-              { value: 'goal_reached', label: 'Goal reached' },
-              { value: 'completed', label: 'Completed' },
-              { value: 'delivered', label: 'Delivered' },
-              { value: 'paused', label: 'Paused' },
-              { value: 'draft', label: 'Draft' },
-              { value: 'cancelled', label: 'Cancelled' },
-            ],
+              'active',
+              'published',
+              'goal_reached',
+              'completed',
+              'delivered',
+              'paused',
+              'draft',
+              'cancelled',
+            ].map((s) => ({ value: s, label: t(`status.${s}`) })),
           },
           {
             id: 'occasion',
-            label: 'Occasion',
+            label: t('fields.occasion'),
             options: [
-              'birthday', 'wedding', 'farewell', 'graduation', 'baby', 'thanks', 'holiday', 'general',
-            ].map((o) => ({ value: o, label: o[0].toUpperCase() + o.slice(1) })),
+              'birthday',
+              'wedding',
+              'farewell',
+              'graduation',
+              'baby',
+              'thanks',
+              'holiday',
+              'general',
+            ].map((o) => ({ value: o, label: t(`occasion.${o}`) })),
           },
           {
             id: 'source',
-            label: 'Source',
+            label: t('fields.source'),
             options: [
-              { value: 'personal', label: 'Personal' },
-              { value: 'group', label: 'Group' },
+              { value: 'personal', label: t('source.personal') },
+              { value: 'group', label: t('source.group') },
             ],
           },
           {
             id: 'progress',
-            label: 'Progress',
+            label: t('fields.progress'),
             options: [
               { value: '0-25', label: '0–25%' },
               { value: '25-50', label: '25–50%' },
@@ -325,15 +341,15 @@ export default function EventsList() {
           },
           {
             id: 'currency',
-            label: 'Currency',
+            label: t('fields.currency'),
             options: [{ value: 'MXN', label: 'MXN' }],
           },
           {
             id: 'card',
-            label: 'Has card',
+            label: t('fields.hasCard'),
             options: [
-              { value: 'yes', label: 'Yes' },
-              { value: 'no', label: 'No' },
+              { value: 'yes', label: t('common.yes') },
+              { value: 'no', label: t('common.no') },
             ],
           },
         ]}
@@ -350,9 +366,8 @@ export default function EventsList() {
         storageKey="events"
         initialSort={{ id: 'created', dir: 'desc' }}
         empty={{
-          headline: 'No events match these filters',
-          description:
-            'Try widening the date range, clearing the status filter, or searching by organizer name.',
+          headline: t('events.emptyHeadline'),
+          description: t('events.emptyBody'),
         }}
         bulkActions={(selected, clear) => (
           <Button
@@ -361,15 +376,18 @@ export default function EventsList() {
             onClick={() => {
               const file = downloadDataset('events-selection', eventColumns, selected, 'csv');
               toast({
-                title: 'Download started',
-                description: `${file} · ${selected.length} events`,
+                title: t('common.downloadStarted'),
+                description: t('events.exportedCount', {
+                  filename: file,
+                  count: selected.length,
+                }),
                 tone: 'success',
               });
               clear();
             }}
           >
             <Download className="h-4 w-4 text-neutral-400" />
-            Export CSV
+            {t('events.exportCsv')}
           </Button>
         )}
       />

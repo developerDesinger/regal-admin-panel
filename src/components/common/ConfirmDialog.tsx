@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import {
@@ -29,7 +30,7 @@ export function ConfirmDialog({
   title,
   /** Spell out exactly what will happen — no vague "Are you sure?". */
   consequence,
-  confirmLabel = 'Confirm',
+  confirmLabel,
   tone = 'danger',
   /** Typing this exact string is required before the action unlocks. */
   requireTypedConfirmation,
@@ -49,6 +50,7 @@ export function ConfirmDialog({
   onConfirm: (reason: string) => void;
   children?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   const [typed, setTyped] = React.useState('');
   const [reason, setReason] = React.useState('');
 
@@ -94,25 +96,31 @@ export function ConfirmDialog({
           {requireReason && (
             <div>
               <Label htmlFor="confirm-reason" required>
-                Reason
+                {t('common.reason')}
               </Label>
               <Textarea
                 id="confirm-reason"
                 rows={3}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="Why is this change being made?"
+                placeholder={t('common.reasonPlaceholder')}
                 className="mt-1"
               />
-              <FieldHelp>This reason is written to the audit trail and cannot be edited later.</FieldHelp>
+              <FieldHelp>{t('common.reasonHelp')}</FieldHelp>
             </div>
           )}
 
           {requireTypedConfirmation && (
             <div>
               <Label htmlFor="confirm-typed" required>
-                Type <span className="font-mono text-neutral-900">{requireTypedConfirmation}</span> to
-                confirm
+                <Trans
+                  i18nKey="confirm.typeToConfirm"
+                  values={{ value: requireTypedConfirmation }}
+                  components={[
+                    <span key="0" />,
+                    <span key="1" className="font-mono text-neutral-900" />,
+                  ]}
+                />
               </Label>
               <Input
                 id="confirm-typed"
@@ -128,7 +136,7 @@ export function ConfirmDialog({
 
         <DialogFooter>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             variant={tone === 'danger' ? 'danger' : 'primary'}
@@ -138,7 +146,7 @@ export function ConfirmDialog({
               onOpenChange(false);
             }}
           >
-            {confirmLabel}
+            {confirmLabel ?? t('common.confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -15,6 +16,7 @@ import { ApiError } from '@/lib/api/client';
  * hour; using it ends every other session for that account.
  */
 export default function ResetPassword() {
+  const { t } = useTranslation();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const token = params.get('token') ?? '';
@@ -44,12 +46,10 @@ export default function ResetPassword() {
 
   if (!token) {
     return (
-      <AuthCard title="Link not valid" subtitle="This reset link is missing its token.">
-        <p className="text-body text-neutral-500">
-          Request a fresh link — each one can be used only once and expires after an hour.
-        </p>
+      <AuthCard title={t('auth.reset.invalidTitle')} subtitle={t('auth.reset.invalidBody')}>
+        <p className="text-body text-neutral-500">{t('auth.reset.invalidHelp')}</p>
         <Button variant="primary" className="mt-6 w-full" asChild>
-          <Link to="/login/forgot">Request a new link</Link>
+          <Link to="/login/forgot">{t('auth.reset.requestNew')}</Link>
         </Button>
       </AuthCard>
     );
@@ -57,16 +57,14 @@ export default function ResetPassword() {
 
   if (done) {
     return (
-      <AuthCard title="Password set">
+      <AuthCard title={t('auth.reset.doneTitle')}>
         <div className="text-center">
           <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success-50">
             <CheckCircle2 className="h-6 w-6 text-success-500" aria-hidden />
           </span>
-          <p className="text-body text-neutral-500">
-            You can sign in now. Any other sessions for this account have been ended.
-          </p>
+          <p className="text-body text-neutral-500">{t('auth.reset.doneBody')}</p>
           <Button variant="primary" className="mt-6 w-full" onClick={() => navigate('/login')}>
-            Go to sign in
+            {t('auth.reset.goToSignIn')}
           </Button>
         </div>
       </AuthCard>
@@ -74,7 +72,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <AuthCard title="Set your password" subtitle="Choose a password for your admin account.">
+    <AuthCard title={t('auth.reset.title')} subtitle={t('auth.reset.subtitle')}>
       {error && (
         <div
           role="alert"
@@ -93,7 +91,7 @@ export default function ResetPassword() {
           onPassword={setPassword}
           onConfirm={setConfirm}
           idPrefix="reset"
-          label="Password"
+          label={t('auth.reset.password')}
         />
         <Button
           type="submit"
@@ -102,7 +100,7 @@ export default function ResetPassword() {
           disabled={!valid}
           loading={pending}
         >
-          {pending ? 'Saving…' : 'Set password'}
+          {pending ? t('auth.reset.saving') : t('auth.reset.submit')}
         </Button>
       </form>
     </AuthCard>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
@@ -13,26 +14,31 @@ import { cn } from '@/lib/utils';
  * Recent searches persisted locally.
  */
 
-const typeLabel = (t: string): Result['type'] =>
-  t === 'event' ? 'Event' : t === 'user' ? 'User' : t === 'contribution' ? 'Contribution' : 'Card';
+type ResultType = 'event' | 'user' | 'contribution' | 'card';
+
+const RESULT_TYPES: ResultType[] = ['event', 'user', 'contribution', 'card'];
+
+const typeOf = (raw: string): ResultType =>
+  (RESULT_TYPES as string[]).includes(raw) ? (raw as ResultType) : 'card';
 
 interface Result {
   id: string;
-  type: 'Event' | 'User' | 'Contribution' | 'Card';
+  type: ResultType;
   title: string;
   subtitle: string;
   href: string;
 }
 
-const TYPE_TONE: Record<Result['type'], string> = {
-  Event: 'bg-brand-50 text-brand-900',
-  User: 'bg-info-50 text-info-500',
-  Contribution: 'bg-success-50 text-success-500',
-  Card: 'bg-accent-500/10 text-accent-500',
+const TYPE_TONE: Record<ResultType, string> = {
+  event: 'bg-brand-50 text-brand-900',
+  user: 'bg-info-50 text-info-500',
+  contribution: 'bg-success-50 text-success-500',
+  card: 'bg-accent-500/10 text-accent-500',
 };
 
 
 export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [query, setQuery] = React.useState('');
   const [active, setActive] = React.useState(0);
@@ -42,7 +48,7 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
   // emails stay masked even for admins who could unmask (§19).
   const { hits } = useSearch(query);
   const results = React.useMemo(
-    () => hits.map((h) => ({ id: h.id, type: typeLabel(h.type), title: h.title, subtitle: h.subtitle, href: h.href })),
+    () => hits.map((h) => ({ id: h.id, type: typeOf(h.type), title: h.title, subtitle: h.subtitle, href: h.href })),
     [hits],
   );
   const showing = query.trim().length >= 2 ? results : recent;
@@ -82,9 +88,9 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-neutral-900/40 data-[state=open]:animate-fade-in" />
         <DialogPrimitive.Content
           className="fixed left-1/2 top-[15vh] z-50 w-[calc(100vw-32px)] max-w-[600px] -translate-x-1/2 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0 shadow-e2 data-[state=open]:animate-slide-up"
-          aria-label="Global search"
+          aria-label={t('search.globalSearch')}
         >
-          <DialogPrimitive.Title className="sr-only">Search Regal Admin</DialogPrimitive.Title>
+          <DialogPrimitive.Title className="sr-only">{t('search.title')}</DialogPrimitive.Title>
           <div className="flex items-center gap-3 border-b border-neutral-200 px-4">
             <Search className="h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
             <input
@@ -92,26 +98,28 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Search events, users, IDs…"
-              aria-label="Search events, users, contributions and cards"
+              placeholder={t('search.placeholder')}
+              aria-label={t('search.ariaLabel')}
               aria-activedescendant={showing[active] ? `search-opt-${showing[active].id}` : undefined}
               className="h-14 w-full bg-transparent text-[15px] text-neutral-900 outline-none placeholder:text-neutral-400"
             />
             <kbd className="hidden shrink-0 rounded-sm border border-neutral-200 px-1.5 py-0.5 font-mono text-[11px] text-neutral-400 sm:block">
-              Esc
+              {t('search.esc')}
             </kbd>
           </div>
 
           <div className="max-h-[400px] overflow-y-auto p-2" role="listbox">
             {query.trim().length < 2 && recent.length > 0 && (
-              <p className="px-3 py-2 text-table-header uppercase text-neutral-500">Recent</p>
+              <p className="px-3 py-2 text-table-header uppercase text-neutral-500">
+                {t('search.recent')}
+              </p>
             )}
 
             {showing.length === 0 ? (
               <p className="px-3 py-8 text-center text-body text-neutral-500">
                 {query.trim().length < 2
-                  ? 'Type at least 2 characters to search events, users, contributions and cards.'
-                  : `No results for “${query}”.`}
+                  ? t('search.minChars')
+                  : t('search.noResults', { query })}
               </p>
             ) : (
               <ul>
@@ -144,7 +152,7 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
                           TYPE_TONE[r.type],
                         )}
                       >
-                        {r.type}
+                        {t(`search.type.${r.type}`)}
                       </span>
                       {i === active && (
                         <CornerDownLeft className="h-3 w-3 shrink-0 text-neutral-400" aria-hidden />
@@ -157,9 +165,11 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
           </div>
 
           <div className="flex items-center gap-4 border-t border-neutral-200 px-4 py-2 text-caption text-neutral-400">
-            <span>↑↓ navigate</span>
-            <span>⏎ open</span>
-            <span>Esc close</span>
+            <span>↑↓ {t('search.navigate')}</span>
+            <span>⏎ {t('search.open')}</span>
+            <span>
+              {t('search.esc')} {t('search.close')}
+            </span>
           </div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>

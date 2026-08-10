@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -57,6 +58,7 @@ import { cn } from '@/lib/utils';
  * D: lifecycle timing table · E: attention lists.
  */
 export default function Dashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [drill, setDrill] = React.useState<DrillTo | null>(null);
   // The date-range picker writes these to the URL; the aggregates read them
@@ -80,32 +82,20 @@ export default function Dashboard() {
   const eventsAtRisk = attention?.atRisk ?? [];
   const largestActiveEvents = attention?.largestActive ?? [];
   const recentlyCompleted = attention?.recentlyCompleted ?? [];
-  const alertChips = [
-    {
-      type: 'stagnant_event',
-      label: 'stagnant events',
-      count: openAlerts.filter((a) => a.type === 'stagnant_event').length,
-      severity: 'warning' as const,
-    },
-    {
-      type: 'payment_friction',
-      label: 'payment friction',
-      count: openAlerts.filter((a) => a.type === 'payment_friction').length,
-      severity: 'danger' as const,
-    },
-    {
-      type: 'withdrawal_pending',
-      label: 'withdrawals pending',
-      count: openAlerts.filter((a) => a.type === 'withdrawal_pending').length,
-      severity: 'warning' as const,
-    },
-    {
-      type: 'clover_anomaly',
-      label: 'clover anomalies',
-      count: openAlerts.filter((a) => a.type === 'clover_anomaly').length,
-      severity: 'danger' as const,
-    },
-  ].filter((c) => c.count > 0);
+  const alertChips = (
+    [
+      { type: 'stagnant_event', severity: 'warning' },
+      { type: 'payment_friction', severity: 'danger' },
+      { type: 'withdrawal_pending', severity: 'warning' },
+      { type: 'clover_anomaly', severity: 'danger' },
+    ] as const
+  )
+    .map((chip) => ({
+      ...chip,
+      label: t(`dashboard.alertChip.${chip.type}`),
+      count: openAlerts.filter((a) => a.type === chip.type).length,
+    }))
+    .filter((c) => c.count > 0);
 
   const sparks = {
     created: timeSeries.slice(-14).map((d) => d.eventsCreated),
@@ -117,12 +107,12 @@ export default function Dashboard() {
   const statusDistribution = React.useMemo(
     () =>
       (statusData ?? []).map((row, i) => ({
-        label: row.status,
+        label: t(`status.${row.status.toLowerCase()}`, { defaultValue: row.status }),
         count: row.count,
         pct: row.percent,
         color: CHART_COLORS[i % CHART_COLORS.length],
       })),
-    [statusData],
+    [statusData, t],
   );
 
 
@@ -148,15 +138,15 @@ export default function Dashboard() {
   return (
     <>
       <PageHeader
-        title="Dashboard"
-        subtitle="Platform health across events, money, participation and rewards."
+        title={t('dashboard.title')}
+        subtitle={t('dashboard.subtitle')}
         dataAsOf={kpiMeta?.dataAsOf as string | undefined}
         actions={
           <>
             <DateRangePicker />
             <Button variant="secondary" onClick={() => navigate('/exports')}>
               <Download className="h-4 w-4 text-neutral-400" />
-              Export
+              {t('common.export')}
             </Button>
           </>
         }
@@ -164,7 +154,7 @@ export default function Dashboard() {
 
       {/* Section A — Alert strip, only when alerts exist */}
       {alertChips.length > 0 && (
-        <div className="mb-6 flex flex-wrap items-center gap-2" role="region" aria-label="Active alerts">
+        <div className="mb-6 flex flex-wrap items-center gap-2" role="region" aria-label={t('dashboard.activeAlerts')}>
           {alertChips.map((chip) => (
             <Link
               key={chip.type}
@@ -188,81 +178,81 @@ export default function Dashboard() {
       {/* Section B — Primary KPI row. Every card drills down (§21). */}
       <KpiGrid className="mb-6">
         <KpiCard
-          label="Active Events"
-          {...kpi('activeEvents', 'Events with status = active at the end of the selected range.', formatNumber)}
+          label={t('dashboard.kpi.activeEvents')}
+          {...kpi('activeEvents', t('dashboard.kpi.activeEventsDef'), formatNumber)}
           sparkline={sparks.created}
           onDrillDown={() =>
-            setDrill({ resource: 'events', label: 'Active events', filters: { status: 'active' } })
+            setDrill({
+              resource: 'events',
+              label: t('dashboard.drill.activeEvents'),
+              filters: { status: 'active' },
+            })
           }
         />
         <KpiCard
-          label="Events Created"
-          {...kpi(
-            'eventsCreated',
-            'Events whose creation timestamp falls inside the selected range, any status.',
-            formatNumber,
-          )}
+          label={t('dashboard.kpi.eventsCreated')}
+          {...kpi('eventsCreated', t('dashboard.kpi.eventsCreatedDef'), formatNumber)}
           sparkline={sparks.created}
           onDrillDown={() =>
-            setDrill({ resource: 'events', label: 'Events created in range', filters: {} })
+            setDrill({ resource: 'events', label: t('dashboard.drill.eventsCreated'), filters: {} })
           }
         />
         <KpiCard
-          label="Event Success Rate"
-          {...kpi(
-            'eventSuccessRate',
-            'Events reaching goal_reached, completed or delivered ÷ all events closed in the range × 100.',
-            formatPercent,
-          )}
+          label={t('dashboard.kpi.successRate')}
+          {...kpi('eventSuccessRate', t('dashboard.kpi.successRateDef'), formatPercent)}
           deltaUnit="pp"
           sparkline={sparks.completed}
           onDrillDown={() =>
-            setDrill({ resource: 'events', label: 'Completed vs not completed', filters: { status: 'completed' } })
+            setDrill({
+              resource: 'events',
+              label: t('dashboard.drill.completedVsNot'),
+              filters: { status: 'completed' },
+            })
           }
         />
         <KpiCard
-          label="Average Event Duration"
-          {...kpi(
-            'avgEventDurationDays',
-            'Mean of (closure date − creation date) across events closed in the range. Median is shown in §Lifecycle timing.',
-            (v: number) => `${v.toFixed(1)} days`,
+          label={t('dashboard.kpi.avgDuration')}
+          {...kpi('avgEventDurationDays', t('dashboard.kpi.avgDurationDef'), (v: number) =>
+            t('dashboard.days', { value: v.toFixed(1) }),
           )}
           invertDelta
           onDrillDown={() =>
-            setDrill({ resource: 'events', label: 'Events with duration', filters: {} })
+            setDrill({
+              resource: 'events',
+              label: t('dashboard.drill.eventsWithDuration'),
+              filters: {},
+            })
           }
         />
         <KpiCard
-          label="Total Confirmed Contributions"
-          {...kpi(
-            'totalConfirmed',
-            'Sum of contribution.amount where status = succeeded, in minor units ÷ 100. Excludes fees.',
-            (v: number) => formatMoney(v),
+          label={t('dashboard.kpi.totalConfirmed')}
+          {...kpi('totalConfirmed', t('dashboard.kpi.totalConfirmedDef'), (v: number) =>
+            formatMoney(v),
           )}
           sparkline={sparks.volume}
           onDrillDown={() =>
             setDrill({
               resource: 'contributions',
-              label: 'Confirmed contributions',
+              label: t('dashboard.drill.confirmedContributions'),
               filters: { status: 'succeeded' },
             })
           }
         />
         <KpiCard
-          label="Participation Rate"
-          {...kpi(
-            'participationRate',
-            'Distinct users with ≥1 confirmed contribution ÷ distinct users invited × 100.',
-            formatPercent,
-          )}
+          label={t('dashboard.kpi.participation')}
+          {...kpi('participationRate', t('dashboard.kpi.participationDef'), formatPercent)}
           deltaUnit="pp"
           sparkline={sparks.count}
           onDrillDown={() =>
-            setDrill({ resource: 'users', label: 'Invited vs contributed', filters: {} })
+            setDrill({
+              resource: 'users',
+              label: t('dashboard.drill.invitedVsContributed'),
+              filters: {},
+            })
           }
         />
         <KpiCard
-          label="Card Downloads"
+          label={t('dashboard.kpi.cardDownloads')}
           value={
             // Guard each field: a partial KPI payload must degrade to the
             // fallback, not crash the whole dashboard.
@@ -270,26 +260,25 @@ export default function Dashboard() {
               ? `${formatNumber(apiKpis.cardDownloads.unique)} / ${formatNumber(apiKpis.cardDownloads.total)}`
               : '—'
           }
-          secondary="unique / total"
+          secondary={t('dashboard.kpi.cardDownloadsSecondary')}
           delta={apiKpis?.cardDownloads?.delta ?? null}
           accent="accent"
-          definition={
-            apiKpis?.cardDownloads?.definition ??
-            'Unique downloaders and total download events from the card event log, in the selected range.'
+          definition={apiKpis?.cardDownloads?.definition ?? t('dashboard.kpi.cardDownloadsDef')}
+          onDrillDown={() =>
+            setDrill({ resource: 'cards', label: t('dashboard.drill.downloadLog'), filters: {} })
           }
-          onDrillDown={() => setDrill({ resource: 'cards', label: 'Download log', filters: {} })}
         />
         <KpiCard
-          label="Clover Redemption Rate"
-          {...kpi(
-            'cloverRedemptionRate',
-            'Users who redeemed ≥1 premium card ÷ users holding enough clovers to redeem one × 100.',
-            formatPercent,
-          )}
+          label={t('dashboard.kpi.cloverRedemption')}
+          {...kpi('cloverRedemptionRate', t('dashboard.kpi.cloverRedemptionDef'), formatPercent)}
           deltaUnit="pp"
           accent="secondary"
           onDrillDown={() =>
-            setDrill({ resource: 'clovers', label: 'Eligible vs redeemed users', filters: {} })
+            setDrill({
+              resource: 'clovers',
+              label: t('dashboard.drill.eligibleVsRedeemed'),
+              filters: {},
+            })
           }
         />
       </KpiGrid>
@@ -297,15 +286,19 @@ export default function Dashboard() {
       {/* Section C — Charts 2×2 */}
       <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
         <ChartCard
-          title="Events Created & Completed Over Time"
-          subtitle="Daily · previous period overlaid"
+          title={t('dashboard.charts.eventsOverTime')}
+          subtitle={t('dashboard.charts.eventsOverTimeSub')}
           legend={[
-            { label: 'Created', color: CHART_COLORS[0] },
-            { label: 'Completed', color: CHART_COLORS[2] },
-            { label: 'Previous period', color: COMPARISON_COLOR, dashed: true },
+            { label: t('dashboard.charts.created'), color: CHART_COLORS[0] },
+            { label: t('dashboard.charts.completed'), color: CHART_COLORS[2] },
+            { label: t('dashboard.charts.previousPeriod'), color: COMPARISON_COLOR, dashed: true },
           ]}
           tableData={{
-            columns: ['Date', 'Created', 'Completed'],
+            columns: [
+              t('dashboard.charts.date'),
+              t('dashboard.charts.created'),
+              t('dashboard.charts.completed'),
+            ],
             rows: timeSeries.map((d) => [d.date, d.eventsCreated, d.eventsCompleted]),
           }}
           onViewRecords={() => navigate('/events')}
@@ -316,12 +309,24 @@ export default function Dashboard() {
               <XAxis dataKey="date" tickLine={false} axisLine={false} tickFormatter={(v) => String(v).slice(5)} minTickGap={24} />
               <YAxis tickLine={false} axisLine={false} width={40} />
               <RTooltip content={<ChartTooltip />} cursor={{ fill: 'rgb(var(--neutral-100))' }} />
-              <Bar dataKey="eventsCreated" name="Created" fill={CHART_COLORS[0]} radius={[2, 2, 0, 0]} isAnimationActive={false} />
-              <Bar dataKey="eventsCompleted" name="Completed" fill={CHART_COLORS[2]} radius={[2, 2, 0, 0]} isAnimationActive={false} />
+              <Bar
+                dataKey="eventsCreated"
+                name={t('dashboard.charts.created')}
+                fill={CHART_COLORS[0]}
+                radius={[2, 2, 0, 0]}
+                isAnimationActive={false}
+              />
+              <Bar
+                dataKey="eventsCompleted"
+                name={t('dashboard.charts.completed')}
+                fill={CHART_COLORS[2]}
+                radius={[2, 2, 0, 0]}
+                isAnimationActive={false}
+              />
               <Line
                 type="monotone"
                 dataKey="previousVolume"
-                name="Previous period"
+                name={t('dashboard.charts.previousPeriod')}
                 stroke={COMPARISON_COLOR}
                 strokeWidth={2}
                 strokeDasharray="4 4"
@@ -334,16 +339,24 @@ export default function Dashboard() {
         </ChartCard>
 
         <ChartCard
-          title="Confirmed Contribution Volume"
-          subtitle="Markers show reminder-send days — post-reminder spikes are visible"
+          title={t('dashboard.charts.volume')}
+          subtitle={t('dashboard.charts.volumeSub')}
           legend={[
-            { label: 'Confirmed volume', color: CHART_COLORS[0] },
-            { label: 'Previous period', color: COMPARISON_COLOR, dashed: true },
-            { label: 'Reminder sent', color: CHART_COLORS[3] },
+            { label: t('dashboard.charts.confirmedVolume'), color: CHART_COLORS[0] },
+            { label: t('dashboard.charts.previousPeriod'), color: COMPARISON_COLOR, dashed: true },
+            { label: t('dashboard.charts.reminderSent'), color: CHART_COLORS[3] },
           ]}
           tableData={{
-            columns: ['Date', 'Volume', 'Reminder sent'],
-            rows: timeSeries.map((d) => [d.date, formatMoney(d.contributionVolume), d.reminderSent ? 'Yes' : 'No']),
+            columns: [
+              t('dashboard.charts.date'),
+              t('dashboard.charts.volumeCol'),
+              t('dashboard.charts.reminderSent'),
+            ],
+            rows: timeSeries.map((d) => [
+              d.date,
+              formatMoney(d.contributionVolume),
+              d.reminderSent ? t('common.yes') : t('common.no'),
+            ]),
           }}
           onViewRecords={() => navigate('/contributions?status=succeeded')}
         >
@@ -370,7 +383,7 @@ export default function Dashboard() {
               <Area
                 type="monotone"
                 dataKey="previousVolume"
-                name="Previous period"
+                name={t('dashboard.charts.previousPeriod')}
                 stroke={COMPARISON_COLOR}
                 strokeDasharray="4 4"
                 strokeWidth={2}
@@ -381,7 +394,7 @@ export default function Dashboard() {
               <Area
                 type="monotone"
                 dataKey="contributionVolume"
-                name="Confirmed volume"
+                name={t('dashboard.charts.confirmedVolume')}
                 stroke={CHART_COLORS[0]}
                 strokeWidth={2}
                 fill="url(#volFill)"
@@ -405,12 +418,16 @@ export default function Dashboard() {
         </ChartCard>
 
         <ChartCard
-          title="Funnel: Invited → Opened → Contributed"
-          subtitle="Conversion between each stage"
+          title={t('dashboard.charts.funnel')}
+          subtitle={t('dashboard.charts.funnelSub')}
           tableData={{
-            columns: ['Stage', 'Users', 'Conversion'],
+            columns: [
+              t('dashboard.charts.stage'),
+              t('dashboard.charts.users'),
+              t('dashboard.charts.conversion'),
+            ],
             rows: funnelStages.map((s, i) => [
-              s.stage,
+              t(`dashboard.funnelStage.${s.stage.toLowerCase()}`, { defaultValue: s.stage }),
               s.value,
               i === 0 ? '—' : `${((s.value / funnelStages[i - 1].value) * 100).toFixed(1)}%`,
             ]),
@@ -425,11 +442,21 @@ export default function Dashboard() {
                 <div key={stage.stage}>
                   {conversion !== null && (
                     <p className="tnum mb-1 pl-1 text-caption text-neutral-400">
-                      ↓ {conversion.toFixed(1)}% converted from {funnelStages[i - 1].stage.toLowerCase()}
+                      {t('dashboard.charts.convertedFrom', {
+                        percent: conversion.toFixed(1),
+                        stage: t(
+                          `dashboard.funnelStage.${funnelStages[i - 1].stage.toLowerCase()}`,
+                          { defaultValue: funnelStages[i - 1].stage },
+                        ).toLowerCase(),
+                      })}
                     </p>
                   )}
                   <div className="flex items-center gap-3">
-                    <span className="w-[92px] shrink-0 text-body text-neutral-700">{stage.stage}</span>
+                    <span className="w-[92px] shrink-0 text-body text-neutral-700">
+                      {t(`dashboard.funnelStage.${stage.stage.toLowerCase()}`, {
+                        defaultValue: stage.stage,
+                      })}
+                    </span>
                     <div className="relative h-8 flex-1 overflow-hidden rounded-sm bg-neutral-100">
                       <div
                         className="h-full rounded-sm"
@@ -447,10 +474,14 @@ export default function Dashboard() {
         </ChartCard>
 
         <ChartCard
-          title="Event Status Distribution"
-          subtitle="Counts and share of all events in range"
+          title={t('dashboard.charts.statusDistribution')}
+          subtitle={t('dashboard.charts.statusDistributionSub')}
           tableData={{
-            columns: ['Status', 'Events', 'Share'],
+            columns: [
+              t('dashboard.charts.statusCol'),
+              t('dashboard.charts.eventsCol'),
+              t('dashboard.charts.shareCol'),
+            ],
             rows: statusDistribution.map((s) => [s.label, s.count, `${s.pct.toFixed(1)}%`]),
           }}
           onViewRecords={() => navigate('/events')}
@@ -459,7 +490,14 @@ export default function Dashboard() {
             {/* Horizontal stacked bar, not a pie (§02 C4) */}
             <div className="flex h-10 w-full overflow-hidden rounded-sm">
               {statusDistribution.map((s) => (
-                <Tooltip key={s.label} content={`${s.label}: ${s.count} (${s.pct.toFixed(1)}%)`}>
+                <Tooltip
+                  key={s.label}
+                  content={t('dashboard.charts.sliceTooltip', {
+                    label: s.label,
+                    count: s.count,
+                    percent: s.pct.toFixed(1),
+                  })}
+                >
                   <div
                     className="h-full transition-opacity hover:opacity-80"
                     style={{ width: `${s.pct}%`, backgroundColor: s.color }}
@@ -491,11 +529,8 @@ export default function Dashboard() {
       <Card className="mb-6">
         <div className="flex items-start justify-between gap-4 p-4">
           <div>
-            <h2 className="text-card-title text-neutral-700">Event Lifecycle Timing</h2>
-            <p className="mt-1 text-caption text-neutral-500">
-              Median is the headline — one 90-day outlier must not distort the number. Mean is in the
-              tooltip.
-            </p>
+            <h2 className="text-card-title text-neutral-700">{t('dashboard.lifecycle.title')}</h2>
+            <p className="mt-1 text-caption text-neutral-500">{t('dashboard.lifecycle.subtitle')}</p>
           </div>
         </div>
         <div className="scroll-x">
@@ -503,16 +538,16 @@ export default function Dashboard() {
             <thead className="bg-neutral-50">
               <tr className="border-y border-neutral-200">
                 <th scope="col" className="px-4 py-3 text-left text-table-header uppercase text-neutral-500">
-                  Metric
+                  {t('dashboard.lifecycle.metric')}
                 </th>
                 <th scope="col" className="px-4 py-3 text-right text-table-header uppercase text-neutral-500">
-                  Median
+                  {t('dashboard.lifecycle.median')}
                 </th>
                 <th scope="col" className="px-4 py-3 text-right text-table-header uppercase text-neutral-500">
-                  p90
+                  {t('dashboard.lifecycle.p90')}
                 </th>
                 <th scope="col" className="px-4 py-3 text-right text-table-header uppercase text-neutral-500">
-                  Trend
+                  {t('dashboard.lifecycle.trend')}
                 </th>
               </tr>
             </thead>
@@ -523,7 +558,13 @@ export default function Dashboard() {
                   className={cn('border-b border-neutral-200 last:border-0', i % 2 === 1 && 'bg-neutral-50')}
                 >
                   <td className="px-4 py-3">
-                    <Tooltip content={`${row.definition} · mean ${row.mean} ${row.unit}`}>
+                    <Tooltip
+                      content={t('dashboard.lifecycle.meanTooltip', {
+                        definition: row.definition,
+                        mean: row.mean,
+                        unit: row.unit,
+                      })}
+                    >
                       <span className="cursor-help text-body font-medium text-neutral-900 underline decoration-neutral-300 decoration-dotted underline-offset-4">
                         {row.metric}
                       </span>
@@ -562,12 +603,12 @@ export default function Dashboard() {
       </Card>
 
       {/* Section E — Attention lists */}
-      <SectionHeading description="Three compact lists that decide where the day's attention goes.">
-        Needs attention
+      <SectionHeading description={t('dashboard.attention.description')}>
+        {t('dashboard.attention.heading')}
       </SectionHeading>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <AttentionList
-          title="Events at risk"
+          title={t('dashboard.attention.atRisk')}
           icon={AlertTriangle}
           tone="warning"
           viewAllHref="/alerts?type=at_risk_event"
@@ -578,38 +619,50 @@ export default function Dashboard() {
                 value={(e.raisedAmount / e.goalAmount) * 100}
                 tone="warning"
                 className="mt-2"
-                label={`${e.name} progress`}
+                label={t('dashboard.attention.progressLabel', { name: e.name })}
               />
               <p className="tnum mt-1 text-caption text-neutral-500">
-                {formatPercent((e.raisedAmount / e.goalAmount) * 100, 0)} of goal ·{' '}
-                {formatRelative(e.endDate)}
+                {t('dashboard.attention.ofGoal', {
+                  percent: formatPercent((e.raisedAmount / e.goalAmount) * 100, 0),
+                  when: formatRelative(e.endDate),
+                })}
               </p>
             </>
           )}
         />
         <AttentionList
-          title="Largest active events"
+          title={t('dashboard.attention.largestActive')}
           icon={Wallet}
           tone="brand"
           viewAllHref="/events?status=active"
           events={largestActiveEvents}
           render={(e) => (
             <p className="mt-1 text-caption text-neutral-500">
-              Goal <MoneyValue amount={e.goalAmount} className="text-caption" /> · raised{' '}
-              <MoneyValue amount={e.raisedAmount} className="text-caption" />
+              <Trans
+                i18nKey="dashboard.attention.goalRaised"
+                components={{
+                  goal: <MoneyValue amount={e.goalAmount ?? 0} className="text-caption" />,
+                  raised: <MoneyValue amount={e.raisedAmount} className="text-caption" />,
+                }}
+              />
             </p>
           )}
         />
         <AttentionList
-          title="Recently completed"
+          title={t('dashboard.attention.recentlyCompleted')}
           icon={Clock}
           tone="success"
           viewAllHref="/events?status=completed"
           events={recentlyCompleted}
           render={(e) => (
             <p className="mt-1 text-caption text-neutral-500">
-              Closed {e.closedAt ? formatDate(e.closedAt) : '—'} ·{' '}
-              <MoneyValue amount={e.raisedAmount} className="text-caption" />
+              <Trans
+                i18nKey="dashboard.attention.closedOn"
+                values={{ date: e.closedAt ? formatDate(e.closedAt) : '—' }}
+                components={{
+                  amount: <MoneyValue amount={e.raisedAmount} className="text-caption" />,
+                }}
+              />
             </p>
           )}
         />
@@ -647,6 +700,7 @@ function AttentionList<T extends AttentionRow>({
   events: T[];
   render: (e: T) => React.ReactNode;
 }) {
+  const { t } = useTranslation();
   const toneClass = {
     warning: 'bg-warning-50 text-warning-500',
     brand: 'bg-brand-50 text-brand-500',
@@ -666,7 +720,7 @@ function AttentionList<T extends AttentionRow>({
           to={viewAllHref}
           className="rounded-sm text-caption font-medium text-brand-500 transition-colors hover:text-brand-600"
         >
-          View all
+          {t('common.viewAll')}
         </Link>
       </div>
       <ul className="divide-y divide-neutral-200">
@@ -692,6 +746,7 @@ function AttentionList<T extends AttentionRow>({
 
 /** Every KPI opens its underlying records without losing page context (§21). */
 export function KpiDrillDown({ drill, onClose }: { drill: DrillTo | null; onClose: () => void }) {
+  const { t } = useTranslation();
   const isContributions = drill?.resource === 'contributions';
   // Both hooks must run unconditionally; only the matching one is enabled by
   // passing the drill's filters, and the other returns an empty page.
@@ -708,7 +763,7 @@ export function KpiDrillDown({ drill, onClose }: { drill: DrillTo | null; onClos
       ? drillContributions
           .map((c) => ({
             id: c.id,
-            primary: c.contributor?.name ?? c.guestName ?? 'Guest',
+            primary: c.contributor?.name ?? c.guestName ?? t('dashboard.guest'),
             secondary: c.eventName,
             value: formatMoney(c.amount),
             status: c.status,
@@ -737,7 +792,7 @@ export function KpiDrillDown({ drill, onClose }: { drill: DrillTo | null; onClos
       onOpenChange={(o) => !o && onClose()}
       title={drill.label}
       recordCount={rows.length}
-      subtitle="Showing the first 40 records"
+      subtitle={t('dashboard.drill.firstRecords')}
       fullPageHref={fullPage}
     >
       <ul className="divide-y divide-neutral-200">

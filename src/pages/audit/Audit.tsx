@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Lock } from 'lucide-react';
@@ -23,6 +24,7 @@ import { cn } from '@/lib/utils';
  * API. Retained 24 months minimum.
  */
 export default function Audit() {
+  const { t } = useTranslation();
   const { all } = useUrlState();
   const [expanded, setExpanded] = React.useState<string | null>(null);
   // Distinct admins actually present in the trail, for the filter dropdown.
@@ -51,7 +53,7 @@ export default function Audit() {
   const columns: Column<AuditEntry>[] = [
     {
       id: 'timestamp',
-      header: 'Timestamp',
+      header: t('audit.timestamp'),
       width: '190px',
       sortable: true,
       sortValue: (e) => e.timestamp,
@@ -66,7 +68,7 @@ export default function Audit() {
     },
     {
       id: 'admin',
-      header: 'Admin',
+      header: t('audit.admin'),
       sortable: true,
       sortValue: (e) => e.admin.name,
       cell: (e) => (
@@ -78,15 +80,15 @@ export default function Audit() {
     },
     {
       id: 'action',
-      header: 'Action',
+      header: t('audit.action'),
       sortable: true,
       sortValue: (e) => e.action,
       cell: (e) => <code className="font-mono text-[13px] text-neutral-900">{e.action}</code>,
     },
-    { id: 'resourceType', header: 'Resource type', cell: (e) => e.resourceType },
+    { id: 'resourceType', header: t('audit.resourceType'), cell: (e) => e.resourceType },
     {
       id: 'resource',
-      header: 'Resource',
+      header: t('audit.resource'),
       cell: (e) => (
         <Link
           to={e.resource.href}
@@ -100,7 +102,7 @@ export default function Audit() {
     },
     {
       id: 'diff',
-      header: 'Before → After',
+      header: t('audit.diff'),
       width: '220px',
       cell: (e) =>
         e.before && e.after ? (
@@ -118,7 +120,7 @@ export default function Audit() {
               className={cn('h-3 w-3 transition-transform duration-micro', expanded === e.id && 'rotate-90')}
               aria-hidden
             />
-            View diff
+            {t('audit.viewDiff')}
           </button>
         ) : (
           <span className="text-neutral-400">—</span>
@@ -126,18 +128,18 @@ export default function Audit() {
     },
     {
       id: 'reason',
-      header: 'Reason',
+      header: t('audit.reason'),
       cell: (e) => <span className="text-neutral-500">{e.reason}</span>,
     },
     {
       id: 'ip',
-      header: 'IP address',
+      header: t('audit.ipAddress'),
       defaultHidden: true,
-      cell: (e) => <CopyableId value={e.ip} label="IP address" />,
+      cell: (e) => <CopyableId value={e.ip} label={t('audit.ipAddress')} />,
     },
     {
       id: 'userAgent',
-      header: 'User agent',
+      header: t('audit.userAgent'),
       defaultHidden: true,
       cell: (e) => (
         <Tooltip content={e.userAgent}>
@@ -154,17 +156,21 @@ export default function Audit() {
   return (
     <>
       <PageHeader
-        title="Audit Trail"
-        subtitle="Status overrides, payment-related updates, clover adjustments and manual interventions."
+        title={t('audit.title')}
+        subtitle={t('audit.subtitle')}
         actions={
           <>
             <DateRangePicker />
             <ExportButton
               name="audit-log"
-              label="Audit log"
+              label={t('audit.exportLabel')}
               columns={auditColumns}
               rows={filtered}
-              filterSummary={`${rangeLabel(all.range ?? '30d')} · ${filtered.length} of ${auditEntries.length} entries`}
+              filterSummary={t('audit.filterSummary', {
+                range: t(rangeLabel(all.range ?? '30d')),
+                shown: filtered.length,
+                total: auditEntries.length,
+              })}
             />
           </>
         }
@@ -173,28 +179,30 @@ export default function Audit() {
       <div className="mb-4 flex items-start gap-2 rounded-md border border-neutral-200 bg-neutral-50 p-3">
         <Lock className="mt-px h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
         <p className="text-caption text-neutral-500">
-          Audit entries are <strong>append-only and immutable</strong> — there is no edit or delete
-          path in this UI or in the API. Entries are retained for a minimum of 24 months.
+          <Trans
+            i18nKey="audit.immutableNote"
+            components={[<span key="0" />, <strong key="1" />]}
+          />
         </p>
       </div>
 
       <FilterBar
         className="mb-4"
-        searchPlaceholder="Search action, admin, resource, IP…"
+        searchPlaceholder={t('audit.searchPlaceholder')}
         filters={[
           {
             id: 'admin',
-            label: 'Admin',
+            label: t('audit.admin'),
             options: adminUsers.map((a) => ({ value: a.id, label: a.name })),
           },
           {
             id: 'action',
-            label: 'Action',
+            label: t('audit.action'),
             options: actionTypes.map((a) => ({ value: a, label: a })),
           },
           {
             id: 'resource',
-            label: 'Resource',
+            label: t('audit.resource'),
             options: resourceTypes.map((r) => ({ value: r, label: r })),
           },
         ]}
@@ -218,18 +226,18 @@ export default function Audit() {
               onClick={() => setExpanded(null)}
               className="rounded-sm text-caption font-medium text-brand-500 hover:underline"
             >
-              Close
+              {t('common.close')}
             </button>
           </div>
           <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <p className="mb-1 text-caption font-medium text-danger-500">Before</p>
+              <p className="mb-1 text-caption font-medium text-danger-500">{t('audit.before')}</p>
               <pre className="overflow-x-auto rounded-md border border-danger-500/20 bg-danger-50 p-3 font-mono text-[13px] leading-5 text-neutral-700">
                 {JSON.stringify(expandedEntry.before, null, 2)}
               </pre>
             </div>
             <div>
-              <p className="mb-1 text-caption font-medium text-success-500">After</p>
+              <p className="mb-1 text-caption font-medium text-success-500">{t('audit.after')}</p>
               <pre className="overflow-x-auto rounded-md border border-success-500/20 bg-success-50 p-3 font-mono text-[13px] leading-5 text-neutral-700">
                 {JSON.stringify(expandedEntry.after, null, 2)}
               </pre>
@@ -249,9 +257,8 @@ export default function Audit() {
         initialSort={{ id: 'timestamp', dir: 'desc' }}
         pageSize={30}
         empty={{
-          headline: 'No audit entries match these filters',
-          description:
-            'Try a wider date range, or clear the admin filter. Every administrative action is recorded here.',
+          headline: t('audit.empty'),
+          description: t('audit.emptyBody'),
         }}
       />
     </>

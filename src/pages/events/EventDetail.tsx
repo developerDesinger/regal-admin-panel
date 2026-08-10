@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -86,6 +87,7 @@ function buildDailySeries(rows: Contribution[]) {
  * Tabs: Overview · Timeline · Contributions · Participants · Card · Activity Log.
  */
 export default function EventDetail() {
+  const { t } = useTranslation();
   const { eventId, tab } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -115,9 +117,9 @@ export default function EventDetail() {
     return (
       <EmptyState
         icon={ShieldAlert}
-        headline="Event not found"
-        description="This event may have been deleted, or the ID in the URL is incorrect."
-        action={{ label: 'Back to events', onClick: () => navigate('/events') }}
+        headline={t('eventDetail.notFound')}
+        description={t('eventDetail.notFoundBody')}
+        action={{ label: t('eventDetail.backToEvents'), onClick: () => navigate('/events') }}
       />
     );
   }
@@ -152,8 +154,8 @@ export default function EventDetail() {
       void mutations.runEventAction(event, confirm.action, confirm.patch, reason);
     }
     toast({
-      title: `${confirm.label} recorded`,
-      description: 'Written to the audit trail · see the Activity Log tab',
+      title: t('eventDetail.actionRecorded', { action: confirm.label }),
+      description: t('eventDetail.writtenToAudit'),
       tone: 'success',
     });
   };
@@ -162,14 +164,14 @@ export default function EventDetail() {
     <>
       <PageHeader
         breadcrumbs={[
-          { label: 'Events', href: '/events' },
+          { label: t('events.title'), href: '/events' },
           { label: event.name },
         ]}
         title={event.name}
         subtitle={
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <StatusBadge status={event.status} />
-            <Chip>{event.occasion}</Chip>
+            <Chip>{t(`occasion.${event.occasion}`, { defaultValue: event.occasion })}</Chip>
             <Link
               to={`/users/${event.organizer.id}`}
               className="inline-flex items-center gap-2 rounded-sm transition-colors hover:text-brand-500"
@@ -180,15 +182,15 @@ export default function EventDetail() {
             <span className="text-neutral-400">
               {formatDate(event.createdAt)} → {formatDate(event.endDate)}
             </span>
-            <CopyableId value={event.id} label="Event ID" />
-            <CopyableId value={`regal.app/e/${event.shareSlug}`} label="Share link" />
+            <CopyableId value={event.id} label={t('fields.eventId')} />
+            <CopyableId value={`regal.app/e/${event.shareSlug}`} label={t('fields.shareLink')} />
           </div>
         }
         actions={
           <>
             <ExportButton
               name={`event-${event.shareSlug}`}
-              label="Event"
+              label={t('eventDetail.exportLabel')}
               columns={eventColumns}
               rows={[event]}
               filterSummary={event.name}
@@ -196,88 +198,100 @@ export default function EventDetail() {
             {can('events:write') && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="primary">Admin actions</Button>
+                  <Button variant="primary">{t('eventDetail.adminActions')}</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-[240px]">
-                  <DropdownMenuLabel>All actions are audited</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t('eventDetail.allActionsAudited')}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onSelect={() =>
                       setConfirm({
-                        title: 'Override event status',
-                        label: 'Status override',
+                        title: t('eventDetail.override.title'),
+                        label: t('eventDetail.override.label'),
                         action: 'event.status_override',
                         patch: { status: 'completed', closedAt: new Date().toISOString() },
                         typed: event.name,
                         consequence: (
-                          <>
-                            This forces <strong>{event.name}</strong> from{' '}
-                            <strong>{event.status}</strong> to <strong>completed</strong>. Contributors
-                            are not notified, and the collection window closes immediately. The change
-                            is written to the audit trail with before → after values.
-                          </>
+                          <Trans
+                            i18nKey="eventDetail.override.consequence"
+                            values={{
+                              name: event.name,
+                              from: t(`status.${event.status}`, { defaultValue: event.status }),
+                              to: t('status.completed'),
+                            }}
+                            components={[
+                              <span key="0" />,
+                              <strong key="1" />,
+                              <span key="2" />,
+                              <strong key="3" />,
+                              <span key="4" />,
+                              <strong key="5" />,
+                            ]}
+                          />
                         ),
                       })
                     }
                   >
-                    Override status
+                    {t('eventDetail.override.menu')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={() =>
                       setConfirm({
-                        title: 'Force close this event',
-                        label: 'Force close',
+                        title: t('eventDetail.forceClose.title'),
+                        label: t('eventDetail.forceClose.label'),
                         action: 'event.force_close',
                         patch: { status: 'completed', closedAt: new Date().toISOString() },
                         typed: event.name,
                         consequence: (
-                          <>
-                            No further contributions will be accepted for <strong>{event.name}</strong>.
-                            Funds already confirmed remain available for withdrawal by the beneficiary.
-                          </>
+                          <Trans
+                            i18nKey="eventDetail.forceClose.consequence"
+                            values={{ name: event.name }}
+                            components={[<span key="0" />, <strong key="1" />]}
+                          />
                         ),
                       })
                     }
                   >
-                    Force close
+                    {t('eventDetail.forceClose.menu')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={() =>
                       setConfirm({
-                        title: 'Resend reminders',
-                        label: 'Reminders resent',
+                        title: t('eventDetail.resend.title'),
+                        label: t('eventDetail.resend.label'),
                         action: 'event.resend_reminders',
                         consequence: (
-                          <>
-                            A reminder push and email will be sent to the{' '}
-                            <strong>{participants.length - contributedCount} invitees</strong> who
-                            haven’t contributed yet. They were last reminded 2 days ago.
-                          </>
+                          <Trans
+                            i18nKey="eventDetail.resend.consequence"
+                            values={{ count: participants.length - contributedCount }}
+                            components={[<span key="0" />, <strong key="1" />]}
+                          />
                         ),
                       })
                     }
                   >
-                    Resend reminders
+                    {t('eventDetail.resend.menu')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     destructive
                     onSelect={() =>
                       setConfirm({
-                        title: 'Flag event for review',
-                        label: 'Flagged for review',
+                        title: t('eventDetail.flag.title'),
+                        label: t('eventDetail.flag.label'),
                         action: 'event.flag_for_review',
                         patch: { status: 'paused' },
                         consequence: (
-                          <>
-                            <strong>{event.name}</strong> will be added to the operations review queue
-                            and surfaced in the Alerts Center. The organizer is not notified.
-                          </>
+                          <Trans
+                            i18nKey="eventDetail.flag.consequence"
+                            values={{ name: event.name }}
+                            components={[<strong key="0" />]}
+                          />
                         ),
                       })
                     }
                   >
-                    Flag for review
+                    {t('eventDetail.flag.menu')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -288,18 +302,18 @@ export default function EventDetail() {
 
       <Tabs value={activeTab} onValueChange={(v) => navigate(`/events/${event.id}/${v}`)}>
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="timeline">Timeline</TabsTrigger>
+          <TabsTrigger value="overview">{t('eventDetail.tabs.overview')}</TabsTrigger>
+          <TabsTrigger value="timeline">{t('eventDetail.tabs.timeline')}</TabsTrigger>
           <TabsTrigger value="contributions">
-            Contributions
+            {t('eventDetail.tabs.contributions')}
             <span className="tnum ml-2 text-caption text-neutral-400">{eventContributions.length}</span>
           </TabsTrigger>
           <TabsTrigger value="participants">
-            Participants
+            {t('eventDetail.tabs.participants')}
             <span className="tnum ml-2 text-caption text-neutral-400">{participants.length}</span>
           </TabsTrigger>
-          <TabsTrigger value="card">Card</TabsTrigger>
-          <TabsTrigger value="activity">Activity Log</TabsTrigger>
+          <TabsTrigger value="card">{t('eventDetail.tabs.card')}</TabsTrigger>
+          <TabsTrigger value="activity">{t('eventDetail.tabs.activity')}</TabsTrigger>
         </TabsList>
 
         {/* ------------------------------------------------------- Overview -- */}
@@ -309,12 +323,12 @@ export default function EventDetail() {
               {/* Financial panel — one aggregate total is not enough (§04) */}
               <Card>
                 <div className="border-b border-neutral-200 p-4">
-                  <h2 className="text-card-title text-neutral-700">Financials</h2>
+                  <h2 className="text-card-title text-neutral-700">{t('eventDetail.financials')}</h2>
                 </div>
                 <div className="p-4">
                   <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
                     <div>
-                      <p className="text-caption text-neutral-500">Goal</p>
+                      <p className="text-caption text-neutral-500">{t('eventDetail.goal')}</p>
                       <MoneyValue
                         amount={event.goalAmount}
                         currency={event.currency}
@@ -324,7 +338,7 @@ export default function EventDetail() {
                       />
                     </div>
                     <div className="text-right">
-                      <p className="text-caption text-neutral-500">Confirmed</p>
+                      <p className="text-caption text-neutral-500">{t('eventDetail.confirmed')}</p>
                       <MoneyValue
                         amount={confirmedTotal}
                         currency={event.currency}
@@ -337,7 +351,7 @@ export default function EventDetail() {
                     <ProgressBar
                       value={progress}
                       tone={progress >= 100 ? 'success' : 'brand'}
-                      label="Goal progress"
+                      label={t('eventDetail.goalProgress')}
                     />
                     <span className="tnum shrink-0 text-body font-semibold text-neutral-900">
                       {formatPercent(progress)}
@@ -347,14 +361,7 @@ export default function EventDetail() {
                   {/* Four-state breakdown — designed for cancelled even though the
                       backend enum lacks it today (§05 backend gap). */}
                   <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-neutral-200 bg-neutral-200 md:grid-cols-4">
-                    {(
-                      [
-                        ['Confirmed', 'succeeded'],
-                        ['Pending', 'pending'],
-                        ['Failed', 'failed'],
-                        ['Cancelled', 'cancelled'],
-                      ] as const
-                    ).map(([label, status]) => {
+                    {(['succeeded', 'pending', 'failed', 'cancelled'] as const).map((status) => {
                       const txns = byStatus(status);
                       // The backend now models cancelled/refunded, so a zero is
                       // a real zero rather than a missing enum value.
@@ -362,13 +369,13 @@ export default function EventDetail() {
                       return (
                         <div key={status} className="bg-neutral-0 p-3">
                           <div className="flex items-center gap-2">
-                            <StatusBadge status={status} label={label} dot />
+                            <StatusBadge status={status} dot />
                           </div>
                           <p className="tnum mt-2 text-[16px] font-semibold leading-6 text-neutral-900">
                             {unsupported ? '—' : formatMoney(sumOf(status), event.currency, { showCurrency: false })}
                           </p>
                           <p className="tnum mt-0.5 text-caption text-neutral-500">
-                            {`${txns.count} txns`}
+                            {t('eventDetail.txns', { count: txns.count })}
                           </p>
                         </div>
                       );
@@ -376,28 +383,28 @@ export default function EventDetail() {
                   </div>
 
                   <dl className="mt-4 divide-y divide-neutral-200">
-                    <DetailRow label="Unique contributors">
+                    <DetailRow label={t('eventDetail.uniqueContributors')}>
                       <span className="tnum">{uniqueContributors}</span>
                     </DetailRow>
-                    <DetailRow label="Contribution count">
+                    <DetailRow label={t('eventDetail.contributionCount')}>
                       <span className="tnum">{financials?.contributionCount ?? 0}</span>
                     </DetailRow>
-                    <DetailRow label="Average contribution">
+                    <DetailRow label={t('eventDetail.averageContribution')}>
                       <MoneyValue
                         amount={financials?.averageContribution ?? 0}
                         currency={event.currency}
                       />
                     </DetailRow>
-                    <DetailRow label="Median contribution">
+                    <DetailRow label={t('eventDetail.medianContribution')}>
                       <MoneyValue amount={medianContribution} currency={event.currency} />
                     </DetailRow>
-                    <DetailRow label="Platform fees">
+                    <DetailRow label={t('eventDetail.platformFees')}>
                       <MoneyValue amount={platformFees} currency={event.currency} />
                     </DetailRow>
-                    <DetailRow label="Stripe fees">
+                    <DetailRow label={t('eventDetail.stripeFees')}>
                       <MoneyValue amount={stripeFees} currency={event.currency} />
                     </DetailRow>
-                    <DetailRow label="Net to beneficiary">
+                    <DetailRow label={t('eventDetail.netToBeneficiary')}>
                       <MoneyValue
                         amount={confirmedTotal - platformFees - stripeFees}
                         currency={event.currency}
@@ -409,15 +416,19 @@ export default function EventDetail() {
               </Card>
 
               <ChartCard
-                title="Contribution timeline"
-                subtitle="Daily confirmed amount with contribution count · reminder sends marked"
+                title={t('eventDetail.timelineChart')}
+                subtitle={t('eventDetail.timelineChartSub')}
                 legend={[
-                  { label: 'Amount', color: CHART_COLORS[0] },
-                  { label: 'Contribution count', color: CHART_COLORS[2] },
-                  { label: 'Reminder sent', color: CHART_COLORS[3] },
+                  { label: t('eventDetail.amount'), color: CHART_COLORS[0] },
+                  { label: t('eventDetail.contributionCount'), color: CHART_COLORS[2] },
+                  { label: t('eventDetail.reminderSent'), color: CHART_COLORS[3] },
                 ]}
                 tableData={{
-                  columns: ['Date', 'Amount', 'Count'],
+                  columns: [
+                    t('fields.date'),
+                    t('eventDetail.amount'),
+                    t('eventDetail.count'),
+                  ],
                   rows: dailySeries.map((d) => [d.date, formatMoney(d.amount, event.currency), d.count]),
                 }}
                 minHeight={240}
@@ -425,9 +436,8 @@ export default function EventDetail() {
                 {dailySeries.length === 0 ? (
                   <EmptyState
                     compact
-                    headline="No confirmed contributions yet"
-                    description="Once the first payment succeeds, daily volume and count appear here."
-                  />
+                    headline={t('eventDetail.noConfirmedYet')}
+                    description={t('eventDetail.noConfirmedYetBody')}                  />
                 ) : (
                   <ResponsiveContainer width="100%" height={220}>
                     <ComposedChart data={dailySeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
@@ -460,7 +470,7 @@ export default function EventDetail() {
                       <Bar
                         yAxisId="amount"
                         dataKey="amount"
-                        name="Amount"
+                        name={t('eventDetail.amount')}
                         fill={CHART_COLORS[0]}
                         radius={[2, 2, 0, 0]}
                         isAnimationActive={false}
@@ -469,7 +479,7 @@ export default function EventDetail() {
                         yAxisId="count"
                         type="monotone"
                         dataKey="count"
-                        name="Contribution count"
+                        name={t('eventDetail.contributionCount')}
                         stroke={CHART_COLORS[2]}
                         strokeWidth={2}
                         dot={false}
@@ -497,13 +507,15 @@ export default function EventDetail() {
               {/* Participation mini funnel */}
               <Card>
                 <div className="border-b border-neutral-200 p-4">
-                  <h2 className="text-card-title text-neutral-700">Participation</h2>
+                  <h2 className="text-card-title text-neutral-700">
+                    {t('eventDetail.participation')}
+                  </h2>
                 </div>
                 <div className="space-y-3 p-4">
                   {[
-                    { label: 'Invited', value: participants.length },
-                    { label: 'Opened', value: openedCount },
-                    { label: 'Contributed', value: contributedCount },
+                    { label: t('eventDetail.invited'), value: participants.length },
+                    { label: t('eventDetail.opened'), value: openedCount },
+                    { label: t('eventDetail.contributed'), value: contributedCount },
                   ].map((row, i, arr) => (
                     <div key={row.label}>
                       <div className="flex items-center gap-3">
@@ -536,29 +548,31 @@ export default function EventDetail() {
             <div className="space-y-4">
               <Card>
                 <div className="border-b border-neutral-200 p-4">
-                  <h2 className="text-card-title text-neutral-700">Withdrawal status</h2>
+                  <h2 className="text-card-title text-neutral-700">
+                    {t('eventDetail.withdrawalStatus')}
+                  </h2>
                 </div>
                 <dl className="divide-y divide-neutral-200 p-4 pt-0">
-                  <DetailRow label="Available balance">
+                  <DetailRow label={t('eventDetail.availableBalance')}>
                     <MoneyValue
                       amount={confirmedTotal - platformFees - stripeFees}
                       currency={event.currency}
                     />
                   </DetailRow>
-                  <DetailRow label="Requested amount">
+                  <DetailRow label={t('eventDetail.requestedAmount')}>
                     {event.withdrawalStatus === 'none' ? (
                       <span className="text-neutral-400">—</span>
                     ) : (
                       <MoneyValue amount={Math.round(confirmedTotal * 0.94)} currency={event.currency} />
                     )}
                   </DetailRow>
-                  <DetailRow label="State">
+                  <DetailRow label={t('eventDetail.state')}>
                     <StatusBadge status={event.withdrawalStatus} />
                   </DetailRow>
-                  <DetailRow label="Stripe Connect">
+                  <DetailRow label={t('eventDetail.stripeConnect')}>
                     <StatusBadge status={event.stripeAccountStatus} />
                   </DetailRow>
-                  <DetailRow label="Payout completed">
+                  <DetailRow label={t('eventDetail.payoutCompleted')}>
                     <span className="tnum">
                       {event.withdrawalStatus === 'completed' && event.closedAt
                         ? formatDateTime(event.closedAt)
@@ -567,7 +581,9 @@ export default function EventDetail() {
                   </DetailRow>
                   {event.withdrawalStatus === 'failed' && (
                     <div className="pt-3">
-                      <p className="text-caption text-neutral-500">Failure reason (verbatim from Stripe)</p>
+                      <p className="text-caption text-neutral-500">
+                        {t('eventDetail.failureReason')}
+                      </p>
                       <p className="mt-1 rounded-sm bg-danger-50 p-2 font-mono text-[13px] leading-5 text-danger-500">
                         account_closed — The bank account has been closed.
                       </p>
@@ -578,15 +594,15 @@ export default function EventDetail() {
 
               <Card>
                 <div className="border-b border-neutral-200 p-4">
-                  <h2 className="text-card-title text-neutral-700">Event metadata</h2>
+                  <h2 className="text-card-title text-neutral-700">{t('eventDetail.metadata')}</h2>
                 </div>
                 <dl className="divide-y divide-neutral-200 p-4 pt-0">
-                  <DetailRow label="Currency">{event.currency}</DetailRow>
-                  <DetailRow label="Source">
-                    <Chip>{event.source}</Chip>
+                  <DetailRow label={t('fields.currency')}>{event.currency}</DetailRow>
+                  <DetailRow label={t('fields.source')}>
+                    <Chip>{t(`source.${event.source}`, { defaultValue: event.source })}</Chip>
                   </DetailRow>
-                  <DetailRow label="Group">{event.groupName ?? '—'}</DetailRow>
-                  <DetailRow label="Location">
+                  <DetailRow label={t('fields.group')}>{event.groupName ?? '—'}</DetailRow>
+                  <DetailRow label={t('fields.location')}>
                     <a
                       href={event.locationUrl}
                       target="_blank"
@@ -597,14 +613,16 @@ export default function EventDetail() {
                       {event.location}
                     </a>
                   </DetailRow>
-                  <DetailRow label="Fee payer">
+                  <DetailRow label={t('eventDetail.feePayer')}>
                     <Chip>{event.feePayer}</Chip>
                   </DetailRow>
-                  <DetailRow label="Share slug">
+                  <DetailRow label={t('eventDetail.shareSlug')}>
                     <code className="font-mono text-[13px]">{event.shareSlug}</code>
                   </DetailRow>
                   <div className="pt-3">
-                    <p className="text-caption text-neutral-500">Personal message</p>
+                    <p className="text-caption text-neutral-500">
+                      {t('eventDetail.personalMessage')}
+                    </p>
                     <p className="mt-1 text-body text-neutral-700">{event.personalMessage}</p>
                   </div>
                 </dl>
@@ -612,7 +630,7 @@ export default function EventDetail() {
 
               <Card>
                 <div className="border-b border-neutral-200 p-4">
-                  <h2 className="text-card-title text-neutral-700">Gift card</h2>
+                  <h2 className="text-card-title text-neutral-700">{t('eventDetail.giftCard')}</h2>
                 </div>
                 <div className="p-4">
                   {card ? (
@@ -626,27 +644,30 @@ export default function EventDetail() {
                       <p className="mt-3 text-body font-medium text-neutral-900">{card.name}</p>
                       <div className="mt-1 flex items-center gap-2">
                         <Chip tone={card.cloverCost > 0 ? 'secondary' : 'neutral'}>
-                          {card.cloverCost > 0 ? `🍀 ${card.cloverCost}` : 'FREE'}
+                          {card.cloverCost > 0 ? `🍀 ${card.cloverCost}` : t('eventDetail.free')}
                         </Chip>
                         <StatusBadge
                           status={event.cardRevealed ? 'completed' : 'pending'}
-                          label={event.cardRevealed ? 'Revealed' : 'Not revealed'}
+                          label={
+                            event.cardRevealed
+                              ? t('eventDetail.revealed')
+                              : t('eventDetail.notRevealed')
+                          }
                         />
                       </div>
                       <Link
                         to={`/cards/catalog/${card.id}`}
                         className="mt-3 inline-flex items-center gap-1 text-caption font-medium text-brand-500 hover:underline"
                       >
-                        Open in catalog
+                        {t('eventDetail.openInCatalog')}
                         <ExternalLink className="h-3 w-3" />
                       </Link>
                     </>
                   ) : (
                     <EmptyState
                       compact
-                      headline="No card attached"
-                      description="The organizer hasn’t selected a gift-card design for this event yet."
-                    />
+                      headline={t('eventDetail.noCard')}
+                      description={t('eventDetail.noCardBody')}                    />
                   )}
                 </div>
               </Card>
@@ -657,17 +678,13 @@ export default function EventDetail() {
         {/* ------------------------------------------------------- Timeline -- */}
         <TabsContent value="timeline">
           <Card className="p-6">
-            <p className="mb-6 text-body text-neutral-500">
-              The event’s whole life. Each milestone shows its elapsed time from publication — this is
-              where the lifecycle timing metrics come from.
-            </p>
+            <p className="mb-6 text-body text-neutral-500">{t('eventDetail.timelineIntro')}</p>
             {timeline.length > 0 ? (
               <Timeline entries={timeline} />
             ) : (
               <EmptyState
-                headline="No timeline events yet"
-                description="Milestones appear as the event is published, invited and funded."
-              />
+                headline={t('eventDetail.noTimeline')}
+                description={t('eventDetail.noTimelineBody')}              />
             )}
           </Card>
         </TabsContent>
@@ -681,12 +698,15 @@ export default function EventDetail() {
             toolbar={
               <ExportButton
                 name={`contributions-${event.shareSlug}`}
-                label="Contributions"
+                label={t('eventDetail.contributionsExportLabel')}
                 columns={contributionColumns}
                 rows={eventContributions}
                 containsPii
                 size="sm"
-                filterSummary={`Event ${event.name} · ${eventContributions.length} contributions`}
+                filterSummary={t('eventDetail.contributionsFilterSummary', {
+                  name: event.name,
+                  count: eventContributions.length,
+                })}
               />
             }
           />
@@ -711,55 +731,57 @@ export default function EventDetail() {
               </Card>
               <Card className="lg:col-span-2">
                 <div className="border-b border-neutral-200 p-4">
-                  <h2 className="text-card-title text-neutral-700">Card performance for this event</h2>
+                  <h2 className="text-card-title text-neutral-700">
+                    {t('eventDetail.cardPerformance')}
+                  </h2>
                 </div>
                 <dl className="divide-y divide-neutral-200 p-4 pt-0">
-                  <DetailRow label="Template name">{card.name}</DetailRow>
-                  <DetailRow label="Type">
+                  <DetailRow label={t('eventDetail.templateName')}>{card.name}</DetailRow>
+                  <DetailRow label={t('eventDetail.cardType')}>
                     <Chip tone={card.cloverCost > 0 ? 'secondary' : 'neutral'}>
-                      {card.cloverCost > 0 ? 'Premium' : 'Standard'}
+                      {card.cloverCost > 0 ? t('eventDetail.premium') : t('eventDetail.standard')}
                     </Chip>
                   </DetailRow>
-                  <DetailRow label="Clover cost paid">
+                  <DetailRow label={t('eventDetail.cloverCostPaid')}>
                     {eventCard?.cloverCostPaid ? `🍀 ${eventCard.cloverCostPaid}` : '—'}
                   </DetailRow>
-                  <DetailRow label="Revealed">
+                  <DetailRow label={t('eventDetail.revealed')}>
                     {eventCard?.revealed ? (
                       <span className="tnum">{formatDateTime(eventCard.revealedAt)}</span>
                     ) : (
-                      <StatusBadge status="pending" label="Not revealed" />
+                      <StatusBadge status="pending" label={t('eventDetail.notRevealed')} />
                     )}
                   </DetailRow>
-                  <DetailRow label="Unique downloads">
+                  <DetailRow label={t('eventDetail.uniqueDownloads')}>
                     <span className="tnum">{eventCard?.uniqueDownloads ?? 0}</span>
                   </DetailRow>
-                  <DetailRow label="Total downloads">
+                  <DetailRow label={t('eventDetail.totalDownloads')}>
                     <span className="tnum">{eventCard?.totalDownloads ?? 0}</span>
                   </DetailRow>
-                  <DetailRow label="Unique downloaders">
+                  <DetailRow label={t('eventDetail.uniqueDownloaders')}>
                     <span className="tnum">{eventCard?.uniqueDownloaders ?? 0}</span>
                   </DetailRow>
-                  <DetailRow label="Time to first view">
+                  <DetailRow label={t('eventDetail.timeToFirstView')}>
                     <span className="tnum">
                       {eventCard?.timeToFirstViewHours != null
                         ? formatDuration(eventCard.timeToFirstViewHours)
                         : '—'}
                     </span>
                   </DetailRow>
-                  <DetailRow label="Time to first download">
+                  <DetailRow label={t('eventDetail.timeToFirstDownload')}>
                     <span className="tnum">
                       {eventCard?.timeToFirstDownloadHours != null
                         ? formatDuration(eventCard.timeToFirstDownloadHours)
                         : '—'}
                     </span>
                   </DetailRow>
-                  <DetailRow label="Card error events">
+                  <DetailRow label={t('eventDetail.cardErrors')}>
                     {eventCard?.errors?.length ? (
                       <span className="text-danger-500">
                         {eventCard.errors.length} — {eventCard.errors[0].type}
                       </span>
                     ) : (
-                      <span className="text-neutral-400">None</span>
+                      <span className="text-neutral-400">{t('common.none')}</span>
                     )}
                   </DetailRow>
                 </dl>
@@ -767,9 +789,9 @@ export default function EventDetail() {
             </div>
           ) : (
             <EmptyState
-              headline="No card attached to this event"
-              description="The organizer hasn’t selected a gift-card design. Card metrics appear once one is chosen."
-              action={{ label: 'Browse catalog', href: '/cards/catalog' }}
+              headline={t('eventDetail.noCardAttached')}
+              description={t('eventDetail.noCardAttachedBody')}
+              action={{ label: t('eventDetail.browseCatalog'), href: '/cards/catalog' }}
             />
           )}
         </TabsContent>
@@ -797,6 +819,7 @@ export default function EventDetail() {
 }
 
 function ParticipantsTable({ participants }: { participants: Participant[] }) {
+  const { t } = useTranslation();
   const [filter, setFilter] = React.useState<'all' | 'contributed' | 'not' | 'opened_not'>('all');
 
   const rows = participants.filter((p) => {
@@ -809,7 +832,7 @@ function ParticipantsTable({ participants }: { participants: Participant[] }) {
   const columns: Column<Participant>[] = [
     {
       id: 'user',
-      header: 'User',
+      header: t('eventDetail.participants.user'),
       cell: (p) => (
         <Link
           to={`/users/${p.user.id}`}
@@ -823,32 +846,32 @@ function ParticipantsTable({ participants }: { participants: Participant[] }) {
     },
     {
       id: 'invitedAt',
-      header: 'Invited at',
+      header: t('eventDetail.participants.invitedAt'),
       sortable: true,
       sortValue: (p) => p.invitedAt,
       cell: (p) => <span className="tnum">{formatDate(p.invitedAt)}</span>,
     },
     {
       id: 'openedAt',
-      header: 'Opened at',
+      header: t('eventDetail.participants.openedAt'),
       sortable: true,
       sortValue: (p) => p.openedAt ?? '',
       cell: (p) =>
-        p.openedAt ? <span className="tnum">{formatDate(p.openedAt)}</span> : <span className="text-neutral-400">Not opened</span>,
+        p.openedAt ? <span className="tnum">{formatDate(p.openedAt)}</span> : <span className="text-neutral-400">{t('eventDetail.participants.notOpened')}</span>,
     },
     {
       id: 'contributed',
-      header: 'Contributed',
+      header: t('eventDetail.participants.contributed'),
       cell: (p) => (
         <StatusBadge
           status={p.contributed ? 'completed' : 'inactive'}
-          label={p.contributed ? 'Yes' : 'No'}
+          label={p.contributed ? t('common.yes') : t('common.no')}
         />
       ),
     },
     {
       id: 'amount',
-      header: 'Amount',
+      header: t('eventDetail.participants.amount'),
       numeric: true,
       sortable: true,
       sortValue: (p) => p.amount ?? 0,
@@ -856,7 +879,7 @@ function ParticipantsTable({ participants }: { participants: Participant[] }) {
     },
     {
       id: 'decision',
-      header: 'Decision time',
+      header: t('eventDetail.participants.decisionTime'),
       numeric: true,
       sortable: true,
       sortValue: (p) => p.decisionTimeHours ?? Infinity,
@@ -869,12 +892,12 @@ function ParticipantsTable({ participants }: { participants: Participant[] }) {
     },
     {
       id: 'payment',
-      header: 'Payment status',
+      header: t('eventDetail.participants.paymentStatus'),
       cell: (p) => (p.paymentStatus ? <StatusBadge status={p.paymentStatus} /> : <span className="text-neutral-400">—</span>),
     },
     {
       id: 'reminders',
-      header: 'Reminders',
+      header: t('eventDetail.participants.reminders'),
       numeric: true,
       sortable: true,
       sortValue: (p) => p.remindersReceived,
@@ -889,13 +912,17 @@ function ParticipantsTable({ participants }: { participants: Participant[] }) {
       rowKey={(p) => p.id}
       storageKey="participants"
       toolbar={
-        <div className="flex flex-wrap gap-1" role="group" aria-label="Filter participants">
+        <div
+          className="flex flex-wrap gap-1"
+          role="group"
+          aria-label={t('eventDetail.participants.filterLabel')}
+        >
           {(
             [
-              ['all', 'All'],
-              ['contributed', 'Contributed'],
-              ['not', 'Not contributed'],
-              ['opened_not', 'Opened, not contributed'],
+              ['all', t('eventDetail.participants.all')],
+              ['contributed', t('eventDetail.participants.contributed')],
+              ['not', t('eventDetail.participants.notContributed')],
+              ['opened_not', t('eventDetail.participants.openedNotContributed')],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -916,8 +943,8 @@ function ParticipantsTable({ participants }: { participants: Participant[] }) {
         </div>
       }
       empty={{
-        headline: 'No participants in this view',
-        description: 'Switch the filter above, or invite more people from the mobile app.',
+        headline: t('eventDetail.participants.empty'),
+        description: t('eventDetail.participants.emptyBody'),
       }}
     />
   );
@@ -925,13 +952,13 @@ function ParticipantsTable({ participants }: { participants: Participant[] }) {
 
 /** Every admin action taken on this event: who, what, when, before → after. */
 export function ActivityLog({ entries }: { entries: AuditEntry[] }) {
+  const { t } = useTranslation();
   if (entries.length === 0) {
     return (
       <Card>
         <EmptyState
-          headline="No admin actions on this record"
-          description="Status overrides, manual interventions and financial adjustments will appear here with before → after values."
-        />
+          headline={t('eventDetail.activity.empty')}
+          description={t('eventDetail.activity.emptyBody')}        />
       </Card>
     );
   }

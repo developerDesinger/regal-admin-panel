@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide-react';
@@ -36,6 +37,7 @@ const MAX_ATTEMPTS = 5;
 const LOCKOUT_SECONDS = 15 * 60;
 
 export default function Login() {
+  const { t } = useTranslation();
   const { admin, signIn, verifyTwoFactor } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -49,7 +51,7 @@ export default function Login() {
   const [remember, setRemember] = React.useState(false);
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(
-    params.get('reason') === 'timeout' ? 'Your session expired after 30 minutes of inactivity.' : null,
+    params.get('reason') === 'timeout' ? t('auth.sessionExpired') : null,
   );
   const [attempts, setAttempts] = React.useState(0);
   const [lockoutLeft, setLockoutLeft] = React.useState(0);
@@ -84,7 +86,7 @@ export default function Login() {
         setDevCode(res.devCode ?? null);
         setStage('2fa');
         return;
-      }
+      } 
       navigate('/');
     } catch (err) {
       const api = err as ApiError;
@@ -104,7 +106,7 @@ export default function Login() {
       // returns one generic message for both cases.
       const next = attempts + 1;
       setAttempts(next);
-      setError(api.message || 'Incorrect email or password.');
+      setError(api.message || t('auth.incorrectCredentials'));
       if (next >= MAX_ATTEMPTS && !api.retryAfterSeconds) setLockoutLeft(LOCKOUT_SECONDS);
     } finally {
       setPending(false);
@@ -133,19 +135,17 @@ export default function Login() {
           <span className="flex h-9 w-9 items-center justify-center rounded-md bg-white/15">
             <ShieldCheck className="h-5 w-5 text-white" aria-hidden />
           </span>
-          <span className="text-[20px] font-semibold text-white">Regal Admin</span>
+          <span className="text-[20px] font-semibold text-white">{t('auth.brand')}</span>
         </div>
 
         {/* White card — the only surface that carries the form */}
         <div className="rounded-lg bg-neutral-0 p-6 shadow-e2 sm:p-8">
           <div className="mb-6 text-center">
             <h1 className="text-page-title text-neutral-900">
-              {stage === '2fa' ? 'Two-factor authentication' : 'Sign in to continue'}
+              {stage === '2fa' ? t('auth.twoFactorTitle') : t('auth.signInToContinue')}
             </h1>
             <p className="mt-1 text-body text-neutral-500">
-              {stage === '2fa'
-                ? 'Enter the 6-digit code from your authenticator app.'
-                : 'Regal Administration Panel'}
+              {stage === '2fa' ? t('auth.twoFactorSubtitle') : t('auth.panelName')}
             </p>
           </div>
 
@@ -162,11 +162,13 @@ export default function Login() {
           {locked && (
             <div role="alert" className="mb-4 rounded-md border border-warning-500/20 bg-warning-50 p-3">
               <p className="text-body text-warning-500">
-                Too many attempts. Try again in{' '}
-                <span className="tnum font-semibold">
-                  {Math.floor(lockoutLeft / 60)}:{String(lockoutLeft % 60).padStart(2, '0')}
-                </span>
-                .
+                <Trans
+                  i18nKey="auth.lockedOut"
+                  values={{
+                    time: `${Math.floor(lockoutLeft / 60)}:${String(lockoutLeft % 60).padStart(2, '0')}`,
+                  }}
+                  components={[<span key="0" className="tnum font-semibold" />]}
+                />
               </p>
             </div>
           )}
@@ -174,7 +176,7 @@ export default function Login() {
           {stage === 'credentials' ? (
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('auth.email')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -183,7 +185,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onBlur={() => setEmailTouched(true)}
-                  placeholder="admin@regal.app"
+                  placeholder={t('auth.emailPlaceholder')}
                   invalid={emailError || Boolean(error)}
                   disabled={locked}
                   className="mt-1"
@@ -191,13 +193,13 @@ export default function Login() {
                 />
                 {emailError && (
                   <p id="email-error" className="mt-1 text-caption text-danger-500">
-                    Enter a valid email address.
+                    {t('auth.emailInvalid')}
                   </p>
                 )}
               </div>
 
               <div>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t('auth.password')}</Label>
                 <div className="relative mt-1">
                   <Input
                     id="password"
@@ -212,7 +214,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label={showPassword ? t('common.hidePassword') : t('common.showPassword')}
                     className="absolute right-1 top-1/2 -translate-y-1/2 rounded-sm p-2 text-neutral-400 transition-colors hover:text-neutral-700"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -228,14 +230,14 @@ export default function Login() {
                     onCheckedChange={(v) => setRemember(Boolean(v))}
                   />
                   <Label htmlFor="remember" className="cursor-pointer font-normal">
-                    Remember me
+                    {t('auth.rememberMe')}
                   </Label>
                 </div>
                 <Link
                   to="/login/forgot"
                   className="rounded-sm text-[13px] font-medium text-brand-500 transition-colors hover:text-brand-600"
                 >
-                  Forgot password?
+                  {t('auth.forgotPassword')}
                 </Link>
               </div>
 
@@ -246,13 +248,11 @@ export default function Login() {
                 disabled={!canSubmit}
                 loading={pending}
               >
-                {pending ? 'Signing in…' : 'Sign in'}
+                {pending ? t('auth.signingIn') : t('auth.signIn')}
               </Button>
 
               <p className="text-caption text-neutral-500">
-                {remember
-                  ? 'Your session will stay active for 30 days on this device.'
-                  : 'Your session ends when you close the browser.'}
+                {remember ? t('auth.sessionRemembered') : t('auth.sessionEnds')}
               </p>
             </form>
           ) : (
@@ -265,7 +265,7 @@ export default function Login() {
                 setError(null);
               }}
               onVerify={async (code) => {
-                if (!challengeId) throw new Error('Missing challenge. Sign in again.');
+                if (!challengeId) throw new Error(t('auth.missingChallenge'));
                 await verifyTwoFactor(challengeId, code);
                 navigate('/');
               }}
@@ -275,7 +275,7 @@ export default function Login() {
           {/* Kept on the white surface: 12px on brand-500 tops out at 4.15:1,
               below the 4.5:1 WCAG AA floor for normal text (§21). */}
           <p className="mt-6 border-t border-neutral-200 pt-4 text-center text-caption text-neutral-500">
-            Restricted access. All activity is logged.
+            {t('common.restrictedAccess')}
           </p>
         </div>
       </main>
@@ -297,6 +297,7 @@ function TwoFactorForm({
   onVerify: (code: string) => Promise<void>;
   onError: (message: string) => void;
 }) {
+  const { t } = useTranslation();
   const [digits, setDigits] = React.useState(['', '', '', '', '', '']);
   const [cooldown, setCooldown] = React.useState(0);
   const [pending, setPending] = React.useState(false);
@@ -334,7 +335,7 @@ function TwoFactorForm({
     try {
       await onVerify(digits.join(''));
     } catch (err) {
-      onError((err as ApiError).message || 'That code was not accepted.');
+      onError((err as ApiError).message || t('auth.codeRejected'));
       setDigits(['', '', '', '', '', '']);
       refs.current[0]?.focus();
     } finally {
@@ -344,7 +345,7 @@ function TwoFactorForm({
 
   return (
     <form className="space-y-4" onSubmit={submit}>
-      <div className="flex justify-between gap-2" role="group" aria-label="6-digit verification code">
+      <div className="flex justify-between gap-2" role="group" aria-label={t('auth.codeGroup')}>
         {digits.map((d, i) => (
           <input
             key={i}
@@ -359,7 +360,7 @@ function TwoFactorForm({
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
-            aria-label={`Digit ${i + 1}`}
+            aria-label={t('auth.digit', { n: i + 1 })}
             autoFocus={i === 0}
             className={cn(
               'tnum h-12 w-full rounded-sm border border-neutral-300 bg-neutral-0 text-center text-[18px] font-semibold text-neutral-900',
@@ -376,13 +377,16 @@ function TwoFactorForm({
         disabled={!complete}
         loading={pending}
       >
-        {pending ? 'Verifying…' : 'Verify'}
+        {pending ? t('auth.verifying') : t('auth.verify')}
       </Button>
 
       {devCode && (
         <p className="rounded-sm bg-warning-50 p-2 text-center text-caption text-warning-500">
-          Dev code: <span className="tnum font-mono font-semibold">{devCode}</span> — shown outside
-          production only.
+          <Trans
+            i18nKey="auth.devCode"
+            values={{ code: devCode }}
+            components={[<span key="0" className="tnum font-mono font-semibold" />]}
+          />
         </p>
       )}
 
@@ -392,7 +396,7 @@ function TwoFactorForm({
           onClick={onBack}
           className="rounded-sm text-[13px] font-medium text-brand-500 hover:text-brand-600"
         >
-          Back to sign in
+          {t('auth.backToSignIn')}
         </button>
         <button
           type="button"
@@ -408,7 +412,7 @@ function TwoFactorForm({
           }}
           className="rounded-sm text-[13px] font-medium text-brand-500 hover:text-brand-600 disabled:text-neutral-400"
         >
-          {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
+          {cooldown > 0 ? t('auth.resendIn', { seconds: cooldown }) : t('auth.resendCode')}
         </button>
       </div>
     </form>

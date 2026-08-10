@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -40,6 +41,7 @@ import { formatDuration, formatNumber, formatPercent } from '@/lib/format';
 
 /** Screen 08 — Gift Cards Analytics (§08). */
 export default function CardAnalytics() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { all } = useUrlState();
   const range = all.range ?? '30d';
@@ -70,7 +72,7 @@ export default function CardAnalytics() {
   const templateColumns: Column<CardTemplateRow>[] = [
     {
       id: 'design',
-      header: 'Design',
+      header: t('cards.analytics.table.design'),
       width: '220px',
       sortable: true,
       sortValue: (c) => c.name,
@@ -95,16 +97,16 @@ export default function CardAnalytics() {
     },
     {
       id: 'type',
-      header: 'Type',
+      header: t('cards.analytics.table.type'),
       cell: (c) => (
         <Chip tone={c.cloverCost > 0 ? 'secondary' : 'neutral'}>
-          {c.cloverCost > 0 ? 'Premium' : 'Standard'}
+          {c.cloverCost > 0 ? t('cards.premium') : t('cards.standard')}
         </Chip>
       ),
     },
     {
       id: 'selected',
-      header: 'Times selected',
+      header: t('cards.analytics.table.timesSelected'),
       numeric: true,
       sortable: true,
       sortValue: (c) => c.timesSelected,
@@ -112,7 +114,7 @@ export default function CardAnalytics() {
     },
     {
       id: 'share',
-      header: 'Selection share',
+      header: t('cards.analytics.table.selectionShare'),
       numeric: true,
       sortable: true,
       sortValue: (c) => c.selectionSharePercent,
@@ -120,7 +122,7 @@ export default function CardAnalytics() {
     },
     {
       id: 'revealRate',
-      header: 'Reveal rate',
+      header: t('cards.analytics.table.revealRate'),
       numeric: true,
       sortable: true,
       sortValue: (c) => c.revealRate,
@@ -128,7 +130,7 @@ export default function CardAnalytics() {
     },
     {
       id: 'uniqueDownloads',
-      header: 'Unique downloads',
+      header: t('cards.analytics.table.uniqueDownloads'),
       numeric: true,
       sortable: true,
       sortValue: (c) => c.uniqueDownloads,
@@ -136,7 +138,7 @@ export default function CardAnalytics() {
     },
     {
       id: 'totalDownloads',
-      header: 'Total downloads',
+      header: t('cards.analytics.table.totalDownloads'),
       numeric: true,
       sortable: true,
       sortValue: (c) => c.totalDownloads,
@@ -144,7 +146,7 @@ export default function CardAnalytics() {
     },
     {
       id: 'perReveal',
-      header: 'Downloads / reveal',
+      header: t('cards.analytics.table.downloadsPerReveal'),
       numeric: true,
       sortable: true,
       sortValue: (c) => c.downloadsPerReveal,
@@ -152,7 +154,7 @@ export default function CardAnalytics() {
     },
     {
       id: 'cloverCost',
-      header: 'Clover cost',
+      header: t('cards.analytics.table.cloverCost'),
       numeric: true,
       sortable: true,
       sortValue: (c) => c.cloverCost,
@@ -160,12 +162,12 @@ export default function CardAnalytics() {
         c.cloverCost > 0 ? (
           <CloverValue amount={c.cloverCost} className="justify-end" />
         ) : (
-          <span className="text-neutral-400">Free</span>
+          <span className="text-neutral-400">{t('cards.free')}</span>
         ),
     },
     {
       id: 'revenue',
-      header: 'Revenue in clovers',
+      header: t('cards.analytics.table.revenue'),
       numeric: true,
       sortable: true,
       sortValue: (c) => c.revenueInClovers,
@@ -181,22 +183,25 @@ export default function CardAnalytics() {
   return (
     <>
       <PageHeader
-        breadcrumbs={[{ label: 'Gift Cards' }, { label: 'Analytics' }]}
-        title="Gift Cards Analytics"
-        subtitle="Which designs earn their place in the catalog, and where card delivery breaks."
+        breadcrumbs={[
+          { label: t('nav.giftCards') },
+          { label: t('cards.analytics.breadcrumb') },
+        ]}
+        title={t('cards.analytics.title')}
+        subtitle={t('cards.analytics.subtitle')}
         actions={
           <>
             <DateRangePicker />
             <ExportButton
               name="card-performance"
-              label="Cards"
+              label={t('cards.analytics.exportLabel')}
               columns={cardColumns}
               rows={giftCards}
-              filterSummary={`${giftCards.length} designs`}
+              filterSummary={t('cards.analytics.designCount', { count: giftCards.length })}
             />
             <Button variant="primary" onClick={() => navigate('/cards/catalog')}>
               <Upload className="h-4 w-4" />
-              Manage catalog
+              {t('cards.analytics.manageCatalog')}
             </Button>
           </>
         }
@@ -204,70 +209,70 @@ export default function CardAnalytics() {
 
       <KpiGrid className="mb-6">
         <KpiCard
-          label="Cards Created"
+          label={t('cards.analytics.kpi.created')}
           {...kpi('cardsCreated', formatNumber)}
           accent="accent"
-          definition="Cards attached to an event in the selected range, standard and premium combined."
+          definition={t('cards.analytics.kpi.createdDef')}
         />
         <KpiCard
-          label="Standard vs Premium"
+          label={t('cards.analytics.kpi.standardVsPremium')}
           value={
             kpis
               ? `${formatNumber(kpis.standardCount?.value ?? 0)} / ${formatNumber(kpis.premiumCount?.value ?? 0)}`
               : '—'
           }
-          secondary="standard / premium"
-          definition="Share of cards created from free designs versus clover-unlocked premium designs."
+          secondary={t('cards.analytics.kpi.standardVsPremiumSecondary')}
+          definition={t('cards.analytics.kpi.standardVsPremiumDef')}
         />
         <KpiCard
-          label="Premium Redeemed with Clovers"
+          label={t('cards.analytics.kpi.premiumRedeemed')}
           {...kpi('premiumRedeemedWithClovers', formatNumber)}
           accent="secondary"
-          definition="CardUnlock rows created in the range — one per user per premium design."
+          definition={t('cards.analytics.kpi.premiumRedeemedDef')}
           onDrillDown={() => navigate('/clovers')}
         />
         <KpiCard
-          label="Reveal Rate"
+          label={t('cards.analytics.kpi.revealRate')}
           {...kpi('revealRate', formatPercent)}
           deltaUnit="pp"
-          definition="Cards revealed by the beneficiary ÷ cards available × 100."
+          definition={t('cards.analytics.kpi.revealRateDef')}
         />
         <KpiCard
-          label="Unique Downloads"
+          label={t('cards.analytics.kpi.uniqueDownloads')}
           {...kpi('uniqueDownloads', formatNumber)}
-          definition="Distinct (user, card) pairs with at least one download event."
+          definition={t('cards.analytics.kpi.uniqueDownloadsDef')}
         />
         <KpiCard
-          label="Total Downloads"
+          label={t('cards.analytics.kpi.totalDownloads')}
           {...kpi('totalDownloads', formatNumber)}
-          definition="All download events, including repeats by the same user."
+          definition={t('cards.analytics.kpi.totalDownloadsDef')}
         />
         <KpiCard
-          label="Median Time to First View"
+          label={t('cards.analytics.kpi.medianFirstView')}
           {...kpi('medianTimeToFirstViewHours', formatDuration)}
           invertDelta
-          definition="Median of (first view timestamp − card available timestamp)."
+          definition={t('cards.analytics.kpi.medianFirstViewDef')}
         />
         <KpiCard
-          label="Card Errors"
+          label={t('cards.analytics.kpi.errors')}
           {...kpi('cardErrors', formatNumber)}
           invertDelta
           accent="danger"
-          definition="Generation, loading, reveal and download failures logged in the card event log."
+          definition={t('cards.analytics.kpi.errorsDef')}
           onDrillDown={() => setErrorDrill(true)}
         />
       </KpiGrid>
 
       <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
         <ChartCard
-          title="Cards created over time"
-          subtitle="Stacked standard vs premium"
+          title={t('cards.analytics.charts.createdOverTime')}
+          subtitle={t('cards.analytics.charts.createdOverTimeSub')}
           legend={[
-            { label: 'Standard', color: CHART_COLORS[6] },
-            { label: 'Premium', color: CHART_COLORS[4] },
+            { label: t('cards.standard'), color: CHART_COLORS[6] },
+            { label: t('cards.premium'), color: CHART_COLORS[4] },
           ]}
           tableData={{
-            columns: ['Date', 'Standard', 'Premium'],
+            columns: [t('fields.date'), t('cards.standard'), t('cards.premium')],
             rows: series.map((d) => [d.date, d.standard, d.premium]),
           }}
         >
@@ -283,10 +288,16 @@ export default function CardAnalytics() {
               />
               <YAxis tickLine={false} axisLine={false} width={40} />
               <RTooltip content={<ChartTooltip />} cursor={{ fill: 'rgb(var(--neutral-100))' }} />
-              <Bar dataKey="standard" name="Standard" stackId="c" fill={CHART_COLORS[6]} isAnimationActive={false} />
+              <Bar
+                dataKey="standard"
+                name={t('cards.standard')}
+                stackId="c"
+                fill={CHART_COLORS[6]}
+                isAnimationActive={false}
+              />
               <Bar
                 dataKey="premium"
-                name="Premium"
+                name={t('cards.premium')}
                 stackId="c"
                 fill={CHART_COLORS[4]}
                 radius={[2, 2, 0, 0]}
@@ -297,12 +308,16 @@ export default function CardAnalytics() {
         </ChartCard>
 
         <ChartCard
-          title="Funnel: Selected → Shared"
-          subtitle="Where cards drop out of the delivery path"
+          title={t('cards.analytics.charts.funnel')}
+          subtitle={t('cards.analytics.charts.funnelSub')}
           tableData={{
-            columns: ['Stage', 'Count', 'Conversion'],
+            columns: [
+              t('cards.analytics.charts.stage'),
+              t('cards.analytics.charts.count'),
+              t('cards.analytics.charts.conversion'),
+            ],
             rows: funnelStages.map((s, i) => [
-              s.stage,
+              t(`cards.analytics.funnelStage.${s.stage.toLowerCase()}`, { defaultValue: s.stage }),
               s.value,
               i === 0 ? '—' : `${((s.value / funnelStages[i - 1].value) * 100).toFixed(1)}%`,
             ]),
@@ -314,7 +329,11 @@ export default function CardAnalytics() {
               const conv = i === 0 ? 100 : (stage.value / funnelStages[i - 1].value) * 100;
               return (
                 <div key={stage.stage} className="flex items-center gap-3">
-                  <span className="w-[80px] shrink-0 text-body text-neutral-700">{stage.stage}</span>
+                  <span className="w-[80px] shrink-0 text-body text-neutral-700">
+                    {t(`cards.analytics.funnelStage.${stage.stage.toLowerCase()}`, {
+                      defaultValue: stage.stage,
+                    })}
+                  </span>
                   <div className="relative h-6 flex-1 overflow-hidden rounded-sm bg-neutral-100">
                     <div
                       className="h-full rounded-sm"
@@ -339,16 +358,22 @@ export default function CardAnalytics() {
 
       <div className="mb-6">
         <ChartCard
-          title="Card errors over time"
-          subtitle="By error type — drill down to individual error records with stack context"
+          title={t('cards.analytics.charts.errorsOverTime')}
+          subtitle={t('cards.analytics.charts.errorsOverTimeSub')}
           legend={[
-            { label: 'Generation', color: CHART_COLORS[0] },
-            { label: 'Loading', color: CHART_COLORS[1] },
-            { label: 'Reveal', color: CHART_COLORS[3] },
-            { label: 'Download', color: 'rgb(var(--danger-500))' },
+            { label: t('cards.analytics.errorType.generation'), color: CHART_COLORS[0] },
+            { label: t('cards.analytics.errorType.loading'), color: CHART_COLORS[1] },
+            { label: t('cards.analytics.errorType.reveal'), color: CHART_COLORS[3] },
+            { label: t('cards.analytics.errorType.download'), color: 'rgb(var(--danger-500))' },
           ]}
           tableData={{
-            columns: ['Date', 'Generation', 'Loading', 'Reveal', 'Download'],
+            columns: [
+              t('fields.date'),
+              t('cards.analytics.errorType.generation'),
+              t('cards.analytics.errorType.loading'),
+              t('cards.analytics.errorType.reveal'),
+              t('cards.analytics.errorType.download'),
+            ],
             rows: errorSeries.map((d) => [d.date, d.generation, d.loading, d.reveal, d.download]),
           }}
           onViewRecords={() => setErrorDrill(true)}
@@ -366,17 +391,49 @@ export default function CardAnalytics() {
               />
               <YAxis tickLine={false} axisLine={false} width={40} />
               <RTooltip content={<ChartTooltip />} />
-              <Line type="monotone" dataKey="generation" name="Generation" stroke={CHART_COLORS[0]} strokeWidth={2} dot={false} isAnimationActive={false} />
-              <Line type="monotone" dataKey="loading" name="Loading" stroke={CHART_COLORS[1]} strokeWidth={2} dot={false} isAnimationActive={false} />
-              <Line type="monotone" dataKey="reveal" name="Reveal" stroke={CHART_COLORS[3]} strokeWidth={2} dot={false} isAnimationActive={false} />
-              <Line type="monotone" dataKey="download" name="Download" stroke="rgb(var(--danger-500))" strokeWidth={2} dot={false} isAnimationActive={false} />
+              <Line
+                type="monotone"
+                dataKey="generation"
+                name={t('cards.analytics.errorType.generation')}
+                stroke={CHART_COLORS[0]}
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="loading"
+                name={t('cards.analytics.errorType.loading')}
+                stroke={CHART_COLORS[1]}
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="reveal"
+                name={t('cards.analytics.errorType.reveal')}
+                stroke={CHART_COLORS[3]}
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="download"
+                name={t('cards.analytics.errorType.download')}
+                stroke="rgb(var(--danger-500))"
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={false}
+              />
             </LineChart>
           </ResponsiveContainer>
         </ChartCard>
       </div>
 
-      <SectionHeading description="One row per design. This is what tells you which designs are worth commissioning more of.">
-        Template performance
+      <SectionHeading description={t('cards.analytics.templateDescription')}>
+        {t('cards.analytics.templateHeading')}
       </SectionHeading>
       <DataTable
         columns={templateColumns}
@@ -387,17 +444,20 @@ export default function CardAnalytics() {
         initialSort={{ id: 'selected', dir: 'desc' }}
         pageSize={20}
         empty={{
-          headline: 'No designs in the catalog',
-          description: 'Upload the first gift-card design to start collecting performance data.',
-          action: { label: 'Open catalog', onClick: () => navigate('/cards/catalog') },
+          headline: t('cards.analytics.table.empty'),
+          description: t('cards.analytics.table.emptyBody'),
+          action: {
+            label: t('cards.analytics.table.openCatalog'),
+            onClick: () => navigate('/cards/catalog'),
+          },
         }}
       />
 
       <DrillDownDrawer
         open={errorDrill}
         onOpenChange={setErrorDrill}
-        title="Card errors"
-        subtitle="Last 14 days · newest first"
+        title={t('cards.analytics.drillTitle')}
+        subtitle={t('cards.analytics.drillSubtitle')}
         recordCount={totalErrors}
         fullPageHref="/cards/analytics"
       >
@@ -408,20 +468,22 @@ export default function CardAnalytics() {
             .flatMap((d) =>
               (
                 [
-                  ['generation', d.generation, 'Card image generation timed out'],
-                  ['loading', d.loading, 'Artwork failed to load from CDN'],
-                  ['reveal', d.reveal, 'Reveal animation crashed on client'],
-                  ['download', d.download, 'Signed download URL expired'],
+                  ['generation', d.generation],
+                  ['loading', d.loading],
+                  ['reveal', d.reveal],
+                  ['download', d.download],
                 ] as const
               )
                 .filter(([, count]) => count > 0)
-                .map(([type, count, message]) => (
+                .map(([type, count]) => (
                   <li key={`${d.date}-${type}`} className="px-6 py-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-body font-medium text-neutral-900">{message}</p>
+                        <p className="text-body font-medium text-neutral-900">
+                          {t(`cards.analytics.errorMessage.${type}`)}
+                        </p>
                         <p className="mt-1 font-mono text-caption text-neutral-500">
-                          error.type={type} · date={d.date}
+                          {t('cards.analytics.drillMeta', { type, date: d.date })}
                         </p>
                       </div>
                       <span className="tnum shrink-0 rounded-sm bg-danger-50 px-2 py-1 text-caption font-medium text-danger-500">
@@ -433,10 +495,9 @@ export default function CardAnalytics() {
             )}
         </ul>
         <p className="px-6 py-4 text-caption text-neutral-500">
-          Individual error records include the failing card slug, user id and client stack once the
-          card event log ships.{' '}
+          {t('cards.analytics.drillNote')}{' '}
           <Link to="/cards/catalog" className="text-brand-500 hover:underline">
-            Open catalog
+            {t('cards.analytics.table.openCatalog')}
           </Link>
         </p>
       </DrillDownDrawer>

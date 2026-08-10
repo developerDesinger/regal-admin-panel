@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, Eye, EyeOff, Lock, UserMinus, UserPlus } from 'lucide-react';
@@ -30,6 +31,7 @@ const PROVIDER_ICON: Record<string, string> = { local: '✉️', google: 'G', ap
 
 /** Screen 06 — Users (§06). */
 export default function UsersList() {
+  const { t } = useTranslation();
   const { all } = useUrlState();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -75,7 +77,7 @@ export default function UsersList() {
   const columns: Column<RegalUser>[] = [
     {
       id: 'user',
-      header: 'User',
+      header: t('users.table.user'),
       width: '260px',
       sortable: true,
       sortValue: (u) => `${u.firstName} ${u.lastName}`,
@@ -93,26 +95,26 @@ export default function UsersList() {
     },
     {
       id: 'registered',
-      header: 'Registered',
+      header: t('users.table.registered'),
       sortable: true,
       sortValue: (u) => u.createdAt,
       cell: (u) => <span className="tnum whitespace-nowrap">{formatDate(u.createdAt)}</span>,
     },
     {
       id: 'lastLogin',
-      header: 'Last login',
+      header: t('users.table.lastLogin'),
       sortable: true,
       sortValue: (u) => u.lastLoginAt ?? '',
       cell: (u) =>
         u.lastLoginAt ? (
           <span className="text-neutral-500">{formatRelative(u.lastLoginAt)}</span>
         ) : (
-          <span className="text-neutral-400">Never</span>
+          <span className="text-neutral-400">{t('status.never')}</span>
         ),
     },
     {
       id: 'providers',
-      header: 'Auth',
+      header: t('users.table.auth'),
       cell: (u) => (
         <div className="flex gap-1">
           {u.authProviders.map((p) => (
@@ -127,7 +129,7 @@ export default function UsersList() {
     },
     {
       id: 'organized',
-      header: 'Organized',
+      header: t('users.table.organized'),
       numeric: true,
       sortable: true,
       sortValue: (u) => u.eventsOrganized,
@@ -135,7 +137,7 @@ export default function UsersList() {
     },
     {
       id: 'contributed',
-      header: 'Contributed to',
+      header: t('users.table.contributedTo'),
       numeric: true,
       sortable: true,
       sortValue: (u) => u.eventsContributedTo,
@@ -143,7 +145,7 @@ export default function UsersList() {
     },
     {
       id: 'invitations',
-      header: 'Invitations',
+      header: t('users.table.invitations'),
       numeric: true,
       sortable: true,
       defaultHidden: true,
@@ -152,7 +154,7 @@ export default function UsersList() {
     },
     {
       id: 'conversion',
-      header: 'Conversion',
+      header: t('users.table.conversion'),
       numeric: true,
       sortable: true,
       sortValue: (u) => (u.invitationsReceived ? u.eventsContributedTo / u.invitationsReceived : 0),
@@ -166,7 +168,7 @@ export default function UsersList() {
     },
     {
       id: 'totalContributed',
-      header: 'Total contributed',
+      header: t('users.table.totalContributed'),
       numeric: true,
       sortable: true,
       sortValue: (u) => u.totalContributed,
@@ -174,7 +176,7 @@ export default function UsersList() {
     },
     {
       id: 'clovers',
-      header: 'Clovers',
+      header: t('users.table.clovers'),
       numeric: true,
       sortable: true,
       sortValue: (u) => u.cloverBalance,
@@ -182,13 +184,21 @@ export default function UsersList() {
     },
     {
       id: 'status',
-      header: 'Status',
+      header: t('fields.status'),
       sortable: true,
       sortValue: (u) => (u.isDeleted ? 'deleted' : u.isVerified ? 'active' : 'unverified'),
       cell: (u) => (
         <StatusBadge
           status={u.isDeleted ? 'deleted' : !u.isActive ? 'inactive' : u.isVerified ? 'active' : 'unverified'}
-          label={u.isDeleted ? 'Deleted' : !u.isActive ? 'Suspended' : u.isVerified ? 'Active' : 'Unverified'}
+          label={
+            u.isDeleted
+              ? t('status.deleted')
+              : !u.isActive
+                ? t('users.table.suspended')
+                : u.isVerified
+                  ? t('status.active')
+                  : t('status.unverified')
+          }
         />
       ),
     },
@@ -199,12 +209,24 @@ export default function UsersList() {
       cell: (u) =>
         can('users:read') && !u.isDeleted ? (
           <div data-no-row-click onClick={(e) => e.stopPropagation()}>
-            <Tooltip content={u.isActive ? `Suspend ${u.firstName}` : `Reactivate ${u.firstName}`}>
+            <Tooltip
+              content={
+                u.isActive
+                  ? t('users.suspend.tooltip', { name: u.firstName })
+                  : t('users.suspend.reactivateTooltip', { name: u.firstName })
+              }
+            >
               <Button
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => setPending(u)}
-                aria-label={u.isActive ? `Suspend ${u.firstName} ${u.lastName}` : `Reactivate ${u.firstName} ${u.lastName}`}
+                aria-label={
+                  u.isActive
+                    ? t('users.suspend.tooltip', { name: `${u.firstName} ${u.lastName}` })
+                    : t('users.suspend.reactivateTooltip', {
+                        name: `${u.firstName} ${u.lastName}`,
+                      })
+                }
                 className={u.isActive ? 'text-neutral-400 hover:text-danger-500' : 'text-neutral-400 hover:text-success-500'}
               >
                 {u.isActive ? <UserMinus className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
@@ -218,8 +240,8 @@ export default function UsersList() {
   return (
     <>
       <PageHeader
-        title="Users"
-        subtitle="Everyone who organizes, contributes or receives a gift."
+        title={t('users.title')}
+        subtitle={t('users.subtitle')}
         actions={
           <>
             <DateRangePicker />
@@ -230,31 +252,35 @@ export default function UsersList() {
                   togglePii();
                   if (!piiUnmasked) {
                     toast({
-                      title: 'PII unmasked',
-                      description: 'This action was written to the audit trail.',
+                      title: t('users.piiUnmasked'),
+                      description: t('users.piiUnmaskedBody'),
                       tone: 'warning',
                     });
                   }
                 }}
               >
                 {piiUnmasked ? <EyeOff className="h-4 w-4 text-neutral-400" /> : <Eye className="h-4 w-4 text-neutral-400" />}
-                {piiUnmasked ? 'Mask PII' : 'Unmask PII'}
+                {piiUnmasked ? t('users.maskPii') : t('users.unmaskPii')}
               </Button>
             ) : (
-              <Tooltip content="Requires the pii:read permission. Ask a Super Admin to grant it.">
+              <Tooltip content={t('users.piiTooltip')}>
                 <Button variant="secondary" disabled>
                   <Lock className="h-4 w-4" />
-                  PII masked
+                  {t('users.piiMasked')}
                 </Button>
               </Tooltip>
             )}
             <ExportButton
               name="users"
-              label="Users"
+              label={t('users.exportLabel')}
               columns={userColumns}
               rows={filtered}
               containsPii
-              filterSummary={`${rangeLabel(all.range ?? '30d')} · ${filtered.length} of ${meta?.totalRows ?? users.length} users`}
+              filterSummary={t('users.filterSummary', {
+                range: t(rangeLabel(all.range ?? '30d')),
+                shown: filtered.length,
+                total: meta?.totalRows ?? users.length,
+              })}
             />
           </>
         }
@@ -262,37 +288,37 @@ export default function UsersList() {
 
       <KpiGrid columns={3} className="mb-6">
         <KpiCard
-          label="Total Users"
+          label={t('users.kpi.total')}
           {...kpi('totalUsers', formatNumber)}
-          definition="All registered accounts, excluding hard-deleted records."
+          definition={t('users.kpi.totalDef')}
           onDrillDown={() => navigate('/users')}
         />
         <KpiCard
-          label="New Users"
+          label={t('users.kpi.new')}
           {...kpi('newUsers', formatNumber)}
-          definition="Accounts whose registration timestamp falls inside the selected range."
+          definition={t('users.kpi.newDef')}
         />
         <KpiCard
-          label="Active Contributors"
+          label={t('users.kpi.activeContributors')}
           {...kpi('activeContributors', formatNumber)}
-          definition="Distinct users with ≥1 confirmed contribution in the selected range."
+          definition={t('users.kpi.activeContributorsDef')}
           onDrillDown={() => navigate('/users?activity=contributed')}
         />
         <KpiCard
-          label="Recurrent Contributors"
+          label={t('users.kpi.recurrent')}
           {...kpi('recurrentContributors', formatNumber)}
-          definition="Users who contributed to 2 or more distinct events, lifetime."
+          definition={t('users.kpi.recurrentDef')}
         />
         <KpiCard
-          label="Average Lifetime Contribution"
+          label={t('users.kpi.avgLifetime')}
           {...kpi('avgLifetimeContribution', (v) => formatMoney(v))}
-          definition="Mean of total confirmed money contributed per user, lifetime."
+          definition={t('users.kpi.avgLifetimeDef')}
         />
         <KpiCard
-          label="Users with Clover Balance"
+          label={t('users.kpi.withClovers')}
           {...kpi('usersWithCloverBalance', formatNumber)}
           accent="secondary"
-          definition="Users whose current clover balance is greater than zero."
+          definition={t('users.kpi.withCloversDef')}
           onDrillDown={() => navigate('/users?clovers=has')}
         />
       </KpiGrid>
@@ -300,54 +326,56 @@ export default function UsersList() {
       {!piiUnmasked && (
         <p className="mb-3 flex items-center gap-2 text-caption text-neutral-500">
           <Lock className="h-3 w-3" aria-hidden />
-          Email and phone are masked by default. Unmasking requires{' '}
-          <code className="font-mono">pii:read</code> and is itself an audited action.
+          <Trans
+            i18nKey="users.piiNote"
+            components={[<span key="0" />, <code key="1" className="font-mono" />]}
+          />
         </p>
       )}
 
       <FilterBar
         className="mb-4"
-        searchPlaceholder="Search name, email, user ID…"
+        searchPlaceholder={t('users.searchPlaceholder')}
         filters={[
           {
             id: 'verified',
-            label: 'Verified',
+            label: t('users.filters.verified'),
             options: [
-              { value: 'yes', label: 'Verified' },
-              { value: 'no', label: 'Unverified' },
+              { value: 'yes', label: t('users.filters.verified') },
+              { value: 'no', label: t('users.filters.unverified') },
             ],
           },
           {
             id: 'state',
-            label: 'State',
+            label: t('users.filters.state'),
             options: [
-              { value: 'active', label: 'Active' },
-              { value: 'deleted', label: 'Deleted' },
+              { value: 'active', label: t('status.active') },
+              { value: 'deleted', label: t('users.filters.deleted') },
             ],
           },
           {
             id: 'provider',
-            label: 'Provider',
+            label: t('users.filters.provider'),
             options: [
-              { value: 'local', label: 'Email / password' },
+              { value: 'local', label: t('users.filters.emailPassword') },
               { value: 'google', label: 'Google' },
               { value: 'apple', label: 'Apple' },
             ],
           },
           {
             id: 'activity',
-            label: 'Activity',
+            label: t('users.filters.activity'),
             options: [
-              { value: 'contributed', label: 'Has contributed' },
-              { value: 'organized', label: 'Has organized' },
+              { value: 'contributed', label: t('users.filters.hasContributed') },
+              { value: 'organized', label: t('users.filters.hasOrganized') },
             ],
           },
           {
             id: 'clovers',
-            label: 'Clovers',
+            label: t('users.filters.clovers'),
             options: [
-              { value: 'has', label: 'Has balance' },
-              { value: 'none', label: 'Zero balance' },
+              { value: 'has', label: t('users.filters.hasBalance') },
+              { value: 'none', label: t('users.filters.zeroBalance') },
             ],
           },
         ]}
@@ -364,8 +392,8 @@ export default function UsersList() {
         storageKey="users"
         initialSort={{ id: 'registered', dir: 'desc' }}
         empty={{
-          headline: 'No users match these filters',
-          description: 'Clear a filter or search by email to widen the result set.',
+          headline: t('users.table.empty'),
+          description: t('users.table.emptyBody'),
         }}
         bulkActions={(selected, clear) => (
           <Button
@@ -374,15 +402,15 @@ export default function UsersList() {
             onClick={() => {
               const file = downloadDataset('users-selection', userColumns, selected, 'csv');
               toast({
-                title: 'Download started',
-                description: `${file} · contains PII · audited`,
+                title: t('common.downloadStarted'),
+                description: t('users.exportedPii', { filename: file }),
                 tone: 'success',
               });
               clear();
             }}
           >
             <Download className="h-4 w-4 text-neutral-400" />
-            Export CSV
+            {t('events.exportCsv')}
           </Button>
         )}
       />
@@ -391,30 +419,27 @@ export default function UsersList() {
         <ConfirmDialog
           open
           onOpenChange={(o) => !o && setPending(null)}
-          title={pending.isActive ? 'Suspend this account' : 'Reactivate this account'}
+          title={
+            pending.isActive ? t('users.suspend.title') : t('users.suspend.reactivateTitle')
+          }
           tone={pending.isActive ? 'danger' : 'primary'}
           // The server rejects these without a reason (422), and it lands in
           // the audit trail — so it stays required. The typed-name step does
           // not: suspending is reversible from this same button.
           requireReason
-          confirmLabel={pending.isActive ? 'Suspend account' : 'Reactivate account'}
+          confirmLabel={
+            pending.isActive ? t('users.suspend.confirm') : t('users.suspend.reactivateConfirm')
+          }
           consequence={
-            pending.isActive ? (
-              <>
-                <strong>
-                  {pending.firstName} {pending.lastName}
-                </strong>{' '}
-                will be unable to sign in, contribute or organize events. Their contributions and
-                clover balance are preserved, and you can reactivate them from this same button.
-              </>
-            ) : (
-              <>
-                <strong>
-                  {pending.firstName} {pending.lastName}
-                </strong>{' '}
-                will be able to sign in again immediately.
-              </>
-            )
+            <Trans
+              i18nKey={
+                pending.isActive
+                  ? 'users.suspend.consequence'
+                  : 'users.suspend.reactivateConsequence'
+              }
+              values={{ name: `${pending.firstName} ${pending.lastName}` }}
+              components={[<strong key="0" />]}
+            />
           }
           onConfirm={(reason) => {
             const wasActive = pending.isActive;
@@ -423,14 +448,16 @@ export default function UsersList() {
               .setUserActive(pending.id, !wasActive, reason)
               .then(() =>
                 toast({
-                  title: wasActive ? 'Account suspended' : 'Account reactivated',
+                  title: wasActive ? t('users.suspend.done') : t('users.suspend.reactivateDone'),
                   description: name,
                   tone: 'success',
                 }),
               )
               .catch((err: ApiError) =>
                 toast({
-                  title: wasActive ? 'Could not suspend' : 'Could not reactivate',
+                  title: wasActive
+                    ? t('users.suspend.failed')
+                    : t('users.suspend.reactivateFailed'),
                   // 409 means it is already in that state — worth saying plainly.
                   description: err.message,
                   tone: 'danger',

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { History, Pencil, ShieldAlert } from 'lucide-react';
@@ -15,6 +16,7 @@ import { formatDate, formatDateTime, formatNumber, formatPercent } from '@/lib/f
 
 /** Card catalog detail (§09) — includes the version history strip. */
 export default function CardDetail() {
+  const { t } = useTranslation();
   const { cardId } = useParams();
   const navigate = useNavigate();
   const { can } = useAuth();
@@ -28,9 +30,9 @@ export default function CardDetail() {
     return (
       <EmptyState
         icon={ShieldAlert}
-        headline="Design not found"
-        description="This design may have been deleted, or the ID in the URL is incorrect."
-        action={{ label: 'Back to catalog', onClick: () => navigate('/cards/catalog') }}
+        headline={t('cards.detail.notFound')}
+        description={t('cards.detail.notFoundBody')}
+        action={{ label: t('cards.detail.backToCatalog'), onClick: () => navigate('/cards/catalog') }}
       />
     );
   }
@@ -44,8 +46,8 @@ export default function CardDetail() {
     <>
       <PageHeader
         breadcrumbs={[
-          { label: 'Gift Cards' },
-          { label: 'Catalog', href: '/cards/catalog' },
+          { label: t('nav.giftCards') },
+          { label: t('cards.catalog.breadcrumb'), href: '/cards/catalog' },
           { label: card.name },
         ]}
         title={card.name}
@@ -53,15 +55,15 @@ export default function CardDetail() {
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <StatusBadge
               status={card.isActive ? 'active' : 'inactive'}
-              label={card.isActive ? 'Active' : 'Inactive'}
+              label={card.isActive ? t('status.active') : t('status.inactive')}
             />
             <Chip tone={card.cloverCost > 0 ? 'secondary' : 'neutral'}>
-              {card.cloverCost > 0 ? 'Premium' : 'Standard'}
+              {card.cloverCost > 0 ? t('cards.premium') : t('cards.standard')}
             </Chip>
             {card.categories.map((c) => (
-              <Chip key={c}>{c}</Chip>
+              <Chip key={c}>{t(`occasion.${c}`, { defaultValue: c })}</Chip>
             ))}
-            <CopyableId value={card.slug} label="Slug" />
+            <CopyableId value={card.slug} label={t('cards.detail.slug')} />
             <span className="text-neutral-400">v{card.version}</span>
           </div>
         }
@@ -69,7 +71,7 @@ export default function CardDetail() {
           can('cards:write') && (
             <Button variant="primary" onClick={() => setEditOpen(true)}>
               <Pencil className="h-4 w-4" />
-              Edit design
+              {t('cards.detail.editDesign')}
             </Button>
           )
         }
@@ -88,37 +90,37 @@ export default function CardDetail() {
               </span>
             ) : (
               <span className="absolute right-3 top-3 rounded-full bg-success-500 px-2 py-1 text-[12px] font-semibold text-white">
-                FREE
+                {t('cards.freeUpper')}
               </span>
             )}
           </div>
           <p className="mt-3 text-caption text-neutral-500">
-            Background <code className="font-mono">{card.bg}</code>
+            {t('cards.detail.background')} <code className="font-mono">{card.bg}</code>
           </p>
         </Card>
 
         <div className="space-y-4 lg:col-span-2">
           <Card>
             <div className="border-b border-neutral-200 p-4">
-              <h2 className="text-card-title text-neutral-700">Performance</h2>
+              <h2 className="text-card-title text-neutral-700">{t('cards.detail.performance')}</h2>
             </div>
             <dl className="divide-y divide-neutral-200 p-4 pt-0">
-              <DetailRow label="Times selected">
+              <DetailRow label={t('cards.detail.timesSelected')}>
                 <span className="tnum">{formatNumber(card.timesSelected)}</span>
               </DetailRow>
-              <DetailRow label="Unlocks">
+              <DetailRow label={t('cards.detail.unlocks')}>
                 <span className="tnum">{formatNumber(card.unlocks)}</span>
               </DetailRow>
-              <DetailRow label="Reveal rate">
+              <DetailRow label={t('cards.detail.revealRate')}>
                 <span className="tnum">{formatPercent(card.revealRate)}</span>
               </DetailRow>
-              <DetailRow label="Unique downloads">
+              <DetailRow label={t('cards.detail.uniqueDownloads')}>
                 <span className="tnum">{formatNumber(card.uniqueDownloads)}</span>
               </DetailRow>
-              <DetailRow label="Total downloads">
+              <DetailRow label={t('cards.detail.totalDownloads')}>
                 <span className="tnum">{formatNumber(card.totalDownloads)}</span>
               </DetailRow>
-              <DetailRow label="Revenue in clovers">
+              <DetailRow label={t('cards.detail.revenue')}>
                 {revenue > 0 ? <CloverValue amount={revenue} /> : <span className="text-neutral-400">—</span>}
               </DetailRow>
             </dl>
@@ -126,25 +128,27 @@ export default function CardDetail() {
 
           <Card>
             <div className="border-b border-neutral-200 p-4">
-              <h2 className="text-card-title text-neutral-700">Configuration</h2>
+              <h2 className="text-card-title text-neutral-700">
+                {t('cards.detail.configuration')}
+              </h2>
             </div>
             <dl className="divide-y divide-neutral-200 p-4 pt-0">
-              <DetailRow label="Slug (immutable)">
+              <DetailRow label={t('cards.detail.slugImmutable')}>
                 <code className="font-mono text-[13px]">{card.slug}</code>
               </DetailRow>
-              <DetailRow label="Clover cost">
-                {card.cloverCost > 0 ? <CloverValue amount={card.cloverCost} /> : 'Free'}
+              <DetailRow label={t('cards.detail.cloverCost')}>
+                {card.cloverCost > 0 ? <CloverValue amount={card.cloverCost} /> : t('cards.free')}
               </DetailRow>
-              <DetailRow label="Sort order">
+              <DetailRow label={t('cards.detail.sortOrder')}>
                 <span className="tnum">{card.sortOrder}</span>
               </DetailRow>
-              <DetailRow label="Available from">
+              <DetailRow label={t('cards.detail.availableFrom')}>
                 {card.availableFrom ? formatDate(card.availableFrom) : '—'}
               </DetailRow>
-              <DetailRow label="Available until">
+              <DetailRow label={t('cards.detail.availableUntil')}>
                 {card.availableUntil ? formatDate(card.availableUntil) : '—'}
               </DetailRow>
-              <DetailRow label="Created">{formatDate(card.createdAt)}</DetailRow>
+              <DetailRow label={t('cards.detail.created')}>{formatDate(card.createdAt)}</DetailRow>
             </dl>
           </Card>
         </div>
@@ -153,9 +157,9 @@ export default function CardDetail() {
       {/* Version history — artwork is never mutated in place (§09) */}
       <SectionHeading
         className="mt-6"
-        description="Editing artwork creates a new version. Users who unlocked v1 keep exactly what they paid for."
+        description={t('cards.detail.versionDescription')}
       >
-        Version history
+        {t('cards.detail.versionHeading')}
       </SectionHeading>
       <Card>
         <ul className="divide-y divide-neutral-200">
@@ -177,18 +181,16 @@ export default function CardDetail() {
               )}
               <div className="min-w-0 flex-1">
                 <p className="text-body font-medium text-neutral-900">
-                  Version {v.version}
+                  {t('cards.detail.version', { n: v.version })}
                   {v.isCurrent && (
                     <span className="ml-2 rounded-sm bg-success-50 px-1.5 py-px text-[11px] font-medium text-success-500">
-                      Current
+                      {t('cards.detail.current')}
                     </span>
                   )}
                 </p>
                 <p className="mt-0.5 text-caption text-neutral-500">
-                  {v.isCurrent
-                    ? 'Live in the app now'
-                    : 'Retained for users who unlocked this version'}
-                  {v.createdBy ? ` · by ${v.createdBy}` : ''}
+                  {v.isCurrent ? t('cards.detail.liveNow') : t('cards.detail.retained')}
+                  {v.createdBy ? t('cards.detail.createdBy', { name: v.createdBy }) : ''}
                 </p>
               </div>
               <span className="tnum shrink-0 text-caption text-neutral-400">
@@ -197,20 +199,20 @@ export default function CardDetail() {
             </li>
           ))}
           {versions.length === 0 && (
-            <li className="p-4 text-body text-neutral-500">No version history recorded yet.</li>
+            <li className="p-4 text-body text-neutral-500">{t('cards.detail.noVersions')}</li>
           )}
         </ul>
       </Card>
 
-      <SectionHeading className="mt-6" description="Every create, edit, price change, activation and deletion.">
-        Change history
+      <SectionHeading className="mt-6" description={t('cards.detail.changeDescription')}>
+        {t('cards.detail.changeHeading')}
       </SectionHeading>
       <Card>
         {cardAudit.length === 0 ? (
           <EmptyState
             icon={History}
-            headline="No changes recorded"
-            description="Catalog changes are written to the audit trail with before → after values."
+            headline={t('cards.detail.noChanges')}
+            description={t('cards.detail.noChangesBody')}
           />
         ) : (
           <ul className="divide-y divide-neutral-200">

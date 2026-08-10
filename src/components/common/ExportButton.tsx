@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Download, FileJson, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,7 @@ export function ExportButton<T>({
   size?: 'sm' | 'md';
   variant?: 'secondary' | 'ghost';
 }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { can } = useAuth();
   const [busy, setBusy] = React.useState(false);
@@ -46,8 +48,8 @@ export function ExportButton<T>({
   const run = (format: 'csv' | 'json') => {
     if (rows.length === 0) {
       toast({
-        title: 'Nothing to export',
-        description: 'No rows match the current filters.',
+        title: t('common.nothingToExport'),
+        description: t('common.nothingToExportBody'),
         tone: 'warning',
       });
       return;
@@ -66,8 +68,8 @@ export function ExportButton<T>({
         /* the file already downloaded; a failed bookkeeping call must not block it */
       });
     toast({
-      title: 'Download started',
-      description: `${filename} · ${rows.length.toLocaleString()} rows`,
+      title: t('common.downloadStarted'),
+      description: t('common.rowsWithCount', { filename, count: rows.length }),
       tone: 'success',
     });
     setTimeout(() => setBusy(false), 500);
@@ -80,26 +82,24 @@ export function ExportButton<T>({
       <DropdownMenuTrigger asChild>
         <Button variant={variant} size={size} loading={busy}>
           <Download className="h-4 w-4 text-neutral-400" />
-          Export
+          {t('common.export')}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuLabel>
-          {rows.length.toLocaleString()} row{rows.length === 1 ? '' : 's'} in view
-        </DropdownMenuLabel>
+        <DropdownMenuLabel>{t('common.rowsInView', { count: rows.length })}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => run('csv')}>
           <FileSpreadsheet className="h-4 w-4 text-neutral-400" />
-          Download CSV
+          {t('common.downloadCsv')}
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => run('json')}>
           <FileJson className="h-4 w-4 text-neutral-400" />
-          Download JSON
+          {t('common.downloadJson')}
         </DropdownMenuItem>
         {containsPii && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel>Contains PII · audited</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('common.containsPii')}</DropdownMenuLabel>
           </>
         )}
       </DropdownMenuContent>

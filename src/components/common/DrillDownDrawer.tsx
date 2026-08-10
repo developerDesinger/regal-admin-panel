@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Link } from 'react-router-dom';
@@ -27,6 +28,7 @@ export function DrillDownDrawer({
   fullPageHref?: string;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
@@ -46,7 +48,7 @@ export function DrillDownDrawer({
               <p id="drawer-subtitle" className="mt-1 text-caption text-neutral-500">
                 {recordCount !== undefined && (
                   <span className="tnum">
-                    {recordCount.toLocaleString()} record{recordCount === 1 ? '' : 's'}
+                    {t('common.recordCount', { count: recordCount })}
                   </span>
                 )}
                 {recordCount !== undefined && subtitle ? ' · ' : ''}
@@ -60,13 +62,13 @@ export function DrillDownDrawer({
                   onClick={() => onOpenChange(false)}
                   className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-[13px] font-medium text-brand-500 transition-colors hover:bg-brand-50"
                 >
-                  Open full page
+                  {t('common.openFullPage')}
                   <ArrowUpRight className="h-3 w-3" />
                 </Link>
               )}
               <DialogPrimitive.Close
                 className="rounded-sm p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-                aria-label="Close drawer"
+                aria-label={t('common.close')}
               >
                 <X className="h-4 w-4" />
               </DialogPrimitive.Close>

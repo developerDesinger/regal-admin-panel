@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -55,6 +56,7 @@ import { cn } from '@/lib/utils';
  * designs and set the clover price at which users unlock them.
  */
 export default function CardCatalog() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { can } = useAuth();
@@ -128,7 +130,7 @@ export default function CardCatalog() {
   const columns: Column<GiftCardDesign>[] = [
     {
       id: 'design',
-      header: 'Design',
+      header: t('cards.catalog.table.design'),
       width: '240px',
       sortable: true,
       sortValue: (c) => c.name,
@@ -153,18 +155,18 @@ export default function CardCatalog() {
     },
     {
       id: 'categories',
-      header: 'Categories',
+      header: t('cards.catalog.table.categories'),
       cell: (c) => (
         <div className="flex flex-wrap gap-1">
           {c.categories.map((cat) => (
-            <Chip key={cat}>{cat}</Chip>
+            <Chip key={cat}>{t(`occasion.${cat}`, { defaultValue: cat })}</Chip>
           ))}
         </div>
       ),
     },
     {
       id: 'cost',
-      header: 'Clover cost',
+      header: t('cards.catalog.table.cloverCost'),
       numeric: true,
       sortable: true,
       sortValue: (c) => c.cloverCost,
@@ -172,12 +174,12 @@ export default function CardCatalog() {
         c.cloverCost > 0 ? (
           <CloverValue amount={c.cloverCost} className="justify-end" />
         ) : (
-          <Chip tone="neutral">FREE</Chip>
+          <Chip tone="neutral">{t('cards.freeUpper')}</Chip>
         ),
     },
     {
       id: 'usage',
-      header: 'Times used',
+      header: t('cards.catalog.table.timesUsed'),
       numeric: true,
       sortable: true,
       sortValue: (c) => c.timesSelected,
@@ -185,7 +187,7 @@ export default function CardCatalog() {
     },
     {
       id: 'unlocks',
-      header: 'Unlocks',
+      header: t('cards.catalog.table.unlocks'),
       numeric: true,
       sortable: true,
       sortValue: (c) => c.unlocks,
@@ -193,13 +195,13 @@ export default function CardCatalog() {
     },
     {
       id: 'version',
-      header: 'Version',
+      header: t('cards.catalog.table.version'),
       numeric: true,
       cell: (c) => <span className="tnum">v{c.version}</span>,
     },
     {
       id: 'sortOrder',
-      header: 'Order',
+      header: t('cards.catalog.table.order'),
       numeric: true,
       sortable: true,
       sortValue: (c) => c.sortOrder,
@@ -207,14 +209,17 @@ export default function CardCatalog() {
     },
     {
       id: 'state',
-      header: 'State',
+      header: t('cards.catalog.table.state'),
       cell: (c) => (
-        <StatusBadge status={c.isActive ? 'active' : 'inactive'} label={c.isActive ? 'Active' : 'Inactive'} />
+        <StatusBadge
+          status={c.isActive ? 'active' : 'inactive'}
+          label={c.isActive ? t('status.active') : t('status.inactive')}
+        />
       ),
     },
     {
       id: 'created',
-      header: 'Created',
+      header: t('cards.catalog.table.created'),
       sortable: true,
       defaultHidden: true,
       sortValue: (c) => c.createdAt,
@@ -225,16 +230,23 @@ export default function CardCatalog() {
   return (
     <>
       <PageHeader
-        breadcrumbs={[{ label: 'Gift Cards' }, { label: 'Catalog' }]}
-        title="Card Catalog"
-        subtitle="Upload designs, set the clover price users pay to unlock them, and control what the app shows."
+        breadcrumbs={[
+          { label: t('nav.giftCards') },
+          { label: t('cards.catalog.breadcrumb') },
+        ]}
+        title={t('cards.catalog.title')}
+        subtitle={t('cards.catalog.subtitle')}
         actions={
           <>
-            <div className="flex rounded-md border border-neutral-300 p-0.5" role="group" aria-label="View mode">
+            <div
+              className="flex rounded-md border border-neutral-300 p-0.5"
+              role="group"
+              aria-label={t('cards.catalog.viewMode')}
+            >
               {(
                 [
-                  ['grid', LayoutGrid, 'Grid view'],
-                  ['table', Table2, 'Table view'],
+                  ['grid', LayoutGrid, t('cards.catalog.gridView')],
+                  ['table', Table2, t('cards.catalog.tableView')],
                 ] as const
               ).map(([mode, Icon, label]) => (
                 <button
@@ -257,10 +269,13 @@ export default function CardCatalog() {
             </div>
             <ExportButton
               name="card-catalog"
-              label="Cards"
+              label={t('cards.analytics.exportLabel')}
               columns={cardColumns}
               rows={filtered}
-              filterSummary={`${filtered.length} of ${giftCards.length} designs`}
+              filterSummary={t('cards.catalog.filterSummary', {
+                shown: filtered.length,
+                total: giftCards.length,
+              })}
             />
             {can('cards:write') && (
               <>
@@ -273,7 +288,7 @@ export default function CardCatalog() {
                   aria-pressed={reordering}
                 >
                   <GripVertical className="h-4 w-4 text-neutral-400" />
-                  {reordering ? 'Exit reorder' : 'Reorder'}
+                  {reordering ? t('cards.catalog.exitReorder') : t('cards.catalog.reorder')}
                 </Button>
                 <Button
                   variant="primary"
@@ -283,7 +298,7 @@ export default function CardCatalog() {
                   }}
                 >
                   <Upload className="h-4 w-4" />
-                  Upload Card
+                  {t('cards.catalog.uploadCard')}
                 </Button>
               </>
             )}
@@ -301,65 +316,81 @@ export default function CardCatalog() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search designs…"
+            placeholder={t('cards.catalog.searchPlaceholder')}
             className="pl-9"
-            aria-label="Search designs"
+            aria-label={t('cards.catalog.searchLabel')}
           />
         </div>
         <Select value={all.category ?? 'all'} onValueChange={(v) => set({ category: v })}>
-          <SelectTrigger className="w-full sm:w-auto sm:min-w-[140px]" aria-label="Category">
-            <SelectValue placeholder="Category" />
+          <SelectTrigger
+            className="w-full sm:w-auto sm:min-w-[140px]"
+            aria-label={t('cards.catalog.category')}
+          >
+            <SelectValue placeholder={t('cards.catalog.category')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All categories</SelectItem>
-            {['birthday', 'wedding', 'farewell', 'graduation', 'baby', 'thanks', 'holiday', 'general'].map(
-              (c) => (
-                <SelectItem key={c} value={c} className="capitalize">
-                  {c}
-                </SelectItem>
-              ),
-            )}
+            <SelectItem value="all">{t('cards.catalog.allCategories')}</SelectItem>
+            {[
+              'birthday',
+              'wedding',
+              'farewell',
+              'graduation',
+              'baby',
+              'thanks',
+              'holiday',
+              'general',
+            ].map((c) => (
+              <SelectItem key={c} value={c}>
+                {t(`occasion.${c}`)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={all.tier ?? 'all'} onValueChange={(v) => set({ tier: v })}>
-          <SelectTrigger className="w-full sm:w-auto sm:min-w-[130px]" aria-label="Tier">
-            <SelectValue placeholder="Tier" />
+          <SelectTrigger
+            className="w-full sm:w-auto sm:min-w-[130px]"
+            aria-label={t('cards.catalog.tier')}
+          >
+            <SelectValue placeholder={t('cards.catalog.tier')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All tiers</SelectItem>
-            <SelectItem value="free">Free</SelectItem>
-            <SelectItem value="premium">Premium</SelectItem>
+            <SelectItem value="all">{t('cards.catalog.allTiers')}</SelectItem>
+            <SelectItem value="free">{t('cards.free')}</SelectItem>
+            <SelectItem value="premium">{t('cards.premium')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={all.state ?? 'all'} onValueChange={(v) => set({ state: v })}>
-          <SelectTrigger className="w-full sm:w-auto sm:min-w-[130px]" aria-label="State">
-            <SelectValue placeholder="State" />
+          <SelectTrigger
+            className="w-full sm:w-auto sm:min-w-[130px]"
+            aria-label={t('cards.catalog.state')}
+          >
+            <SelectValue placeholder={t('cards.catalog.state')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All states</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="all">{t('cards.catalog.allStates')}</SelectItem>
+            <SelectItem value="active">{t('status.active')}</SelectItem>
+            <SelectItem value="inactive">{t('status.inactive')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={all.sort ?? 'sort_order'} onValueChange={(v) => set({ sort: v })}>
-          <SelectTrigger className="w-full sm:w-auto sm:min-w-[150px]" aria-label="Sort by">
-            <SelectValue placeholder="Sort" />
+          <SelectTrigger
+            className="w-full sm:w-auto sm:min-w-[150px]"
+            aria-label={t('cards.catalog.sortBy')}
+          >
+            <SelectValue placeholder={t('cards.catalog.sort')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="sort_order">Sort order</SelectItem>
-            <SelectItem value="newest">Newest</SelectItem>
-            <SelectItem value="most_used">Most used</SelectItem>
-            <SelectItem value="cost">Highest clover cost</SelectItem>
+            <SelectItem value="sort_order">{t('cards.catalog.sortOrder')}</SelectItem>
+            <SelectItem value="newest">{t('cards.catalog.newest')}</SelectItem>
+            <SelectItem value="most_used">{t('cards.catalog.mostUsed')}</SelectItem>
+            <SelectItem value="cost">{t('cards.catalog.highestCost')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {reordering && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-brand-300 bg-brand-50 p-3">
-          <p className="text-body text-brand-900">
-            Reorder mode — drag tiles, or use the ↑ ↓ buttons on a focused tile. This controls the
-            order users see in the mobile app.
-          </p>
+          <p className="text-body text-brand-900">{t('cards.catalog.reorderNote')}</p>
           <div className="flex gap-2">
             <Button
               variant="secondary"
@@ -370,7 +401,7 @@ export default function CardCatalog() {
                 setReordering(false);
               }}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="primary"
@@ -379,15 +410,15 @@ export default function CardCatalog() {
               onClick={() => {
                 void mutations.reorderCards(order);
                 toast({
-                  title: 'Order saved',
-                  description: 'New sortOrder written to the audit trail.',
+                  title: t('cards.catalog.orderSaved'),
+                  description: t('cards.catalog.orderSavedBody'),
                   tone: 'success',
                 });
                 setDirty(false);
                 setReordering(false);
               }}
             >
-              Save order
+              {t('cards.catalog.saveOrder')}
             </Button>
           </div>
         </div>
@@ -395,9 +426,13 @@ export default function CardCatalog() {
 
       {filtered.length === 0 ? (
         <EmptyState
-          headline="No designs match these filters"
-          description="Clear a filter, or upload the first design in this category."
-          action={can('cards:write') ? { label: 'Upload card', onClick: () => setUploadOpen(true) } : undefined}
+          headline={t('cards.catalog.emptyHeadline')}
+          description={t('cards.catalog.emptyBody')}
+          action={
+            can('cards:write')
+              ? { label: t('cards.catalog.uploadAction'), onClick: () => setUploadOpen(true) }
+              : undefined
+          }
         />
       ) : view === 'grid' ? (
         <ul className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
@@ -411,7 +446,7 @@ export default function CardCatalog() {
               >
                 {!card.isActive && (
                   <span className="absolute left-3 top-3 z-10 rounded-sm bg-neutral-900/80 px-2 py-1 text-[11px] font-semibold uppercase text-white">
-                    Inactive
+                    {t('cards.inactive')}
                   </span>
                 )}
 
@@ -427,7 +462,7 @@ export default function CardCatalog() {
                       </span>
                     ) : (
                       <span className="absolute right-2 top-2 rounded-full bg-success-500 px-2 py-1 text-[11px] font-semibold text-white">
-                        FREE
+                        {t('cards.freeUpper')}
                       </span>
                     )}
                   </div>
@@ -435,9 +470,11 @@ export default function CardCatalog() {
                 </Link>
 
                 <div className="mt-1 flex items-center justify-between gap-2">
-                  <Chip>{card.categories[0]}</Chip>
+                  <Chip>
+                    {t(`occasion.${card.categories[0]}`, { defaultValue: card.categories[0] })}
+                  </Chip>
                   <span className="tnum text-caption text-neutral-500">
-                    {formatNumber(card.timesSelected)} uses
+                    {t('cards.catalog.uses', { count: formatNumber(card.timesSelected) })}
                   </span>
                 </div>
 
@@ -449,7 +486,7 @@ export default function CardCatalog() {
                         size="icon-sm"
                         onClick={() => move(card.id, -1)}
                         disabled={i === 0}
-                        aria-label={`Move ${card.name} earlier`}
+                        aria-label={t('cards.catalog.moveEarlier', { name: card.name })}
                       >
                         <ArrowUp className="h-3 w-3" />
                       </Button>
@@ -458,7 +495,7 @@ export default function CardCatalog() {
                         size="icon-sm"
                         onClick={() => move(card.id, 1)}
                         disabled={i === filtered.length - 1}
-                        aria-label={`Move ${card.name} later`}
+                        aria-label={t('cards.catalog.moveLater', { name: card.name })}
                       >
                         <ArrowDown className="h-3 w-3" />
                       </Button>
@@ -466,7 +503,7 @@ export default function CardCatalog() {
                   ) : (
                     <StatusBadge
                       status={card.isActive ? 'active' : 'inactive'}
-                      label={card.isActive ? 'Active' : 'Inactive'}
+                      label={card.isActive ? t('status.active') : t('status.inactive')}
                     />
                   )}
 
@@ -474,7 +511,7 @@ export default function CardCatalog() {
                     <DropdownMenu>
                       <DropdownMenuTrigger
                         className="rounded-sm p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-                        aria-label={`Actions for ${card.name}`}
+                        aria-label={t('cards.catalog.actionsFor', { name: card.name })}
                       >
                         <MoreHorizontal className="h-4 w-4" />
                       </DropdownMenuTrigger>
@@ -486,50 +523,58 @@ export default function CardCatalog() {
                           }}
                         >
                           <Pencil className="h-4 w-4 text-neutral-400" />
-                          Edit
+                          {t('cards.catalog.edit')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => {
                             setPriceChange(card);
                             setNewPrice(String(card.cloverCost));
                           }}>
                           <CloverValue amount={0} showIcon className="!gap-0" />
-                          Change clover price
+                          {t('cards.catalog.changePrice')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onSelect={async () => {
                             const copy = await mutations.duplicateCard(card);
                             toast({
-                              title: 'Design duplicated',
-                              description: `${copy?.name} · created inactive so you can edit it first`,
+                              title: t('cards.catalog.duplicated'),
+                              description: t('cards.catalog.duplicatedBody', { name: copy?.name }),
                               tone: 'success',
                             });
                           }}
                         >
                           <Copy className="h-4 w-4 text-neutral-400" />
-                          Duplicate
+                          {t('cards.catalog.duplicate')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onSelect={() => toast({ title: 'Device preview', description: card.name, tone: 'info' })}
+                          onSelect={() =>
+                            toast({
+                              title: t('cards.catalog.devicePreview'),
+                              description: card.name,
+                              tone: 'info',
+                            })
+                          }
                         >
                           <Smartphone className="h-4 w-4 text-neutral-400" />
-                          Preview on device
+                          {t('cards.catalog.previewOnDevice')}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onSelect={() => {
                             void mutations.setCardActive(card, !card.isActive, '');
                             toast({
-                              title: card.isActive ? 'Design deactivated' : 'Design activated',
-                              description: `${card.name} · written to the audit trail`,
+                              title: card.isActive
+                                ? t('cards.catalog.deactivated')
+                                : t('cards.catalog.activated'),
+                              description: t('cards.catalog.auditedBody', { name: card.name }),
                               tone: 'success',
                             });
                           }}
                         >
-                          {card.isActive ? 'Deactivate' : 'Activate'}
+                          {card.isActive ? t('cards.catalog.deactivate') : t('cards.catalog.activate')}
                         </DropdownMenuItem>
                         <DropdownMenuItem destructive onSelect={() => setDeleting(card)}>
                           <Trash2 className="h-4 w-4" />
-                          Delete
+                          {t('cards.catalog.delete')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -547,8 +592,8 @@ export default function CardCatalog() {
           rowHref={(c) => `/cards/catalog/${c.id}`}
           storageKey="card-catalog"
           empty={{
-            headline: 'No designs match these filters',
-            description: 'Clear a filter, or upload the first design in this category.',
+            headline: t('cards.catalog.emptyHeadline'),
+            description: t('cards.catalog.emptyBody'),
           }}
         />
       )}
@@ -561,23 +606,31 @@ export default function CardCatalog() {
           <ConfirmDialog
             open
             onOpenChange={(o) => !o && setDeleting(null)}
-            title="This design can’t be deleted"
+            title={t('cards.catalog.cannotDelete')}
             tone="primary"
-            confirmLabel="Deactivate instead"
+            confirmLabel={t('cards.catalog.deactivateInstead')}
             consequence={
-              <>
-                <strong>{deleting.name}</strong> has{' '}
-                <strong>{deleting.unlocks.toLocaleString()} unlocks</strong> and has been used on{' '}
-                <strong>{deleting.timesSelected.toLocaleString()} events</strong>. Deleting it would
-                strip a design users paid clovers for. Deactivating hides it from new selection while
-                everyone who unlocked it keeps it.
-              </>
+              <Trans
+                i18nKey="cards.catalog.cannotDeleteBody"
+                values={{
+                  name: deleting.name,
+                  unlocks: deleting.unlocks.toLocaleString(),
+                  events: deleting.timesSelected.toLocaleString(),
+                }}
+                components={[
+                  <strong key="0" />,
+                  <span key="1" />,
+                  <strong key="2" />,
+                  <span key="3" />,
+                  <strong key="4" />,
+                ]}
+              />
             }
             onConfirm={(reason) => {
               void mutations.setCardActive(deleting, false, reason);
               toast({
-                title: 'Design deactivated',
-                description: `${deleting.name} · unlocks preserved`,
+                title: t('cards.catalog.deactivated'),
+                description: t('cards.catalog.unlocksPreserved', { name: deleting.name }),
                 tone: 'success',
               });
             }}
@@ -586,20 +639,20 @@ export default function CardCatalog() {
           <ConfirmDialog
             open
             onOpenChange={(o) => !o && setDeleting(null)}
-            title="Delete this design"
+            title={t('cards.catalog.deleteTitle')}
             requireTypedConfirmation={deleting.name}
             requireReason
             consequence={
-              <>
-                <strong>{deleting.name}</strong> has zero unlocks and zero usage, so it can be hard
-                deleted. The artwork is removed from object storage and the slug is released. This
-                cannot be undone.
-              </>
+              <Trans
+                i18nKey="cards.catalog.deleteBody"
+                values={{ name: deleting.name }}
+                components={[<strong key="0" />]}
+              />
             }
-            confirmLabel="Delete permanently"
+            confirmLabel={t('cards.catalog.deleteConfirm')}
             onConfirm={(reason) => {
               void mutations.deleteCard(deleting, reason);
-              toast({ title: 'Design deleted', description: deleting.name, tone: 'success' });
+              toast({ title: t('cards.catalog.deleted'), description: deleting.name, tone: 'success' });
             }}
           />
         ))}
@@ -608,32 +661,44 @@ export default function CardCatalog() {
         <ConfirmDialog
           open
           onOpenChange={(o) => !o && setPriceChange(null)}
-          title="Change clover price"
+          title={t('cards.catalog.priceTitle')}
           tone="primary"
           requireReason
           consequence={
-            <>
-              Changing the price of <strong>{priceChange.name}</strong> does{' '}
-              <strong>not</strong> retroactively charge or refund anyone. The{' '}
-              {priceChange.unlocks.toLocaleString()} users who already unlocked it at 🍀{' '}
-              {priceChange.cloverCost} keep it at no further cost.
-            </>
+            <Trans
+              i18nKey="cards.catalog.priceBody"
+              values={{
+                name: priceChange.name,
+                unlocks: priceChange.unlocks.toLocaleString(),
+                cost: priceChange.cloverCost,
+              }}
+              components={[
+                <span key="0" />,
+                <strong key="1" />,
+                <span key="2" />,
+                <strong key="3" />,
+              ]}
+            />
           }
-          confirmLabel="Change price"
+          confirmLabel={t('cards.catalog.priceConfirm')}
           onConfirm={(reason) => {
             const next = Number(newPrice);
             if (!Number.isFinite(next) || next < 0) return;
             void mutations.setCardPrice(priceChange, Math.round(next), reason);
             toast({
-              title: 'Clover price updated',
-              description: `${priceChange.name} · 🍀 ${priceChange.cloverCost} → 🍀 ${Math.round(next)}`,
+              title: t('cards.catalog.priceUpdated'),
+              description: t('cards.catalog.priceUpdatedBody', {
+                name: priceChange.name,
+                from: priceChange.cloverCost,
+                to: Math.round(next),
+              }),
               tone: 'success',
             });
           }}
         >
           <div>
             <Label htmlFor="new-price" required>
-              New clover cost
+              {t('cards.catalog.newCost')}
             </Label>
             <Input
               id="new-price"
@@ -643,22 +708,19 @@ export default function CardCatalog() {
               onChange={(e) => setNewPrice(e.target.value)}
               className="tnum mt-1"
             />
-            <p className="mt-1 text-caption text-neutral-500">
-              0 makes the design free for everyone.
-            </p>
+            <p className="mt-1 text-caption text-neutral-500">{t('cards.catalog.newCostHelp')}</p>
           </div>
         </ConfirmDialog>
       )}
 
       <p className="mt-6 text-caption text-neutral-500">
-        Images are served from object storage behind a CDN and resized server-side into thumb (400w),
-        preview (800w) and full (1600w) variants —{' '}
+        {t('cards.catalog.cdnNote')}{' '}
         <button
           type="button"
           onClick={() => navigate('/cards/analytics')}
           className="rounded-sm text-brand-500 hover:underline"
         >
-          see how each design performs
+          {t('cards.catalog.seePerformance')}
         </button>
         .
       </p>

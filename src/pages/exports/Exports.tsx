@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Download, FileJson, FileSpreadsheet, Loader2, Lock, Plus, RefreshCw } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/common/PageHeader';
@@ -41,22 +42,24 @@ import type { ExportJobRow } from '@/lib/api/types';
 
 interface DatasetDef {
   id: string;
-  label: string;
+  /** Key under `exports.dataset.*` — resolved at render, not at module load. */
+  labelKey: string;
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   columns: ExportColumn<any>[];
 }
 
 const DATASETS: DatasetDef[] = [
-  { id: 'events', label: 'Events', columns: eventColumns },
-  { id: 'contributions', label: 'Contributions', columns: contributionColumns },
-  { id: 'users', label: 'Users', columns: userColumns },
-  { id: 'cards', label: 'Cards', columns: cardColumns },
-  { id: 'clover_ledger', label: 'Clover ledger', columns: cloverColumns },
-  { id: 'withdrawals', label: 'Withdrawals', columns: withdrawalColumns },
-  { id: 'audit_log', label: 'Audit log', columns: auditColumns },
+  { id: 'events', labelKey: 'exports.dataset.events', columns: eventColumns },
+  { id: 'contributions', labelKey: 'exports.dataset.contributions', columns: contributionColumns },
+  { id: 'users', labelKey: 'exports.dataset.users', columns: userColumns },
+  { id: 'cards', labelKey: 'exports.dataset.cards', columns: cardColumns },
+  { id: 'clover_ledger', labelKey: 'exports.dataset.clover_ledger', columns: cloverColumns },
+  { id: 'withdrawals', labelKey: 'exports.dataset.withdrawals', columns: withdrawalColumns },
+  { id: 'audit_log', labelKey: 'exports.dataset.audit_log', columns: auditColumns },
 ];
 
 export default function Exports() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { can } = useAuth();
   const { jobs, refetch } = useExportJobs();
@@ -89,11 +92,11 @@ export default function Exports() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      toast({ title: 'Download started', description: filename, tone: 'success' });
+      toast({ title: t('common.downloadStarted'), description: filename, tone: 'success' });
       void refetch();
     } catch (err) {
       toast({
-        title: 'Download failed',
+        title: t('exports.downloadFailed'),
         description: (err as Error).message,
         tone: 'danger',
       });
@@ -110,18 +113,18 @@ export default function Exports() {
         format,
         columns: selectedColumns,
         filters: { range: get('range', '30d') },
-        reason: reason || `${dataset.label} export`,
+        reason: reason || t('exports.defaultReason', { dataset: t(dataset.labelKey) }),
       })
       .then((job) => {
         toast({
-          title: 'Export queued',
+          title: t('exports.queued'),
           description: `${job.dataset} · ${job.format.toUpperCase()}`,
           tone: 'info',
         });
         void refetch();
       })
       .catch((err: ApiError) =>
-        toast({ title: 'Could not queue export', description: err.message, tone: 'danger' }),
+        toast({ title: t('exports.queueFailed'), description: err.message, tone: 'danger' }),
       );
   };
 
@@ -136,7 +139,7 @@ export default function Exports() {
   const columns: Column<ExportJobRow>[] = [
     {
       id: 'dataset',
-      header: 'Dataset',
+      header: t('exports.table.dataset'),
       width: '260px',
       sortable: true,
       sortValue: (j) => j.dataset,
@@ -155,10 +158,10 @@ export default function Exports() {
         </div>
       ),
     },
-    { id: 'format', header: 'Format', cell: (j) => <Chip>{j.format.toUpperCase()}</Chip> },
+    { id: 'format', header: t('exports.table.format'), cell: (j) => <Chip>{j.format.toUpperCase()}</Chip> },
     {
       id: 'rows',
-      header: 'Rows',
+      header: t('exports.table.rows'),
       numeric: true,
       sortable: true,
       sortValue: (j) => j.rows ?? 0,
@@ -171,29 +174,38 @@ export default function Exports() {
     },
     {
       id: 'status',
-      header: 'Status',
+      header: t('fields.status'),
       sortable: true,
       sortValue: (j) => j.status,
       cell: (j) => (
         <div className="min-w-[130px]">
           <StatusBadge status={j.status} />
           {(j.status === 'running' || j.status === 'queued') && (
-            <ProgressBar value={j.progress} className="mt-2" label={`${j.dataset} export progress`} />
+            <ProgressBar
+              value={j.progress}
+              className="mt-2"
+              label={t('exports.table.progressLabel', { dataset: j.dataset })}
+            />
           )}
         </div>
       ),
     },
-    { id: 'requestedBy', header: 'Requested by', defaultHidden: true, cell: (j) => j.requestedBy },
+    {
+      id: 'requestedBy',
+      header: t('exports.table.requestedBy'),
+      defaultHidden: true,
+      cell: (j) => j.requestedBy,
+    },
     {
       id: 'requestedAt',
-      header: 'Requested',
+      header: t('exports.table.requested'),
       sortable: true,
       sortValue: (j) => j.requestedAt,
       cell: (j) => <span className="tnum whitespace-nowrap">{formatDateTime(j.requestedAt)}</span>,
     },
     {
       id: 'expires',
-      header: 'Expires',
+      header: t('exports.table.expires'),
       cell: (j) =>
         j.expiresAt ? (
           <span className={j.status === 'expired' ? 'text-neutral-400' : 'text-neutral-700'}>
@@ -219,7 +231,7 @@ export default function Exports() {
               }}
             >
               <Download className="h-3 w-3 text-neutral-400" />
-              Download
+              {t('common.download')}
             </Button>
           ) : j.status === 'failed' ? (
             <Button
@@ -229,23 +241,27 @@ export default function Exports() {
                 exportsService
                   .retry(j.id)
                   .then(() => {
-                    toast({ title: 'Export re-queued', description: j.dataset, tone: 'info' });
+                    toast({ title: t('exports.table.requeued'), description: j.dataset, tone: 'info' });
                     void refetch();
                   })
                   .catch((err: ApiError) =>
-                    toast({ title: 'Could not retry', description: err.message, tone: 'danger' }),
+                    toast({
+                      title: t('exports.table.retryFailed'),
+                      description: err.message,
+                      tone: 'danger',
+                    }),
                   );
               }}
             >
               <RefreshCw className="h-3 w-3 text-neutral-400" />
-              Retry
+              {t('exports.table.retry')}
             </Button>
           ) : j.status === 'expired' ? (
-            <span className="text-caption text-neutral-400">Link expired</span>
+            <span className="text-caption text-neutral-400">{t('exports.table.linkExpired')}</span>
           ) : (
             <span className="inline-flex items-center gap-1 text-caption text-neutral-500">
               <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-              Preparing
+              {t('exports.table.preparing')}
             </span>
           )}
         </div>
@@ -256,19 +272,19 @@ export default function Exports() {
   return (
     <>
       <PageHeader
-        title="Exports"
-        subtitle="Large exports run asynchronously. Download links are single-use and expire after 24 hours."
+        title={t('exports.title')}
+        subtitle={t('exports.subtitle')}
       />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[380px_minmax(0,1fr)]">
         {/* New export */}
         <Card className="h-fit">
           <div className="border-b border-neutral-200 p-4">
-            <h2 className="text-card-title text-neutral-700">New export</h2>
+            <h2 className="text-card-title text-neutral-700">{t('exports.newExport')}</h2>
           </div>
           <div className="space-y-4 p-4">
             <div>
-              <Label htmlFor="dataset">Dataset</Label>
+              <Label htmlFor="dataset">{t('exports.datasetLabel')}</Label>
               <Select
                 value={dataset.id}
                 onValueChange={(v) => setDataset(DATASETS.find((d) => d.id === v) ?? DATASETS[0])}
@@ -279,7 +295,7 @@ export default function Exports() {
                 <SelectContent>
                   {DATASETS.map((d) => (
                     <SelectItem key={d.id} value={d.id}>
-                      {d.label}
+                      {t(d.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -288,37 +304,37 @@ export default function Exports() {
                 <span className="tnum font-medium text-neutral-700">
                   —
                 </span>{' '}
-                rows available
+                {t('exports.rowsAvailable')}
               </p>
             </div>
 
             <div>
-              <Label>Filters</Label>
+              <Label>{t('exports.filters')}</Label>
               <div className="mt-1">
                 <DateRangePicker className="w-full justify-start" />
               </div>
               <p className="mt-1 text-caption text-neutral-500">
-                The same filter UI as the {dataset.label} list screen applies here.
+                {t('exports.filterNote', { dataset: t(dataset.labelKey) })}
               </p>
             </div>
 
             <div>
               <div className="flex items-center justify-between">
-                <Label>Columns</Label>
+                <Label>{t('exports.columns')}</Label>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setSelectedColumns(dataset.columns.map((c) => c.key))}
                     className="rounded-sm text-caption font-medium text-brand-500 hover:underline"
                   >
-                    All
+                    {t('exports.selectAll')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setSelectedColumns([])}
                     className="rounded-sm text-caption font-medium text-brand-500 hover:underline"
                   >
-                    None
+                    {t('exports.selectNone')}
                   </button>
                 </div>
               </div>
@@ -341,12 +357,15 @@ export default function Exports() {
                 ))}
               </div>
               <p className="mt-1 text-caption text-neutral-500">
-                {selectedColumns.length} of {dataset.columns.length} selected
+                {t('exports.selectedCount', {
+                  selected: selectedColumns.length,
+                  total: dataset.columns.length,
+                })}
               </p>
             </div>
 
             <div>
-              <Label>Format</Label>
+              <Label>{t('exports.format')}</Label>
               <RadioGroup
                 value={format}
                 onValueChange={(v) => setFormat(v as 'csv' | 'json')}
@@ -371,29 +390,28 @@ export default function Exports() {
                 disabled={selectedColumns.length === 0}
               >
                 <Plus className="h-4 w-4" />
-                Generate export
+                {t('exports.generate')}
               </Button>
             ) : (
               <div className="flex items-start gap-2 rounded-md border border-neutral-200 bg-neutral-50 p-3">
                 <Lock className="mt-px h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
                 <p className="text-caption text-neutral-500">
-                  Your role can’t run exports. This needs the{' '}
-                  <code className="font-mono">exports:run</code> permission.
+                  <Trans
+                    i18nKey="exports.noPermission"
+                    components={[<span key="0" />, <code key="1" className="font-mono" />]}
+                  />
                 </p>
               </div>
             )}
 
-            <p className="text-caption text-neutral-400">
-              Money columns export as decimal strings with an explicit currency column — never raw
-              minor-unit integers.
-            </p>
+            <p className="text-caption text-neutral-400">{t('common.csvNote')}</p>
           </div>
         </Card>
 
         {/* Jobs */}
         <div className="min-w-0">
-          <SectionHeading description="Every export is audited: who exported what, which filters, how many rows.">
-            Export jobs
+          <SectionHeading description={t('exports.jobsDescription')}>
+            {t('exports.jobsHeading')}
           </SectionHeading>
           <DataTable
             columns={columns}
@@ -402,8 +420,8 @@ export default function Exports() {
             storageKey="exports"
             initialSort={{ id: 'requestedAt', dir: 'desc' }}
             empty={{
-              headline: 'No exports yet',
-              description: 'Pick a dataset on the left, choose your columns and format, then generate.',
+              headline: t('exports.table.empty'),
+              description: t('exports.table.emptyBody'),
             }}
           />
         </div>
@@ -412,18 +430,22 @@ export default function Exports() {
       <ConfirmDialog
         open={confirmPii}
         onOpenChange={setConfirmPii}
-        title="This export contains personal data"
+        title={t('exports.piiTitle')}
         tone="primary"
         requireReason
         consequence={
-          <>
-            The export includes these PII fields:{' '}
-            <strong className="font-mono">{piiColumns.join(', ')}</strong>. It requires the{' '}
-            <code className="font-mono">pii:export</code> permission, is written to the audit trail
-            with your name and the exact filters, and the download link expires after 24 hours.
-          </>
+          <Trans
+            i18nKey="exports.piiConsequence"
+            values={{ fields: piiColumns.join(', ') }}
+            components={[
+              <span key="0" />,
+              <strong key="1" className="font-mono" />,
+              <span key="2" />,
+              <code key="3" className="font-mono" />,
+            ]}
+          />
         }
-        confirmLabel="Generate export"
+        confirmLabel={t('exports.generate')}
         onConfirm={(reason) => runExport(reason)}
       />
     </>

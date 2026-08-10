@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
@@ -17,6 +18,7 @@ import { ApiError } from '@/lib/api/client';
  * their own. Changing it re-mints the session and its CSRF token.
  */
 export default function ChangePassword() {
+  const { t } = useTranslation();
   const { admin, changePassword, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -45,8 +47,12 @@ export default function ChangePassword() {
 
   return (
     <AuthCard
-      title="Choose a new password"
-      subtitle={`Your account uses a temporary password${admin ? `, ${admin.name.split(' ')[0]}` : ''}. Set your own to continue.`}
+      title={t('auth.change.title')}
+      subtitle={
+        admin
+          ? t('auth.change.subtitleNamed', { name: admin.name.split(' ')[0] })
+          : t('auth.change.subtitle')
+      }
     >
       {error && (
         <div
@@ -61,7 +67,7 @@ export default function ChangePassword() {
       <form onSubmit={submit} noValidate className="space-y-4">
         <div>
           <Label htmlFor="current-password" required>
-            Current password
+            {t('auth.change.currentPassword')}
           </Label>
           <Input
             id="current-password"
@@ -88,7 +94,7 @@ export default function ChangePassword() {
           disabled={!valid}
           loading={pending}
         >
-          {pending ? 'Saving…' : 'Set password and continue'}
+          {pending ? t('auth.change.saving') : t('auth.change.submit')}
         </Button>
 
         <button
@@ -96,7 +102,7 @@ export default function ChangePassword() {
           onClick={signOut}
           className="block w-full rounded-sm text-center text-[13px] font-medium text-brand-500 transition-colors hover:text-brand-600"
         >
-          Sign out instead
+          {t('auth.change.signOutInstead')}
         </button>
       </form>
     </AuthCard>

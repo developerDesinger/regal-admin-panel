@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { CalendarDays, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ import { cn } from '@/lib/utils';
 
 
 export function DateRangePicker({ className }: { className?: string }) {
+  const { t } = useTranslation();
   const { get, set } = useUrlState();
   const range = get('range', '30d');
   const compare = get('compare') === '1';
@@ -27,7 +29,7 @@ export function DateRangePicker({ className }: { className?: string }) {
   const [open, setOpen] = React.useState(false);
 
   const label =
-    range === 'custom' && from && to ? `${from} → ${to}` : rangeLabel(range);
+    range === 'custom' && from && to ? `${from} → ${to}` : t(rangeLabel(range));
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -37,13 +39,13 @@ export function DateRangePicker({ className }: { className?: string }) {
           {label}
           {compare && (
             <span className="rounded-sm bg-brand-50 px-1.5 py-px text-[11px] font-medium text-brand-500">
-              vs prev
+              {t('dateRange.vsPrev')}
             </span>
           )}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[280px] p-0">
-        <ul className="max-h-[280px] overflow-y-auto p-1" role="listbox" aria-label="Date range presets">
+        <ul className="max-h-[280px] overflow-y-auto p-1" role="listbox" aria-label={t('dateRange.presets')}>
           {RANGE_PRESETS.map((preset) => (
             <li key={preset.id}>
               <button
@@ -61,7 +63,7 @@ export function DateRangePicker({ className }: { className?: string }) {
                     : 'text-neutral-700 hover:bg-neutral-100',
                 )}
               >
-                {preset.label}
+                {t(`dateRange.${preset.id}`)}
                 {range === preset.id && <Check className="h-4 w-4" />}
               </button>
             </li>
@@ -73,7 +75,7 @@ export function DateRangePicker({ className }: { className?: string }) {
             <Separator />
             <div className="grid grid-cols-2 gap-3 p-3">
               <div>
-                <Label htmlFor="range-from">From</Label>
+                <Label htmlFor="range-from">{t('dateRange.from')}</Label>
                 <Input
                   id="range-from"
                   type="date"
@@ -83,7 +85,7 @@ export function DateRangePicker({ className }: { className?: string }) {
                 />
               </div>
               <div>
-                <Label htmlFor="range-to">To</Label>
+                <Label htmlFor="range-to">{t('dateRange.to')}</Label>
                 <Input
                   id="range-to"
                   type="date"
@@ -99,7 +101,7 @@ export function DateRangePicker({ className }: { className?: string }) {
         <Separator />
         <div className="flex items-center justify-between gap-3 p-3">
           <Label htmlFor="compare-toggle" className="cursor-pointer">
-            Compare to previous period
+            {t('dateRange.compare')}
           </Label>
           <Switch
             id="compare-toggle"
@@ -108,7 +110,7 @@ export function DateRangePicker({ className }: { className?: string }) {
           />
         </div>
         <p className="border-t border-neutral-200 px-3 py-2 text-caption text-neutral-400">
-          Inclusive of both endpoints · bucketed in {TZ_LABEL}
+          {t('dateRange.inclusive', { tz: TZ_LABEL })}
         </p>
       </PopoverContent>
     </Popover>

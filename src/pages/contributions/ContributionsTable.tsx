@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
@@ -35,19 +36,20 @@ export function ContributionsTable({
   error?: string | null;
   onRetry?: () => void;
 }) {
+  const { t } = useTranslation();
   const [detail, setDetail] = React.useState<Contribution | null>(null);
 
   const columns: Column<Contribution>[] = [
     {
       id: 'contributor',
-      header: 'Contributor',
+      header: t('contributions.table.contributor'),
       width: '200px',
       sortable: true,
       sortValue: (c) => c.contributor?.name ?? c.guestName ?? '',
       cell: (c) =>
         c.isGuest ? (
           <div className="flex items-center gap-2">
-            <Chip>Guest</Chip>
+            <Chip>{t('contributions.table.guest')}</Chip>
             <span className="min-w-0 truncate">{c.guestName}</span>
           </div>
         ) : (
@@ -67,7 +69,7 @@ export function ContributionsTable({
       : ([
           {
             id: 'event',
-            header: 'Event',
+            header: t('fields.event'),
             sortable: true,
             sortValue: (c: Contribution) => c.eventName,
             cell: (c: Contribution) => (
@@ -84,7 +86,7 @@ export function ContributionsTable({
         ] as Column<Contribution>[])),
     {
       id: 'amount',
-      header: 'Amount',
+      header: t('contributions.table.amount'),
       numeric: true,
       sortable: true,
       sortValue: (c) => c.amount,
@@ -92,13 +94,16 @@ export function ContributionsTable({
     },
     {
       id: 'fee',
-      header: 'Fee',
+      header: t('contributions.table.fee'),
       numeric: true,
       sortable: true,
       sortValue: (c) => c.platformFee + c.stripeFee,
       cell: (c) => (
         <Tooltip
-          content={`Platform ${formatMoney(c.platformFee, c.currency)} · Stripe ${formatMoney(c.stripeFee, c.currency)}`}
+          content={t('contributions.table.feeTooltip', {
+            platform: formatMoney(c.platformFee, c.currency),
+            stripe: formatMoney(c.stripeFee, c.currency),
+          })}
         >
           <span className="cursor-help underline decoration-neutral-300 decoration-dotted underline-offset-4">
             <MoneyValue amount={c.platformFee + c.stripeFee} currency={c.currency} showCurrency={false} />
@@ -108,7 +113,7 @@ export function ContributionsTable({
     },
     {
       id: 'totalCharged',
-      header: 'Total charged',
+      header: t('contributions.table.totalCharged'),
       numeric: true,
       sortable: true,
       sortValue: (c) => c.totalCharged,
@@ -116,7 +121,7 @@ export function ContributionsTable({
     },
     {
       id: 'credited',
-      header: 'Credited',
+      header: t('contributions.table.credited'),
       numeric: true,
       sortable: true,
       defaultHidden: true,
@@ -125,48 +130,48 @@ export function ContributionsTable({
     },
     {
       id: 'status',
-      header: 'Status',
+      header: t('fields.status'),
       sortable: true,
       sortValue: (c) => c.status,
       cell: (c) => <StatusBadge status={c.status} />,
     },
     {
       id: 'feePayer',
-      header: 'Fee payer',
+      header: t('contributions.table.feePayer'),
       defaultHidden: true,
       cell: (c) => <Chip>{c.feePayer}</Chip>,
     },
     {
       id: 'card',
-      header: 'Card',
+      header: t('contributions.table.card'),
       defaultHidden: true,
       cell: (c) => (c.cardSlug ? <Chip tone="accent">{c.cardSlug}</Chip> : <span className="text-neutral-400">—</span>),
     },
     {
       id: 'revealed',
-      header: 'Revealed',
+      header: t('contributions.table.revealed'),
       defaultHidden: true,
       cell: (c) => (
-        <StatusBadge status={c.revealed ? 'completed' : 'pending'} label={c.revealed ? 'Yes' : 'No'} />
+        <StatusBadge status={c.revealed ? 'completed' : 'pending'} label={c.revealed ? t('common.yes') : t('common.no')} />
       ),
     },
     {
       id: 'createdAt',
-      header: 'Created at',
+      header: t('contributions.table.createdAt'),
       sortable: true,
       sortValue: (c) => c.createdAt,
       cell: (c) => <span className="tnum whitespace-nowrap">{formatDate(c.createdAt)}</span>,
     },
     {
       id: 'pi',
-      header: 'PaymentIntent',
+      header: t('contributions.table.paymentIntent'),
       width: '190px',
       cell: (c) => (
         <span data-no-row-click onClick={(e) => e.stopPropagation()}>
           <CopyableId
             value={c.stripePaymentIntentId}
             display={shortId(c.stripePaymentIntentId, 14)}
-            label="PaymentIntent ID"
+            label={t('contributions.table.paymentIntentId')}
           />
         </span>
       ),
@@ -188,9 +193,8 @@ export function ContributionsTable({
         toolbar={toolbar}
         bulkActions={bulkActions}
         empty={{
-          headline: 'No contributions match these filters',
-          description:
-            'Widen the date range or clear the status filter. Failed payments are excluded unless you select them explicitly.',
+          headline: t('contributions.table.empty'),
+          description: t('contributions.table.emptyBody'),
         }}
       />
 
@@ -206,12 +210,14 @@ export function ContributionsTable({
             <div className="flex items-center gap-3">
               <StatusBadge status={detail.status} />
               <Chip>{detail.paymentMethod}</Chip>
-              {detail.isGuest && <Chip tone="brand">Guest checkout</Chip>}
+              {detail.isGuest && <Chip tone="brand">{t('contributions.table.guestCheckout')}</Chip>}
             </div>
 
             {detail.failureReason && (
               <div className="rounded-md border border-danger-500/20 bg-danger-50 p-3">
-                <p className="text-caption font-medium text-danger-500">Decline reason</p>
+                <p className="text-caption font-medium text-danger-500">
+                  {t('contributions.table.declineReason')}
+                </p>
                 <p className="mt-1 font-mono text-[13px] leading-5 text-danger-500">
                   {detail.failureReason}
                 </p>
@@ -219,36 +225,40 @@ export function ContributionsTable({
             )}
 
             <section>
-              <h3 className="mb-2 text-card-title text-neutral-700">Money</h3>
+              <h3 className="mb-2 text-card-title text-neutral-700">
+                {t('contributions.table.money')}
+              </h3>
               <dl className="divide-y divide-neutral-200 rounded-md border border-neutral-200 px-3">
-                <DetailRow label="Contribution amount">
+                <DetailRow label={t('contributions.table.contributionAmount')}>
                   <MoneyValue amount={detail.amount} currency={detail.currency} />
                 </DetailRow>
-                <DetailRow label="Platform fee">
+                <DetailRow label={t('contributions.table.platformFee')}>
                   <MoneyValue amount={detail.platformFee} currency={detail.currency} />
                 </DetailRow>
-                <DetailRow label="Stripe fee">
+                <DetailRow label={t('contributions.table.stripeFee')}>
                   <MoneyValue amount={detail.stripeFee} currency={detail.currency} />
                 </DetailRow>
-                <DetailRow label="Total charged">
+                <DetailRow label={t('contributions.table.totalCharged')}>
                   <MoneyValue amount={detail.totalCharged} currency={detail.currency} emphasis="strong" />
                 </DetailRow>
-                <DetailRow label="Credited to beneficiary">
+                <DetailRow label={t('contributions.table.creditedToBeneficiary')}>
                   <MoneyValue amount={detail.creditedAmount} currency={detail.currency} emphasis="strong" />
                 </DetailRow>
-                <DetailRow label="Fee payer">
+                <DetailRow label={t('contributions.table.feePayer')}>
                   <Chip>{detail.feePayer}</Chip>
                 </DetailRow>
               </dl>
             </section>
 
             <section>
-              <h3 className="mb-2 text-card-title text-neutral-700">Record</h3>
+              <h3 className="mb-2 text-card-title text-neutral-700">
+                {t('contributions.table.record')}
+              </h3>
               <dl className="divide-y divide-neutral-200 rounded-md border border-neutral-200 px-3">
-                <DetailRow label="Contribution ID">
+                <DetailRow label={t('contributions.table.contributionId')}>
                   <CopyableId value={detail.id} />
                 </DetailRow>
-                <DetailRow label="Stripe PaymentIntent">
+                <DetailRow label={t('contributions.table.stripePaymentIntent')}>
                   <span className="inline-flex items-center gap-1">
                     <CopyableId value={detail.stripePaymentIntentId} />
                     <a
@@ -256,24 +266,28 @@ export function ContributionsTable({
                       target="_blank"
                       rel="noreferrer"
                       className="text-brand-500 hover:underline"
-                      aria-label="Open in Stripe dashboard"
+                      aria-label={t('contributions.table.openInStripe')}
                     >
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   </span>
                 </DetailRow>
-                <DetailRow label="Contributor">
+                <DetailRow label={t('contributions.table.contributor')}>
                   {detail.isGuest ? `${detail.guestName} (${detail.guestEmail})` : detail.contributor!.name}
                 </DetailRow>
-                <DetailRow label="Created at">
+                <DetailRow label={t('contributions.table.createdAt')}>
                   <span className="tnum">{formatDateTime(detail.createdAt)}</span>
                 </DetailRow>
-                <DetailRow label="Message">{detail.message || '—'}</DetailRow>
+                <DetailRow label={t('contributions.table.message')}>
+                  {detail.message || '—'}
+                </DetailRow>
               </dl>
             </section>
 
             <section>
-              <h3 className="mb-2 text-card-title text-neutral-700">Raw webhook payload</h3>
+              <h3 className="mb-2 text-card-title text-neutral-700">
+                {t('contributions.table.rawPayload')}
+              </h3>
               <pre className="overflow-x-auto rounded-md border border-neutral-200 bg-neutral-50 p-3 font-mono text-[13px] leading-5 text-neutral-700">
                 {JSON.stringify(
                   {

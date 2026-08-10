@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
@@ -15,6 +16,7 @@ import { readLocal, writeLocal } from '@/hooks/useUrlState';
  * drawer; the page body never scrolls sideways (§2.5).
  */
 export function AppShell() {
+  const { t } = useTranslation();
   const { admin, isRestoring, mustChangePassword } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = React.useState(() => readLocal('regal:sidebar-collapsed', false));
@@ -50,7 +52,7 @@ export function AppShell() {
         role="status"
         aria-live="polite"
       >
-        <span className="sr-only">Restoring your session…</span>
+        <span className="sr-only">{t('common.restoringSession')}</span>
         <span className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-200 border-t-brand-500" />
       </div>
     );
@@ -73,9 +75,9 @@ export function AppShell() {
           <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-neutral-900/40 lg:hidden" />
           <DialogPrimitive.Content
             className="fixed left-0 top-0 z-50 h-full w-[240px] lg:hidden"
-            aria-label="Navigation"
+            aria-label={t('shell.navigation')}
           >
-            <DialogPrimitive.Title className="sr-only">Navigation</DialogPrimitive.Title>
+            <DialogPrimitive.Title className="sr-only">{t('shell.navigation')}</DialogPrimitive.Title>
             <Sidebar
               collapsed={false}
               onToggleCollapsed={() => setMobileNavOpen(false)}
@@ -106,9 +108,10 @@ export function AppShell() {
 
 /** Skeleton while a code-split route loads — never a spinner (§21). */
 function RouteFallback() {
+  const { t } = useTranslation();
   return (
     <div aria-busy="true" aria-live="polite">
-      <span className="sr-only">Loading page…</span>
+      <span className="sr-only">{t('shell.loadingPage')}</span>
       <Skeleton className="h-8 w-[280px]" />
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (

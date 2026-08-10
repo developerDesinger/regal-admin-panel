@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -54,19 +55,30 @@ const ALERT_ICONS: Record<AlertType, LucideIcon> = {
   clover_anomaly: AlertTriangle,
 };
 
-/** Suggested next steps per type — UI copy the API doesn't model. */
+/**
+ * Suggested next steps per type — UI copy the API doesn't model. Values are
+ * translation keys under `alerts.action.*` so the buttons follow the language.
+ */
 const ALERT_ACTIONS: Record<AlertType, string[]> = {
-  stagnant_event: ['Review setup', 'Prompt organizer to send reminders'],
-  at_risk_event: ['Trigger reminder', 'Notify organizer'],
-  inactive_event: ['Nudge organizer'],
-  payment_friction: ['Investigate payment flow', 'Open support ticket'],
-  unrevealed_card: ['Review fulfillment flow'],
-  premium_card_unused: ['Review card value', 'Message user'],
-  withdrawal_pending: ['Follow up with beneficiary', 'Escalate to ops'],
-  clover_anomaly: ['Authorized operational/security review'],
+  stagnant_event: ['reviewSetup', 'promptOrganizer'],
+  at_risk_event: ['triggerReminder', 'notifyOrganizer'],
+  inactive_event: ['nudgeOrganizer'],
+  payment_friction: ['investigatePayment', 'openTicket'],
+  unrevealed_card: ['reviewFulfillment'],
+  premium_card_unused: ['reviewCardValue', 'messageUser'],
+  withdrawal_pending: ['followUpBeneficiary', 'escalateOps'],
+  clover_anomaly: ['operationalReview'],
 };
 
+/** Snooze presets — id is what the API takes, the label is translated. */
+const SNOOZE_OPTIONS = [
+  { id: '24h', key: 'alerts.snoozeOptions.24h' },
+  { id: '7d', key: 'alerts.snoozeOptions.7d' },
+  { id: 'custom', key: 'alerts.snoozeOptions.custom' },
+] as const;
+
 export default function Alerts() {
+  const { t } = useTranslation();
   const { all, set } = useUrlState();
   const { toast } = useToast();
   const { can } = useAuth();
@@ -85,23 +97,28 @@ export default function Alerts() {
     return true;
   });
 
-  const typeMeta = (t: AlertType) => alertTypes.find((x) => x.type === t);
-  const typeLabel = (t: AlertType) =>
-    typeMeta(t)?.label ?? t.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
-  const countByType = (t: AlertType) => typeMeta(t)?.openCount ?? 0;
+  const typeMeta = (type: AlertType) => alertTypes.find((x) => x.type === type);
+  // The API's own label is the fallback when a type has no translation yet.
+  const typeLabel = (type: AlertType) =>
+    t(`alertType.${type}`, {
+      defaultValue:
+        typeMeta(type)?.label ??
+        type.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' '),
+    });
+  const countByType = (type: AlertType) => typeMeta(type)?.openCount ?? 0;
   const totalOpen = alerts.filter((a) => a.status === 'open').length;
 
   return (
     <>
       <PageHeader
-        title="Alerts Center"
-        subtitle={`${totalOpen} open alerts. Every threshold here is configurable in Settings — nothing is hardcoded.`}
+        title={t('alerts.title')}
+        subtitle={t('alerts.subtitle', { count: totalOpen })}
         actions={
           can('settings:write') && (
             <Button variant="secondary" asChild>
               <Link to="/settings">
                 <Settings2 className="h-4 w-4 text-neutral-400" />
-                Tune thresholds
+                {t('alerts.tuneThresholds')}
               </Link>
             </Button>
           )
@@ -110,7 +127,7 @@ export default function Alerts() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
         {/* Left rail — alert types with unread counts */}
-        <nav aria-label="Alert types">
+        <nav aria-label={t('alerts.typesNav')}>
           {/* Below lg the rail would be a very tall list — scroll it sideways instead */}
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 lg:hidden">
             <button
@@ -123,26 +140,26 @@ export default function Alerts() {
                   : 'border-neutral-200 bg-neutral-0 text-neutral-700',
               )}
             >
-              All alerts
+              {t('alerts.allAlerts')}
               <span className="tnum rounded-full bg-neutral-100 px-1.5 text-[11px] font-semibold text-neutral-700">
                 {totalOpen}
               </span>
             </button>
-            {alertTypes.map(({ type: t }) => {
-              const count = countByType(t);
+            {alertTypes.map(({ type }) => {
+              const count = countByType(type);
               return (
                 <button
-                  key={t}
+                  key={type}
                   type="button"
-                  onClick={() => set({ type: t })}
+                  onClick={() => set({ type })}
                   className={cn(
                     'flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 text-[13px] font-medium transition-colors',
-                    selectedType === t
+                    selectedType === type
                       ? 'border-brand-300 bg-brand-50 text-brand-500'
                       : 'border-neutral-200 bg-neutral-0 text-neutral-700',
                   )}
                 >
-                  {typeLabel(t)}
+                  {typeLabel(type)}
                   {count > 0 && (
                     <span className="tnum rounded-full bg-danger-500 px-1.5 text-[11px] font-semibold text-white">
                       {count}
@@ -162,28 +179,28 @@ export default function Alerts() {
                 !selectedType ? 'bg-brand-50 text-brand-500' : 'text-neutral-700 hover:bg-neutral-100',
               )}
             >
-              <span className="text-body font-medium">All alerts</span>
+              <span className="text-body font-medium">{t('alerts.allAlerts')}</span>
               <span className="tnum rounded-full bg-neutral-100 px-2 py-px text-caption font-semibold text-neutral-700">
                 {totalOpen}
               </span>
             </button>
             <ul>
-              {alertTypes.map(({ type: t }) => {
-                const Icon = ALERT_ICONS[t];
-                const count = countByType(t);
-                const active = selectedType === t;
+              {alertTypes.map(({ type }) => {
+                const Icon = ALERT_ICONS[type];
+                const count = countByType(type);
+                const active = selectedType === type;
                 return (
-                  <li key={t}>
+                  <li key={type}>
                     <button
                       type="button"
-                      onClick={() => set({ type: t })}
+                      onClick={() => set({ type })}
                       className={cn(
                         'flex w-full items-center gap-3 border-b border-neutral-200 px-4 py-3 text-left transition-colors last:border-0',
                         active ? 'bg-brand-50 text-brand-500' : 'text-neutral-700 hover:bg-neutral-100',
                       )}
                     >
                       <Icon className="h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
-                      <span className="min-w-0 flex-1 truncate text-body">{typeLabel(t)}</span>
+                      <span className="min-w-0 flex-1 truncate text-body">{typeLabel(type)}</span>
                       {count > 0 && (
                         <span className="tnum shrink-0 rounded-full bg-danger-500 px-1.5 py-px text-[11px] font-semibold text-white">
                           {count}
@@ -203,13 +220,14 @@ export default function Alerts() {
             <div className="mb-4 rounded-md border border-neutral-200 bg-neutral-0 p-4">
               <h2 className="text-card-title text-neutral-700">{typeLabel(selectedType)}</h2>
               <p className="mt-1 text-caption text-neutral-500">
-                <strong>Current trigger:</strong>{' '}
+                <strong>{t('alerts.currentTrigger')}</strong>{' '}
                 {typeMeta(selectedType)?.currentTrigger ??
                   typeMeta(selectedType)?.defaultTrigger ??
                   '—'}
               </p>
               <p className="mt-1 text-caption text-neutral-500">
-                <strong>Actions offered:</strong> {ALERT_ACTIONS[selectedType].join(' · ')}
+                <strong>{t('alerts.actionsOffered')}</strong>{' '}
+                {ALERT_ACTIONS[selectedType].map((a) => t(`alerts.action.${a}`)).join(' · ')}
               </p>
             </div>
           )}
@@ -218,13 +236,13 @@ export default function Alerts() {
             <Card>
               <EmptyState
                 icon={Bell}
-                headline="Nothing needs attention here"
+                headline={t('alerts.empty')}
                 description={
                   selectedType
-                    ? `No ${typeLabel(selectedType).toLowerCase()} alerts are currently firing. Thresholds can be tuned in Settings.`
-                    : 'No alerts are firing across the platform right now.'
+                    ? t('alerts.emptyFiltered', { type: typeLabel(selectedType).toLowerCase() })
+                    : t('alerts.emptyAll')
                 }
-                action={{ label: 'Review thresholds', href: '/settings' }}
+                action={{ label: t('alerts.reviewThresholds'), href: '/settings' }}
               />
             </Card>
           ) : (
@@ -235,22 +253,22 @@ export default function Alerts() {
                 <thead className="bg-neutral-50">
                   <tr className="border-b border-neutral-200">
                     <th scope="col" className="hidden px-4 py-3 text-left text-table-header uppercase text-neutral-500 sm:table-cell">
-                      Severity
+                      {t('alerts.severity')}
                     </th>
                     <th scope="col" className="px-4 py-3 text-left text-table-header uppercase text-neutral-500">
-                      Subject
+                      {t('alerts.subject')}
                     </th>
                     <th scope="col" className="hidden px-4 py-3 text-left text-table-header uppercase text-neutral-500 md:table-cell">
-                      Triggered
+                      {t('alerts.triggered')}
                     </th>
                     <th scope="col" className="hidden px-4 py-3 text-left text-table-header uppercase text-neutral-500 lg:table-cell">
-                      Assigned
+                      {t('alerts.assigned')}
                     </th>
                     <th scope="col" className="px-4 py-3 text-left text-table-header uppercase text-neutral-500">
-                      Status
+                      {t('fields.status')}
                     </th>
                     <th scope="col" className="px-4 py-3 text-right text-table-header uppercase text-neutral-500">
-                      Actions
+                      {t('fields.actions')}
                     </th>
                   </tr>
                 </thead>
@@ -270,7 +288,13 @@ export default function Alerts() {
                           <td className="hidden px-4 py-3 sm:table-cell">
                             <StatusBadge
                               status={alert.severity === 'danger' ? 'failed' : alert.severity === 'warning' ? 'pending' : 'active'}
-                              label={alert.severity === 'danger' ? 'Critical' : alert.severity === 'warning' ? 'Warning' : 'Info'}
+                              label={
+                                alert.severity === 'danger'
+                                  ? t('alerts.critical')
+                                  : alert.severity === 'warning'
+                                    ? t('alerts.warning')
+                                    : t('alerts.info')
+                              }
                             />
                           </td>
                           <td className="px-4 py-3">
@@ -310,7 +334,9 @@ export default function Alerts() {
                             {alert.assignedTo ? (
                               <span className="text-body text-neutral-700">{alert.assignedTo}</span>
                             ) : (
-                              <span className="text-body text-neutral-400">Unassigned</span>
+                              <span className="text-body text-neutral-400">
+                                {t('alerts.unassigned')}
+                              </span>
                             )}
                           </td>
                           <td className="px-4 py-3">
@@ -321,7 +347,7 @@ export default function Alerts() {
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="secondary" size="sm">
-                                    Actions
+                                    {t('fields.actions')}
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-[220px]">
@@ -329,44 +355,61 @@ export default function Alerts() {
                                     disabled={alert.status === 'acknowledged'}
                                     onSelect={() => {
                                       void mutations.acknowledgeAlert(alert.id);
-                                      toast({ title: 'Alert acknowledged', description: alert.subject.label, tone: 'success' });
+                                      toast({
+                                        title: t('alerts.acknowledged'),
+                                        description: alert.subject.label,
+                                        tone: 'success',
+                                      });
                                     }}
                                   >
-                                    Acknowledge
+                                    {t('alerts.acknowledge')}
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuLabel>Assign to</DropdownMenuLabel>
+                                  <DropdownMenuLabel>{t('alerts.assignTo')}</DropdownMenuLabel>
                                   {adminUsers.slice(0, 3).map((a) => (
                                     <DropdownMenuItem
                                       key={a.id}
                                       onSelect={() => {
                                         void mutations.assignAlert(alert.id, a.id);
-                                        toast({ title: `Assigned to ${a.name}`, description: alert.subject.label, tone: 'success' });
+                                        toast({
+                                          title: t('alerts.assignedTo', { name: a.name }),
+                                          description: alert.subject.label,
+                                          tone: 'success',
+                                        });
                                       }}
                                     >
                                       {a.name}
                                     </DropdownMenuItem>
                                   ))}
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuLabel>Snooze</DropdownMenuLabel>
-                                  {['24 hours', '7 days', 'Custom…'].map((s) => (
+                                  <DropdownMenuLabel>{t('alerts.snooze')}</DropdownMenuLabel>
+                                  {SNOOZE_OPTIONS.map((option) => (
                                     <DropdownMenuItem
-                                      key={s}
+                                      key={option.id}
                                       onSelect={() => {
-                                        void mutations.snoozeAlert(alert.id, s as '1h' | '24h' | '7d');
-                                        toast({ title: `Snoozed for ${s}`, description: alert.subject.label, tone: 'info' });
+                                        void mutations.snoozeAlert(
+                                          alert.id,
+                                          option.id as '1h' | '24h' | '7d',
+                                        );
+                                        toast({
+                                          title: t('alerts.snoozedFor', {
+                                            duration: t(option.key),
+                                          }),
+                                          description: alert.subject.label,
+                                          tone: 'info',
+                                        });
                                       }}
                                     >
-                                      {s}
+                                      {t(option.key)}
                                     </DropdownMenuItem>
                                   ))}
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onSelect={() => setResolving(alert)}>
-                                    Resolve with note
+                                    {t('alerts.resolveWithNote')}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem destructive onSelect={() => setDismissing(alert)}>
                                     <XCircle className="h-4 w-4" />
-                                    Dismiss as false positive
+                                    {t('alerts.dismissFalsePositive')}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -380,7 +423,7 @@ export default function Alerts() {
                             <td colSpan={6} className="px-4 pb-4 pt-0">
                               <div className="rounded-md border border-neutral-200 bg-neutral-0 p-4">
                                 <p className="mb-3 text-caption text-neutral-500">
-                                  Evidence that fired this rule — no need to go verify it manually.
+                                  {t('alerts.evidenceIntro')}
                                 </p>
                                 <dl className="grid grid-cols-1 gap-3 md:grid-cols-2">
                                   {alert.evidence.map((ev) => (
@@ -394,16 +437,24 @@ export default function Alerts() {
                                 </dl>
                                 <div className="mt-4 flex flex-wrap gap-2">
                                   <Button variant="secondary" size="sm" asChild>
-                                    <Link to={alert.subject.href}>Open {alert.subject.label}</Link>
+                                    <Link to={alert.subject.href}>
+                                      {t('alerts.openSubject', { label: alert.subject.label })}
+                                    </Link>
                                   </Button>
                                   {ALERT_ACTIONS[alert.type].map((a: string) => (
                                     <Button
                                       key={a}
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => toast({ title: a, description: alert.subject.label, tone: 'info' })}
+                                      onClick={() =>
+                                        toast({
+                                          title: t(`alerts.action.${a}`),
+                                          description: alert.subject.label,
+                                          tone: 'info',
+                                        })
+                                      }
                                     >
-                                      {a}
+                                      {t(`alerts.action.${a}`)}
                                     </Button>
                                   ))}
                                 </div>
@@ -426,20 +477,24 @@ export default function Alerts() {
         <ConfirmDialog
           open
           onOpenChange={(o) => !o && setResolving(null)}
-          title="Resolve this alert"
+          title={t('alerts.resolveTitle')}
           tone="primary"
           requireReason
           consequence={
-            <>
-              <strong>{typeLabel(resolving.type)}</strong> for{' '}
-              <strong>{resolving.subject.label}</strong> will be closed. If the underlying condition
-              still holds, the rule will fire again on the next evaluation.
-            </>
+            <Trans
+              i18nKey="alerts.resolveConsequence"
+              values={{ type: typeLabel(resolving.type), subject: resolving.subject.label }}
+              components={[<strong key="0" />, <span key="1" />, <strong key="2" />]}
+            />
           }
-          confirmLabel="Resolve"
+          confirmLabel={t('alerts.resolveConfirm')}
           onConfirm={(reason) => {
             void mutations.resolveAlert(resolving.id, reason);
-            toast({ title: 'Alert resolved', description: resolving.subject.label, tone: 'success' });
+            toast({
+              title: t('alerts.resolved'),
+              description: resolving.subject.label,
+              tone: 'success',
+            });
           }}
         />
       )}
@@ -448,21 +503,21 @@ export default function Alerts() {
         <ConfirmDialog
           open
           onOpenChange={(o) => !o && setDismissing(null)}
-          title="Dismiss as false positive"
+          title={t('alerts.dismissTitle')}
           requireReason
           consequence={
-            <>
-              This closes the alert and feeds threshold tuning — repeated false positives on{' '}
-              <strong>{typeLabel(dismissing.type)}</strong> are a signal that its threshold is
-              set too tightly in Settings.
-            </>
+            <Trans
+              i18nKey="alerts.dismissConsequence"
+              values={{ type: typeLabel(dismissing.type) }}
+              components={[<span key="0" />, <strong key="1" />]}
+            />
           }
-          confirmLabel="Dismiss"
+          confirmLabel={t('alerts.dismissConfirm')}
           onConfirm={(reason) => {
             void mutations.dismissAlert(dismissing.id, reason);
             toast({
-              title: 'Dismissed as false positive',
-              description: 'Feeds threshold tuning in Settings.',
+              title: t('alerts.dismissed'),
+              description: t('alerts.dismissedBody'),
               tone: 'success',
             });
           }}

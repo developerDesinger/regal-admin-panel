@@ -1,4 +1,5 @@
 import axios, { AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
+import i18n from '@/i18n';
 import { DISPLAY_TZ } from '@/lib/format';
 
 /**
@@ -87,15 +88,20 @@ export class ApiError extends Error {
   }
 }
 
-const STATUS_FALLBACK: Record<number, { code: ApiErrorCode; message: string }> = {
-  400: { code: 'VALIDATION_FAILED', message: 'The request was rejected as invalid.' },
-  401: { code: 'UNAUTHENTICATED', message: 'Your session has expired. Sign in again.' },
-  403: { code: 'INSUFFICIENT_PERMISSION', message: 'Your role cannot perform this action.' },
-  404: { code: 'NOT_FOUND', message: 'That record no longer exists.' },
-  409: { code: 'CONFLICT', message: 'That change conflicts with the current state.' },
-  410: { code: 'GONE', message: 'That link has already been used or has expired.' },
-  422: { code: 'VALIDATION_FAILED', message: 'Some fields need correcting.' },
-  429: { code: 'RATE_LIMITED', message: 'Too many requests. Try again shortly.' },
+/**
+ * Fallback sentence per status, used only when the server sends no message of
+ * its own. Keyed by translation id and resolved at throw time, so the wording
+ * follows the admin's chosen language.
+ */
+const STATUS_FALLBACK: Record<number, { code: ApiErrorCode; messageKey: string }> = {
+  400: { code: 'VALIDATION_FAILED', messageKey: 'apiError.validationFailed' },
+  401: { code: 'UNAUTHENTICATED', messageKey: 'apiError.unauthenticated' },
+  403: { code: 'INSUFFICIENT_PERMISSION', messageKey: 'apiError.insufficientPermission' },
+  404: { code: 'NOT_FOUND', messageKey: 'apiError.notFound' },
+  409: { code: 'CONFLICT', messageKey: 'apiError.conflict' },
+  410: { code: 'GONE', messageKey: 'apiError.gone' },
+  422: { code: 'VALIDATION_FAILED', messageKey: 'apiError.fieldsNeedCorrecting' },
+  429: { code: 'RATE_LIMITED', messageKey: 'apiError.rateLimited' },
 };
 
 interface ServerErrorBody {
@@ -108,16 +114,14 @@ export function normalizeError(error: unknown): ApiError {
   const ax = error as AxiosError<ServerErrorBody>;
 
   if (ax.code === 'ECONNABORTED') {
-    return new ApiError({ code: 'TIMEOUT', message: 'The server took too long to respond.' });
+    return new ApiError({ code: 'TIMEOUT', message: i18n.t('apiError.timeout') });
   }
 
   // No response at all: backend down, tunnel closed, DNS, or offline.
   if (!ax.response) {
     return new ApiError({
       code: 'NETWORK',
-      message: navigator.onLine
-        ? 'Could not reach the admin API. It may be offline.'
-        : 'You appear to be offline.',
+      message: navigator.onLine ? i18n.t('apiError.unreachable') : i18n.t('apiError.offline'),
     });
   }
 
@@ -125,7 +129,7 @@ export function normalizeError(error: unknown): ApiError {
   const body = data?.error;
   const fallback = STATUS_FALLBACK[status] ?? {
     code: 'INTERNAL' as ApiErrorCode,
-    message: 'Something went wrong on the server.',
+    messageKey: 'apiError.internal',
   };
   // 429 carries real remaining seconds in both the header and details.
   const headerRetry = Number((headers as Record<string, string> | undefined)?.['retry-after']);
@@ -139,7 +143,7 @@ export function normalizeError(error: unknown): ApiError {
   return new ApiError({
     code: (body?.code as ApiErrorCode) ?? fallback.code,
     // A blank server message is worse than our generic one.
-    message: body?.message?.trim() || fallback.message,
+    message: body?.message?.trim() || i18n.t(fallback.messageKey),
     status,
     details: body?.details ?? null,
     retryAfterSeconds: retryAfter,

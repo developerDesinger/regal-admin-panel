@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, LogOut, Menu, Moon, Search, Sun } from 'lucide-react';
@@ -11,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar } from '@/components/ui/misc';
+import { LanguageSelector } from './LanguageSelector';
 import { useAuth } from '@/hooks/use-auth';
 import { ROLE_LABELS } from '@/lib/permissions';
 import { useAlerts } from '@/hooks/data';
@@ -32,6 +34,7 @@ export function Topbar({
   onOpenSearch: () => void;
   onOpenMobileNav: () => void;
 }) {
+  const { t } = useTranslation();
   const { admin, signOut } = useAuth();
   const navigate = useNavigate();
   const { rows: openAlerts, meta: alertMeta } = useAlerts({ state: 'open' });
@@ -52,7 +55,7 @@ export function Topbar({
         size="icon"
         className="lg:hidden"
         onClick={onOpenMobileNav}
-        aria-label="Open navigation"
+        aria-label={t('nav.openMenu')}
       >
         <Menu className="h-5 w-5" />
       </Button>
@@ -64,7 +67,7 @@ export function Topbar({
         className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-md border border-neutral-200 bg-neutral-50 px-3 text-left text-[14px] text-neutral-400 transition-colors hover:border-neutral-300 md:max-w-[420px]"
       >
         <Search className="h-4 w-4 shrink-0" aria-hidden />
-        <span className="truncate">Search events, users, IDs…</span>
+        <span className="truncate">{t('topbar.searchPlaceholder')}</span>
         <kbd className="ml-auto hidden shrink-0 rounded-sm border border-neutral-200 bg-neutral-0 px-1.5 py-0.5 font-mono text-[11px] sm:block">
           ⌘K
         </kbd>
@@ -82,18 +85,20 @@ export function Topbar({
           </span>
         )}
 
+        <LanguageSelector />
+
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
-          aria-label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+          onClick={() => setTheme((current) => (current === 'light' ? 'dark' : 'light'))}
+          aria-label={theme === 'light' ? t('topbar.switchToDark') : t('topbar.switchToLight')}
         >
           {theme === 'light' ? <Moon className="h-[18px] w-[18px]" /> : <Sun className="h-[18px] w-[18px]" />}
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative" aria-label={`Alerts, ${unread} unread`}>
+            <Button variant="ghost" size="icon" className="relative" aria-label={t('topbar.alertsUnread', { count: unread })}>
               <Bell className="h-[18px] w-[18px]" />
               {unread > 0 && (
                 <span className="tnum absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-500 px-1 text-[10px] font-semibold text-white">
@@ -104,8 +109,10 @@ export function Topbar({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[340px] p-0">
             <div className="flex items-center justify-between border-b border-neutral-200 px-3 py-2">
-              <span className="text-card-title text-neutral-700">Alerts</span>
-              <span className="tnum text-caption text-neutral-500">{unread} open</span>
+              <span className="text-card-title text-neutral-700">{t('topbar.alertsHeading')}</span>
+              <span className="tnum text-caption text-neutral-500">
+                {t('topbar.openCount', { count: unread })}
+              </span>
             </div>
             <ul className="max-h-[320px] overflow-y-auto p-1">
               {openAlerts.slice(0, 6).map((a) => (
@@ -127,7 +134,9 @@ export function Topbar({
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13px] font-medium text-neutral-900">
-                          {a.type.split('_').join(' ')}
+                          {t(`alertType.${a.type}`, {
+                            defaultValue: a.type.split('_').join(' '),
+                          })}
                         </span>
                         <span className="block truncate text-caption text-neutral-500">
                           {a.subject.label}
@@ -142,7 +151,7 @@ export function Topbar({
             </ul>
             <div className="border-t border-neutral-200 p-1">
               <DropdownMenuItem onSelect={() => navigate('/alerts')}>
-                View all alerts
+                {t('topbar.viewAllAlerts')}
               </DropdownMenuItem>
             </div>
           </DropdownMenuContent>
@@ -153,7 +162,7 @@ export function Topbar({
             <button
               type="button"
               className="flex items-center gap-2 rounded-md p-1 transition-colors hover:bg-neutral-100"
-              aria-label="Account menu"
+              aria-label={t('topbar.accountMenu')}
             >
               <Avatar name={admin?.name ?? 'Admin'} color={admin?.avatarColor} size="md" />
               <span className="hidden text-left md:block">
@@ -161,7 +170,7 @@ export function Topbar({
                   {admin?.name}
                 </span>
                 <span className="block text-[11px] leading-4 text-neutral-500">
-                  {admin ? ROLE_LABELS[admin.role] : ''}
+                  {admin ? t(`role.${admin.role}`, { defaultValue: ROLE_LABELS[admin.role] }) : ''}
                 </span>
               </span>
             </button>
@@ -178,7 +187,7 @@ export function Topbar({
               }}
             >
               <LogOut className="h-4 w-4" />
-              Sign out
+              {t('topbar.signOut')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

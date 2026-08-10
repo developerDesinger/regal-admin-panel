@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,7 @@ export interface FilterDef {
 
 export function FilterBar({
   filters,
-  searchPlaceholder = 'Search…',
+  searchPlaceholder,
   showSearch = true,
   children,
   className,
@@ -37,7 +38,9 @@ export function FilterBar({
   children?: React.ReactNode;
   className?: string;
 }) {
+  const { t } = useTranslation();
   const { get, set, clear, all } = useUrlState();
+  const placeholder = searchPlaceholder ?? t('filters.searchPlaceholder');
   const [searchDraft, setSearchDraft] = React.useState(get('q'));
 
   React.useEffect(() => {
@@ -54,7 +57,7 @@ export function FilterBar({
       value: f.options.find((o) => o.value === all[f.id])?.label ?? all[f.id],
     }));
 
-  if (all.q) activeChips.push({ id: 'q', label: 'Search', value: all.q });
+  if (all.q) activeChips.push({ id: 'q', label: t('filters.searchChip'), value: all.q });
 
   return (
     <div className={cn('space-y-3', className)}>
@@ -68,9 +71,9 @@ export function FilterBar({
             <Input
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
-              placeholder={searchPlaceholder}
+              placeholder={placeholder}
               className="pl-9"
-              aria-label={searchPlaceholder}
+              aria-label={placeholder}
             />
           </div>
         )}
@@ -88,7 +91,9 @@ export function FilterBar({
               <SelectValue placeholder={f.label} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All {f.label.toLowerCase()}</SelectItem>
+              <SelectItem value="all">
+                {t('filters.allOf', { label: f.label.toLowerCase() })}
+              </SelectItem>
               {f.options.map((o) => (
                 <SelectItem key={o.value} value={o.value}>
                   {o.label}
@@ -117,7 +122,7 @@ export function FilterBar({
                   if (chip.id === 'q') setSearchDraft('');
                 }}
                 className="rounded-sm p-0.5 transition-colors hover:bg-brand-100"
-                aria-label={`Remove ${chip.label} filter`}
+                aria-label={t('filters.removeFilter', { label: chip.label })}
               >
                 <X className="h-3 w-3" />
               </button>
@@ -132,7 +137,7 @@ export function FilterBar({
               setSearchDraft('');
             }}
           >
-            Clear all
+            {t('common.clearAll')}
           </Button>
         </div>
       )}

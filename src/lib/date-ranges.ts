@@ -1,22 +1,29 @@
-/** Date-range presets shared by the picker and by export filter labels (§4). */
+/**
+ * Date-range presets shared by the picker and by export filter labels (§4).
+ *
+ * Presets carry ids only — the visible label is looked up under `dateRange.<id>`
+ * so switching language relabels them without touching this list.
+ */
 
 export const RANGE_PRESETS = [
-  { id: 'today', label: 'Today' },
-  { id: 'yesterday', label: 'Yesterday' },
-  { id: '7d', label: 'Last 7 days' },
-  { id: '30d', label: 'Last 30 days' },
-  { id: '90d', label: 'Last 90 days' },
-  { id: 'mtd', label: 'This month' },
-  { id: 'last_month', label: 'Last month' },
-  { id: 'qtd', label: 'This quarter' },
-  { id: 'ytd', label: 'Year to date' },
-  { id: 'custom', label: 'Custom' },
+  { id: 'today' },
+  { id: 'yesterday' },
+  { id: '7d' },
+  { id: '30d' },
+  { id: '90d' },
+  { id: 'mtd' },
+  { id: 'last_month' },
+  { id: 'qtd' },
+  { id: 'ytd' },
+  { id: 'custom' },
 ] as const;
 
 export type RangeId = (typeof RANGE_PRESETS)[number]['id'];
 
+/** Translation key for a range id, falling back to the 30-day preset. */
 export function rangeLabel(id: string): string {
-  return RANGE_PRESETS.find((p) => p.id === id)?.label ?? 'Last 30 days';
+  const known = RANGE_PRESETS.some((p) => p.id === id);
+  return `dateRange.${known ? id : '30d'}`;
 }
 
 /** Number of days a preset covers — used to describe an export's filters. */

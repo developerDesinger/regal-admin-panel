@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCheck, ExternalLink, Mail, RotateCw } from 'lucide-react';
@@ -26,6 +27,7 @@ import type { Withdrawal } from '@/lib/types';
 
 /** Screen 11 — Withdrawals & Payouts (§11). */
 export default function Withdrawals() {
+  const { t } = useTranslation();
   const { all } = useUrlState();
   const { toast } = useToast();
   const { can } = useAuth();
@@ -67,7 +69,7 @@ export default function Withdrawals() {
   const columns: Column<Withdrawal>[] = [
     {
       id: 'beneficiary',
-      header: 'Beneficiary',
+      header: t('withdrawals.table.beneficiary'),
       width: '200px',
       sortable: true,
       sortValue: (w) => w.beneficiary.name,
@@ -85,7 +87,7 @@ export default function Withdrawals() {
     },
     {
       id: 'event',
-      header: 'Event',
+      header: t('withdrawals.table.event'),
       sortable: true,
       sortValue: (w) => w.eventName,
       cell: (w) => (
@@ -101,7 +103,7 @@ export default function Withdrawals() {
     },
     {
       id: 'amount',
-      header: 'Amount',
+      header: t('withdrawals.table.amount'),
       numeric: true,
       sortable: true,
       sortValue: (w) => w.amount,
@@ -109,26 +111,26 @@ export default function Withdrawals() {
     },
     {
       id: 'status',
-      header: 'Status',
+      header: t('fields.status'),
       sortable: true,
       sortValue: (w) => w.status,
       cell: (w) => <StatusBadge status={w.status} />,
     },
     {
       id: 'account',
-      header: 'Connect account',
+      header: t('withdrawals.table.connectAccount'),
       cell: (w) => <StatusBadge status={w.stripeAccountStatus} />,
     },
     {
       id: 'requestedAt',
-      header: 'Requested',
+      header: t('withdrawals.table.requested'),
       sortable: true,
       sortValue: (w) => w.requestedAt,
       cell: (w) => <span className="tnum whitespace-nowrap">{formatDate(w.requestedAt)}</span>,
     },
     {
       id: 'completedAt',
-      header: 'Completed',
+      header: t('withdrawals.table.completed'),
       sortable: true,
       defaultHidden: true,
       sortValue: (w) => w.completedAt ?? '',
@@ -141,7 +143,7 @@ export default function Withdrawals() {
     },
     {
       id: 'elapsed',
-      header: 'Elapsed',
+      header: t('withdrawals.table.elapsed'),
       numeric: true,
       sortable: true,
       sortValue: (w) => elapsedHours(w),
@@ -149,7 +151,7 @@ export default function Withdrawals() {
     },
     {
       id: 'failureReason',
-      header: 'Failure reason',
+      header: t('withdrawals.table.failureReason'),
       cell: (w) =>
         w.failureReason ? (
           <Tooltip content={w.failureReason}>
@@ -163,17 +165,17 @@ export default function Withdrawals() {
     },
     {
       id: 'payoutId',
-      header: 'Stripe payout',
+      header: t('withdrawals.table.stripePayout'),
       cell: (w) =>
         w.stripePayoutId ? (
           <span data-no-row-click onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1">
-            <CopyableId value={w.stripePayoutId} display={shortId(w.stripePayoutId, 12)} label="Payout ID" />
+            <CopyableId value={w.stripePayoutId} display={shortId(w.stripePayoutId, 12)} label={t('withdrawals.table.payoutId')} />
             <a
               href={`https://dashboard.stripe.com/payouts/${w.stripePayoutId}`}
               target="_blank"
               rel="noreferrer"
               className="text-brand-500 hover:underline"
-              aria-label="Open payout in Stripe"
+              aria-label={t('withdrawals.table.openInStripe')}
             >
               <ExternalLink className="h-3 w-3" />
             </a>
@@ -191,15 +193,19 @@ export default function Withdrawals() {
           <div className="flex gap-1" data-no-row-click onClick={(e) => e.stopPropagation()}>
             <Button variant="secondary" size="sm" onClick={() => setRetrying(w)}>
               <RotateCw className="h-3 w-3 text-neutral-400" />
-              Retry
+              {t('withdrawals.table.retry')}
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() =>
-                toast({ title: 'Email drafted', description: w.beneficiary.name, tone: 'info' })
+                toast({
+                  title: t('withdrawals.table.emailDrafted'),
+                  description: w.beneficiary.name,
+                  tone: 'info',
+                })
               }
-              aria-label={`Contact ${w.beneficiary.name}`}
+              aria-label={t('withdrawals.table.contact', { name: w.beneficiary.name })}
             >
               <Mail className="h-3 w-3" />
             </Button>
@@ -214,18 +220,22 @@ export default function Withdrawals() {
   return (
     <>
       <PageHeader
-        title="Withdrawals & Payouts"
-        subtitle="Money leaving the platform. Failed payouts stay pinned at the top until resolved."
+        title={t('withdrawals.title')}
+        subtitle={t('withdrawals.subtitle')}
         actions={
           <>
             <DateRangePicker />
             <ExportButton
               name="withdrawals"
-              label="Withdrawals"
+              label={t('withdrawals.exportLabel')}
               columns={withdrawalColumns}
               rows={filtered}
               containsPii
-              filterSummary={`${rangeLabel(all.range ?? '30d')} · ${filtered.length} of ${withdrawals.length} payouts`}
+              filterSummary={t('withdrawals.filterSummary', {
+                range: t(rangeLabel(all.range ?? '30d')),
+                shown: filtered.length,
+                total: withdrawals.length,
+              })}
             />
           </>
         }
@@ -233,68 +243,73 @@ export default function Withdrawals() {
 
       <KpiGrid columns={3} className="mb-6">
         <KpiCard
-          label="Available for Withdrawal"
+          label={t('withdrawals.kpi.available')}
           {...kpi('availableForWithdrawal', (v) => formatMoney(v))}
-          definition="System-wide net balance on closed events where no withdrawal has been started."
+          definition={t('withdrawals.kpi.availableDef')}
         />
         <KpiCard
-          label="Requested"
+          label={t('withdrawals.kpi.requested')}
           {...kpi('requested', formatNumber)}
-          secondary={`${formatNumber(withdrawals.filter((w) => w.status === 'requested' || w.status === 'validated').length)} payouts`}
-          definition="Payouts a beneficiary has requested but Stripe hasn't started processing."
+          secondary={t('withdrawals.kpi.payoutCount', {
+            count: withdrawals.filter(
+              (w) => w.status === 'requested' || w.status === 'validated',
+            ).length,
+          })}
+          definition={t('withdrawals.kpi.requestedDef')}
         />
         <KpiCard
-          label="Processing"
+          label={t('withdrawals.kpi.processing')}
           {...kpi('processing', formatNumber)}
-          secondary={`${formatNumber(withdrawals.filter((w) => w.status === 'processing').length)} payouts`}
-          definition="Payouts in flight at Stripe, not yet settled in the beneficiary's bank."
+          secondary={t('withdrawals.kpi.payoutCount', {
+            count: withdrawals.filter((w) => w.status === 'processing').length,
+          })}
+          definition={t('withdrawals.kpi.processingDef')}
         />
         <KpiCard
-          label="Completed"
+          label={t('withdrawals.kpi.completed')}
           {...kpi('completedInPeriod', formatNumber)}
-          secondary={`${formatNumber(withdrawals.filter((w) => w.status === 'completed').length)} payouts`}
-          definition="Payouts settled inside the selected range."
+          secondary={t('withdrawals.kpi.payoutCount', {
+            count: withdrawals.filter((w) => w.status === 'completed').length,
+          })}
+          definition={t('withdrawals.kpi.completedDef')}
         />
         <KpiCard
-          label="Failed"
+          label={t('withdrawals.kpi.failed')}
           {...kpi('failed', formatNumber)}
           invertDelta
           accent="danger"
-          secondary={`${formatNumber(withdrawals.filter((w) => w.status === 'failed').length)} payouts`}
-          definition="Payouts Stripe rejected. The reason is shown verbatim in the table."
+          secondary={t('withdrawals.kpi.payoutCount', {
+            count: withdrawals.filter((w) => w.status === 'failed').length,
+          })}
+          definition={t('withdrawals.kpi.failedDef')}
         />
         <KpiCard
-          label="Median Time to Payout"
+          label={t('withdrawals.kpi.medianTime')}
           {...kpi('medianTimeToPayoutHours', formatDuration)}
           invertDelta
-          definition="Median of (completion timestamp − request timestamp) across completed payouts."
+          definition={t('withdrawals.kpi.medianTimeDef')}
         />
       </KpiGrid>
 
       <FilterBar
         className="mb-4"
-        searchPlaceholder="Search beneficiary, event, payout ID…"
+        searchPlaceholder={t('withdrawals.searchPlaceholder')}
         filters={[
           {
             id: 'status',
-            label: 'Status',
-            options: [
-              { value: 'requested', label: 'Requested' },
-              { value: 'validated', label: 'Validated' },
-              { value: 'processing', label: 'Processing' },
-              { value: 'completed', label: 'Completed' },
-              { value: 'failed', label: 'Failed' },
-            ],
+            label: t('fields.status'),
+            options: ['requested', 'validated', 'processing', 'completed', 'failed'].map((s) => ({
+              value: s,
+              label: t(`status.${s}`),
+            })),
           },
           {
             id: 'account',
-            label: 'Connect account',
-            options: [
-              { value: 'verified', label: 'Verified' },
-              { value: 'pending', label: 'Pending' },
-              { value: 'restricted', label: 'Restricted' },
-              { value: 'not_started', label: 'Not started' },
-            ],
+            label: t('withdrawals.table.connectAccount'),
+            options: ['verified', 'pending', 'restricted', 'not_started'].map((s) => ({
+              value: s,
+              label: t(`status.${s}`),
+            })),
           },
         ]}
       />
@@ -309,8 +324,8 @@ export default function Withdrawals() {
         storageKey="withdrawals"
         rowClassName={(w) => (w.status === 'failed' ? 'bg-danger-50 hover:bg-danger-50/70' : undefined)}
         empty={{
-          headline: 'No withdrawals match these filters',
-          description: 'Clear the status filter, or widen the date range to see settled payouts.',
+          headline: t('withdrawals.table.empty'),
+          description: t('withdrawals.table.emptyBody'),
         }}
       />
 
@@ -318,23 +333,33 @@ export default function Withdrawals() {
         <ConfirmDialog
           open
           onOpenChange={(o) => !o && setRetrying(null)}
-          title="Retry this payout"
+          title={t('withdrawals.retryTitle')}
           tone="primary"
           requireReason
           consequence={
-            <>
-              A new payout of <strong>{formatMoney(retrying.amount, retrying.currency)}</strong> will be
-              created for <strong>{retrying.beneficiary.name}</strong>. The original failure was:{' '}
-              <span className="font-mono text-[13px]">{retrying.failureReason}</span>. If the
-              underlying bank details are still wrong, this will fail again.
-            </>
+            <Trans
+              i18nKey="withdrawals.retryConsequence"
+              values={{
+                amount: formatMoney(retrying.amount, retrying.currency),
+                name: retrying.beneficiary.name,
+                reason: retrying.failureReason,
+              }}
+              components={[
+                <span key="0" />,
+                <strong key="1" />,
+                <span key="2" />,
+                <strong key="3" />,
+                <span key="4" />,
+                <span key="5" className="font-mono text-[13px]" />,
+              ]}
+            />
           }
-          confirmLabel="Retry payout"
+          confirmLabel={t('withdrawals.retryConfirm')}
           onConfirm={(reason) => {
             void mutations.retryPayout(retrying.id, reason);
             toast({
-              title: 'Payout retry queued',
-              description: `${retrying.beneficiary.name} · now processing`,
+              title: t('withdrawals.retryQueued'),
+              description: t('withdrawals.retryQueuedBody', { name: retrying.beneficiary.name }),
               tone: 'success',
             });
           }}
@@ -345,22 +370,27 @@ export default function Withdrawals() {
         <ConfirmDialog
           open
           onOpenChange={(o) => !o && setResolving(null)}
-          title="Mark as resolved"
+          title={t('withdrawals.resolveTitle')}
           tone="primary"
           requireReason
           consequence={
-            <>
-              This removes <strong>{resolving.beneficiary.name}</strong>’s failed payout from the pinned
-              list. It does <strong>not</strong> move any money — use it only when the payout was
-              settled another way.
-            </>
+            <Trans
+              i18nKey="withdrawals.resolveConsequence"
+              values={{ name: resolving.beneficiary.name }}
+              components={[
+                <span key="0" />,
+                <strong key="1" />,
+                <span key="2" />,
+                <strong key="3" />,
+              ]}
+            />
           }
-          confirmLabel="Mark resolved"
+          confirmLabel={t('withdrawals.resolveConfirm')}
           onConfirm={(reason) => {
             void mutations.markPayoutResolved(resolving.id, reason);
             toast({
-              title: 'Marked resolved',
-              description: `${resolving.beneficiary.name} · removed from the pinned list`,
+              title: t('withdrawals.resolved'),
+              description: t('withdrawals.resolvedBody', { name: resolving.beneficiary.name }),
               tone: 'success',
             });
           }}

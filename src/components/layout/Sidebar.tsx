@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
@@ -33,43 +34,49 @@ import { cn } from '@/lib/utils';
  */
 
 interface NavItem {
-  label: string;
+  /** Key under `nav.*` — resolved at render so the language switch relabels it. */
+  labelKey: string;
   to: string;
   icon: LucideIcon;
   permission: Permission;
   end?: boolean;
-  children?: { label: string; to: string }[];
+  children?: { labelKey: string; to: string }[];
   badge?: number;
 }
 
 const NAV_GROUPS: { items: NavItem[] }[] = [
   {
     items: [
-      { label: 'Dashboard', to: '/', icon: LayoutDashboard, permission: 'events:read', end: true },
-      { label: 'Events', to: '/events', icon: CalendarDays, permission: 'events:read' },
-      { label: 'Contributions', to: '/contributions', icon: Receipt, permission: 'contributions:read' },
-      { label: 'Users', to: '/users', icon: Users, permission: 'users:read' },
+      { labelKey: 'nav.dashboard', to: '/', icon: LayoutDashboard, permission: 'events:read', end: true },
+      { labelKey: 'nav.events', to: '/events', icon: CalendarDays, permission: 'events:read' },
       {
-        label: 'Gift Cards',
+        labelKey: 'nav.contributions',
+        to: '/contributions',
+        icon: Receipt,
+        permission: 'contributions:read',
+      },
+      { labelKey: 'nav.users', to: '/users', icon: Users, permission: 'users:read' },
+      {
+        labelKey: 'nav.giftCards',
         to: '/cards',
         icon: CreditCard,
         permission: 'cards:read',
         children: [
-          { label: 'Analytics', to: '/cards/analytics' },
-          { label: 'Catalog', to: '/cards/catalog' },
+          { labelKey: 'nav.analytics', to: '/cards/analytics' },
+          { labelKey: 'nav.catalog', to: '/cards/catalog' },
         ],
       },
-      { label: 'Clovers', to: '/clovers', icon: Clover, permission: 'clovers:read' },
-      { label: 'Withdrawals', to: '/withdrawals', icon: Wallet, permission: 'financials:read' },
-      { label: 'Alerts', to: '/alerts', icon: Bell, permission: 'alerts:manage' },
-      { label: 'Exports', to: '/exports', icon: Download, permission: 'exports:run' },
+      { labelKey: 'nav.clovers', to: '/clovers', icon: Clover, permission: 'clovers:read' },
+      { labelKey: 'nav.withdrawals', to: '/withdrawals', icon: Wallet, permission: 'financials:read' },
+      { labelKey: 'nav.alerts', to: '/alerts', icon: Bell, permission: 'alerts:manage' },
+      { labelKey: 'nav.exports', to: '/exports', icon: Download, permission: 'exports:run' },
     ],
   },
   {
     items: [
-      { label: 'Audit Trail', to: '/audit', icon: FileClock, permission: 'audit:read' },
-      { label: 'Admins', to: '/admins', icon: BadgeCheck, permission: 'admins:manage' },
-      { label: 'Settings', to: '/settings', icon: Settings, permission: 'settings:write' },
+      { labelKey: 'nav.auditTrail', to: '/audit', icon: FileClock, permission: 'audit:read' },
+      { labelKey: 'nav.admins', to: '/admins', icon: BadgeCheck, permission: 'admins:manage' },
+      { labelKey: 'nav.settings', to: '/settings', icon: Settings, permission: 'settings:write' },
     ],
   },
 ];
@@ -83,6 +90,7 @@ export function Sidebar({
   onToggleCollapsed: () => void;
   onNavigate?: () => void;
 }) {
+  const { t } = useTranslation();
   const { can } = useAuth();
   const location = useLocation();
   const { meta } = useAlerts({ state: 'open' });
@@ -90,7 +98,7 @@ export function Sidebar({
 
   return (
     <nav
-      aria-label="Main navigation"
+      aria-label={t('nav.mainNavigation')}
       className={cn(
         'flex h-full flex-col border-r border-neutral-200 bg-neutral-0 transition-[width] duration-panel ease-standard',
         collapsed ? 'w-16' : 'w-[240px]',
@@ -106,7 +114,9 @@ export function Sidebar({
           <ShieldCheck className="h-5 w-5 text-white" aria-hidden />
         </span>
         {!collapsed && (
-          <span className="truncate text-[15px] font-semibold text-neutral-900">Regal Admin</span>
+          <span className="truncate text-[15px] font-semibold text-neutral-900">
+            {t('auth.brand')}
+          </span>
         )}
       </div>
 
@@ -124,7 +134,7 @@ export function Sidebar({
                     item={item}
                     collapsed={collapsed}
                     onNavigate={onNavigate}
-                    badge={item.label === 'Alerts' ? openAlerts : undefined}
+                    badge={item.labelKey === 'nav.alerts' ? openAlerts : undefined}
                     forceExpanded={location.pathname.startsWith(item.to) && item.to !== '/'}
                   />
                 ))}
@@ -138,7 +148,7 @@ export function Sidebar({
         <button
           type="button"
           onClick={onToggleCollapsed}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
           className={cn(
             'flex w-full items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700',
             collapsed && 'justify-center px-0',
@@ -148,7 +158,7 @@ export function Sidebar({
             className={cn('h-4 w-4 shrink-0 transition-transform duration-panel', collapsed && 'rotate-180')}
             aria-hidden
           />
-          {!collapsed && 'Collapse'}
+          {!collapsed && t('nav.collapse')}
         </button>
       </div>
     </nav>
@@ -168,6 +178,7 @@ function SidebarItem({
   badge?: number;
   forceExpanded: boolean;
 }) {
+  const { t } = useTranslation();
   const Icon = item.icon;
   const hasChildren = Boolean(item.children?.length);
   // A parent with children navigates to its first child.
@@ -197,7 +208,7 @@ function SidebarItem({
             />
           )}
           <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
-          {!collapsed && <span className="truncate">{item.label}</span>}
+          {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
           {!collapsed && badge !== undefined && badge > 0 && (
             <span className="tnum ml-auto rounded-full bg-danger-500 px-1.5 py-px text-[11px] font-semibold text-white">
               {badge}
@@ -214,7 +225,7 @@ function SidebarItem({
   return (
     <li>
       {collapsed ? (
-        <Tooltip content={item.label} side="right">
+        <Tooltip content={t(item.labelKey)} side="right">
           {link}
         </Tooltip>
       ) : (
@@ -237,7 +248,7 @@ function SidebarItem({
                   )
                 }
               >
-                {child.label}
+                {t(child.labelKey)}
               </NavLink>
             </li>
           ))}

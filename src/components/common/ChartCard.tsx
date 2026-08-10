@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Download, FileDown, MoreHorizontal, Table2 } from 'lucide-react';
 import {
@@ -46,6 +47,7 @@ export function ChartCard({
   minHeight?: number;
   actions?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   const [asTable, setAsTable] = React.useState(false);
   const { toast } = useToast();
   const bodyRef = React.useRef<HTMLDivElement>(null);
@@ -54,21 +56,21 @@ export function ChartCard({
 
   const downloadCsv = () => {
     if (!tableData) {
-      toast({ title: 'No tabular data for this chart', tone: 'warning' });
+      toast({ title: t('chart.noTabularData'), tone: 'warning' });
       return;
     }
     downloadText(
       `regal-${slug}-${timestampSlug()}.csv`,
       chartCsv(tableData.columns, tableData.rows),
     );
-    toast({ title: 'Chart CSV downloaded', description: title, tone: 'success' });
+    toast({ title: t('chart.csvDownloaded'), description: title, tone: 'success' });
   };
 
   /** Rasterises the chart's SVG to PNG entirely client-side. */
   const downloadPng = async () => {
     const svg = bodyRef.current?.querySelector('svg');
     if (!svg) {
-      toast({ title: 'Switch back to chart view to export a PNG', tone: 'warning' });
+      toast({ title: t('chart.switchBackForPng'), tone: 'warning' });
       return;
     }
     try {
@@ -114,12 +116,12 @@ export function ChartCard({
         a.click();
         document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-        toast({ title: 'Chart PNG downloaded', description: title, tone: 'success' });
+        toast({ title: t('chart.pngDownloaded'), description: title, tone: 'success' });
       }, 'image/png');
     } catch {
       toast({
-        title: 'Couldn’t render this chart as PNG',
-        description: 'Download the CSV instead.',
+        title: t('chart.pngFailed'),
+        description: t('chart.pngFailedBody'),
         tone: 'danger',
       });
     }
@@ -150,29 +152,29 @@ export function ChartCard({
               )}
             >
               <Table2 className="h-3 w-3" aria-hidden />
-              {asTable ? 'View as chart' : 'View as table'}
+              {asTable ? t('common.viewAsChart') : t('common.viewAsTable')}
             </button>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger
               className="rounded-sm p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-              aria-label={`${title} chart options`}
+              aria-label={t('common.chartOptions', { title })}
             >
               <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={() => void downloadPng()}>
                 <Download className="h-4 w-4 text-neutral-400" />
-                Download PNG
+                {t('common.downloadPng')}
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={downloadCsv}>
                 <FileDown className="h-4 w-4 text-neutral-400" />
-                Download CSV
+                {t('common.downloadCsv')}
               </DropdownMenuItem>
               {onViewRecords && (
                 <DropdownMenuItem onSelect={onViewRecords}>
                   <Table2 className="h-4 w-4 text-neutral-400" />
-                  View underlying records
+                  {t('common.viewRecords')}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>

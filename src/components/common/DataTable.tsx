@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowDown,
@@ -93,6 +94,7 @@ export function DataTable<T>({
   toolbar,
   dense,
 }: DataTableProps<T>) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [page, setPage] = React.useState(0);
   const [sort, setSort] = React.useState(initialSort ?? null);
@@ -182,11 +184,11 @@ export function DataTable<T>({
               <DropdownMenuTrigger asChild>
                 <Button variant="secondary" size="sm" className="md:hidden">
                   <ArrowUpDown className="h-4 w-4" />
-                  Sort
+                  {t('common.sort')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('common.sortBy')}</DropdownMenuLabel>
                 {sortableColumns.map((c) => (
                   <DropdownMenuItem key={c.id} onSelect={() => toggleSort(c)}>
                     {c.header}
@@ -206,11 +208,11 @@ export function DataTable<T>({
               <DropdownMenuTrigger asChild>
                 <Button variant="secondary" size="sm" className="hidden md:inline-flex">
                   <Columns3 className="h-4 w-4" />
-                  Columns
+                  {t('common.columns')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('common.visibleColumns')}</DropdownMenuLabel>
                 {columns.map((c) => (
                   <DropdownMenuCheckboxItem
                     key={c.id}
@@ -264,7 +266,7 @@ export function DataTable<T>({
                             return next;
                           })
                         }
-                        aria-label="Select row"
+                        aria-label={t('common.selectRow')}
                       />
                     )}
                     <button
@@ -318,7 +320,7 @@ export function DataTable<T>({
                         allOnPageSelected ? true : someOnPageSelected ? 'indeterminate' : false
                       }
                       onCheckedChange={toggleAll}
-                      aria-label="Select all rows on this page"
+                      aria-label={t('common.selectAllRows')}
                     />
                   </th>
                 )}
@@ -408,7 +410,7 @@ export function DataTable<T>({
                                 return next;
                               })
                             }
-                            aria-label={`Select row ${idx + 1}`}
+                            aria-label={t('common.selectRow')}
                           />
                         </td>
                       )}
@@ -436,11 +438,8 @@ export function DataTable<T>({
         {!loading && !error && pageRows.length === 0 && (
           <EmptyState
             icon={Inbox}
-            headline={empty?.headline ?? 'No records match these filters'}
-            description={
-              empty?.description ??
-              'Try widening the date range or clearing a filter to see more results.'
-            }
+            headline={empty?.headline ?? t('common.noRecords')}
+            description={empty?.description ?? t('common.noRecordsBody')}
             action={empty?.action}
           />
         )}
@@ -448,8 +447,11 @@ export function DataTable<T>({
         {!loading && !error && sorted.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-200 px-4 py-3">
             <p className="tnum text-caption text-neutral-500">
-              {safePage * pageSize + 1}–{Math.min((safePage + 1) * pageSize, sorted.length)} of{' '}
-              {sorted.length.toLocaleString()}
+              {t('common.rowRange', {
+                from: safePage * pageSize + 1,
+                to: Math.min((safePage + 1) * pageSize, sorted.length),
+                total: sorted.length.toLocaleString(),
+              })}
             </p>
             <div className="flex items-center gap-2">
               <Button
@@ -457,19 +459,19 @@ export function DataTable<T>({
                 size="icon-sm"
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={safePage === 0}
-                aria-label="Previous page"
+                aria-label={t('common.previousPage')}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="tnum text-caption text-neutral-500">
-                Page {safePage + 1} of {pageCount}
+                {t('common.pageOf', { page: safePage + 1, total: pageCount })}
               </span>
               <Button
                 variant="secondary"
                 size="icon-sm"
                 onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
                 disabled={safePage >= pageCount - 1}
-                aria-label="Next page"
+                aria-label={t('common.nextPage')}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -483,10 +485,10 @@ export function DataTable<T>({
         <div
           className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-4 rounded-lg border border-neutral-200 bg-neutral-0 px-4 py-3 shadow-e2 animate-slide-up"
           role="region"
-          aria-label="Bulk actions"
+          aria-label={t('common.actions')}
         >
           <span className="tnum text-[14px] font-medium text-neutral-900">
-            {selectedRows.length} selected
+            {t('common.selectedCount', { count: selectedRows.length })}
           </span>
           <div className="h-4 w-px bg-neutral-200" />
           {bulkActions(selectedRows, () => setSelected(new Set()))}
@@ -494,7 +496,7 @@ export function DataTable<T>({
             type="button"
             onClick={() => setSelected(new Set())}
             className="rounded-sm p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-            aria-label="Clear selection"
+            aria-label={t('common.clearSelection')}
           >
             <X className="h-4 w-4" />
           </button>

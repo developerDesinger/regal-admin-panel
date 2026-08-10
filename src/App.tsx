@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -37,6 +38,7 @@ const NotFound = lazy(() => import('@/pages/NotFound'));
  * layout become the two top-level route branches below.
  */
 export default function App() {
+  const { t } = useTranslation();
   return (
     <AuthProvider>
       <TooltipProvider delayDuration={200} skipDelayDuration={300}>
@@ -45,7 +47,7 @@ export default function App() {
             href="#main"
             className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-md focus:bg-brand-500 focus:px-4 focus:py-2 focus:text-white"
           >
-            Skip to content
+            {t('common.skipToContent')}
           </a>
 
           <Routes>

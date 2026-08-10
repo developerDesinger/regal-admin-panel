@@ -8,6 +8,7 @@
 
 import { useQuery, type QueryKey } from '@tanstack/react-query';
 import * as React from 'react';
+import i18n from '@/i18n';
 import type { PageMeta } from '@/lib/api/client';
 import type { AggregateMeta } from '@/lib/api/types';
 import {
@@ -62,7 +63,7 @@ export interface ListResult<T> {
 }
 
 function errorMessage(e: unknown): string | null {
-  return e ? ((e as Error).message ?? 'Something went wrong.') : null;
+  return e ? ((e as Error).message ?? i18n.t('common.somethingWentWrong')) : null;
 }
 
 /** Wraps a paged query into the shared ListResult shape. */

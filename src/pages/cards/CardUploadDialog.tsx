@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { AlertCircle, ImageUp, X } from 'lucide-react';
 import {
@@ -62,6 +63,7 @@ export function CardUploadDialog({
   onOpenChange: (o: boolean) => void;
   editing?: GiftCardDesign | null;
 }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { rows: giftCards } = useCatalog();
   const qc = useQueryClient();
@@ -134,11 +136,15 @@ export function CardUploadDialog({
     setFileName(file.name);
     setFile(file);
     if (!ACCEPTED_MIME.includes(file.type)) {
-      setFileError(`Unsupported file type "${file.type || 'unknown'}". Use PNG, JPG, WEBP or SVG.`);
+      setFileError(
+        t('cards.upload.unsupportedType', {
+          type: file.type || t('cards.upload.unknownType'),
+        }),
+      );
       return;
     }
     if (file.size > MAX_BYTES) {
-      setFileError(`File is ${(file.size / 1024 / 1024).toFixed(1)} MB. The maximum is 5 MB.`);
+      setFileError(t('cards.upload.tooLarge', { size: (file.size / 1024 / 1024).toFixed(1) }));
       return;
     }
     if (file.type === 'image/svg+xml') {
@@ -150,7 +156,12 @@ export function CardUploadDialog({
     img.onload = () => {
       if (img.width < MIN_WIDTH || img.height < MIN_HEIGHT) {
         setFileError(
-          `Artwork is ${img.width} × ${img.height} px. The minimum is ${MIN_WIDTH} × ${MIN_HEIGHT} px.`,
+          t('cards.upload.tooSmall', {
+            width: img.width,
+            height: img.height,
+            minWidth: MIN_WIDTH,
+            minHeight: MIN_HEIGHT,
+          }),
         );
       } else {
         setFileError(null);
@@ -158,7 +169,7 @@ export function CardUploadDialog({
       URL.revokeObjectURL(url);
     };
     img.onerror = () => {
-      setFileError('That file could not be read as an image.');
+      setFileError(t('cards.upload.notAnImage'));
       URL.revokeObjectURL(url);
     };
     img.src = url;
@@ -168,11 +179,13 @@ export function CardUploadDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent width={880}>
         <DialogHeader>
-          <DialogTitle>{isEdit ? `Edit ${editing!.name}` : 'Upload card design'}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle>
             {isEdit
-              ? 'Editing artwork creates a new version — users who unlocked v1 keep what they paid for.'
-              : 'Artwork is uploaded to object storage and resized into thumb, preview and full variants.'}
+              ? t('cards.upload.editTitle', { name: editing!.name })
+              : t('cards.upload.createTitle')}
+          </DialogTitle>
+          <DialogDescription>
+            {isEdit ? t('cards.upload.editSubtitle') : t('cards.upload.createSubtitle')}
           </DialogDescription>
         </DialogHeader>
 
@@ -181,7 +194,7 @@ export function CardUploadDialog({
             {/* ------------------------------------------------------ form -- */}
             <div className="space-y-4">
               <div>
-                <Label required>Artwork</Label>
+                <Label required>{t('cards.upload.artwork')}</Label>
                 <div
                   onDragOver={(e) => {
                     e.preventDefault();
@@ -202,9 +215,9 @@ export function CardUploadDialog({
                 >
                   <ImageUp className="mb-2 h-6 w-6 text-neutral-400" aria-hidden />
                   <p className="text-body text-neutral-700">
-                    Drag artwork here, or{' '}
+                    {t('cards.upload.dragHere')}{' '}
                     <label className="cursor-pointer font-medium text-brand-500 hover:underline">
-                      browse
+                      {t('cards.upload.browse')}
                       <input
                         type="file"
                         className="sr-only"
@@ -217,7 +230,7 @@ export function CardUploadDialog({
                     </label>
                   </p>
                   <p className="mt-1 text-caption text-neutral-500">
-                    PNG · JPG · WEBP · SVG — max 5 MB, min 1200 × 1600 px
+                    {t('cards.upload.constraints')}
                   </p>
                   {fileName && !fileError && (
                     <p className="mt-2 flex items-center gap-2 text-caption text-success-500">
@@ -228,7 +241,7 @@ export function CardUploadDialog({
                           setFileName(null);
                           setFile(null);
                         }}
-                        aria-label="Remove file"
+                        aria-label={t('cards.upload.removeFile')}
                         className="rounded-sm p-0.5 hover:bg-neutral-100"
                       >
                         <X className="h-3 w-3" />
@@ -247,22 +260,22 @@ export function CardUploadDialog({
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <Label htmlFor="card-name" required>
-                    Name
+                    {t('cards.upload.name')}
                   </Label>
                   <Input
                     id="card-name"
                     value={name}
                     onChange={(e) => setName(e.target.value.slice(0, 60))}
-                    placeholder="Confetti Burst"
+                    placeholder={t('cards.upload.namePlaceholder')}
                     className="mt-1"
                     invalid={name.length > 0 && !nameOk}
                   />
-                  <FieldHelp>{name.length}/60 characters · shown to users</FieldHelp>
+                  <FieldHelp>{t('cards.upload.nameHelp', { count: name.length })}</FieldHelp>
                 </div>
 
                 <div>
                   <Label htmlFor="card-slug" required>
-                    Slug
+                    {t('cards.upload.slug')}
                   </Label>
                   <Input
                     id="card-slug"
@@ -277,16 +290,16 @@ export function CardUploadDialog({
                   />
                   <FieldHelp tone={slugTaken ? 'danger' : 'muted'}>
                     {slugTaken
-                      ? 'That slug is already used by another design.'
+                      ? t('cards.upload.slugTaken')
                       : isEdit
-                        ? 'Immutable after creation — it is the stable seed id the app references.'
-                        : 'Auto-generated from the name. Lowercase-kebab, unique.'}
+                        ? t('cards.upload.slugImmutable')
+                        : t('cards.upload.slugAuto')}
                   </FieldHelp>
                 </div>
               </div>
 
               <div>
-                <Label>Category / Occasion</Label>
+                <Label>{t('cards.upload.categoryLabel')}</Label>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
                   {CATEGORIES.map((c) => (
                     <label key={c} className="flex cursor-pointer items-center gap-2">
@@ -298,22 +311,22 @@ export function CardUploadDialog({
                           )
                         }
                       />
-                      <span className="text-body capitalize text-neutral-700">{c}</span>
+                      <span className="text-body text-neutral-700">{t(`occasion.${c}`)}</span>
                     </label>
                   ))}
                 </div>
-                <FieldHelp>Drives where the card surfaces in the app.</FieldHelp>
+                <FieldHelp>{t('cards.upload.categoryHelp')}</FieldHelp>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <Label htmlFor="card-bg">Background color</Label>
+                  <Label htmlFor="card-bg">{t('cards.upload.background')}</Label>
                   <div className="mt-1 flex gap-2">
                     <input
                       type="color"
                       value={bg}
                       onChange={(e) => setBg(e.target.value)}
-                      aria-label="Background color picker"
+                      aria-label={t('cards.upload.backgroundPicker')}
                       className="h-9 w-12 shrink-0 cursor-pointer rounded-sm border border-neutral-300 bg-neutral-0 p-1"
                     />
                     <Input
@@ -326,7 +339,7 @@ export function CardUploadDialog({
                 </div>
 
                 <div>
-                  <Label htmlFor="card-sort">Sort order</Label>
+                  <Label htmlFor="card-sort">{t('cards.upload.sortOrder')}</Label>
                   <Input
                     id="card-sort"
                     type="number"
@@ -334,12 +347,12 @@ export function CardUploadDialog({
                     onChange={(e) => setSortOrder(e.target.value)}
                     className="tnum mt-1"
                   />
-                  <FieldHelp>Or set it by drag-and-drop in the grid.</FieldHelp>
+                  <FieldHelp>{t('cards.upload.sortOrderHelp')}</FieldHelp>
                 </div>
               </div>
 
               <div>
-                <Label>Card type</Label>
+                <Label>{t('cards.upload.cardType')}</Label>
                 <RadioGroup
                   value={cardType}
                   onValueChange={(v) => setCardType(v as 'standard' | 'premium')}
@@ -348,9 +361,11 @@ export function CardUploadDialog({
                   <label className="flex cursor-pointer items-start gap-2">
                     <RadioGroupItem value="standard" id="type-standard" className="mt-0.5" />
                     <span>
-                      <span className="block text-body font-medium text-neutral-900">Standard (free)</span>
+                      <span className="block text-body font-medium text-neutral-900">
+                        {t('cards.upload.standardTitle')}
+                      </span>
                       <span className="block text-caption text-neutral-500">
-                        Available to everyone at no clover cost.
+                        {t('cards.upload.standardBody')}
                       </span>
                     </span>
                   </label>
@@ -358,10 +373,10 @@ export function CardUploadDialog({
                     <RadioGroupItem value="premium" id="type-premium" className="mt-0.5" />
                     <span>
                       <span className="block text-body font-medium text-neutral-900">
-                        Premium (clover unlock)
+                        {t('cards.upload.premiumTitle')}
                       </span>
                       <span className="block text-caption text-neutral-500">
-                        Users spend clovers to unlock this design permanently.
+                        {t('cards.upload.premiumBody')}
                       </span>
                     </span>
                   </label>
@@ -370,7 +385,7 @@ export function CardUploadDialog({
 
               <div>
                 <Label htmlFor="card-cost" required={cardType === 'premium'}>
-                  Clover cost
+                  {t('cards.upload.cloverCost')}
                 </Label>
                 <Input
                   id="card-cost"
@@ -384,14 +399,16 @@ export function CardUploadDialog({
                 />
                 <FieldHelp>
                   {cardType === 'standard'
-                    ? 'Standard designs are always free — this field is locked at 0.'
-                    : `Users spend this many clovers to unlock this design permanently. ≈ ${(eligibleUsers ?? 0).toLocaleString()} users currently have enough clovers to unlock this.`}
+                    ? t('cards.upload.standardLocked')
+                    : t('cards.upload.premiumHelp', {
+                        count: (eligibleUsers ?? 0).toLocaleString(),
+                      })}
                 </FieldHelp>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <Label htmlFor="from">Available from</Label>
+                  <Label htmlFor="from">{t('cards.upload.availableFrom')}</Label>
                   <Input
                     id="from"
                     type="date"
@@ -401,7 +418,7 @@ export function CardUploadDialog({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="until">Available until</Label>
+                  <Label htmlFor="until">{t('cards.upload.availableUntil')}</Label>
                   <Input
                     id="until"
                     type="date"
@@ -411,17 +428,14 @@ export function CardUploadDialog({
                   />
                 </div>
               </div>
-              <FieldHelp>Optional — for seasonal designs.</FieldHelp>
+              <FieldHelp>{t('cards.upload.seasonalHelp')}</FieldHelp>
 
               <div className="flex items-start justify-between gap-4 rounded-md border border-neutral-200 p-3">
                 <div>
                   <Label htmlFor="card-active" className="cursor-pointer">
-                    Active
+                    {t('cards.upload.active')}
                   </Label>
-                  <p className="mt-1 text-caption text-neutral-500">
-                    Inactive designs stay in the catalog and remain owned by users who already unlocked
-                    them, but are hidden from new selection.
-                  </p>
+                  <p className="mt-1 text-caption text-neutral-500">{t('cards.upload.activeHelp')}</p>
                 </div>
                 <Switch id="card-active" checked={isActive} onCheckedChange={setIsActive} />
               </div>
@@ -429,7 +443,7 @@ export function CardUploadDialog({
 
             {/* --------------------------------------------- live preview -- */}
             <div className="lg:sticky lg:top-0 lg:self-start">
-              <p className="mb-2 text-card-title text-neutral-700">Live preview</p>
+              <p className="mb-2 text-card-title text-neutral-700">{t('cards.upload.livePreview')}</p>
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
                 <div
                   className="relative flex aspect-[3/4] w-full items-center justify-center rounded-md"
@@ -444,34 +458,32 @@ export function CardUploadDialog({
                     </span>
                   ) : (
                     <span className="absolute right-2 top-2 rounded-full bg-success-500 px-2 py-1 text-[11px] font-semibold text-white">
-                      FREE
+                      {t('cards.freeUpper')}
                     </span>
                   )}
                   {!isActive && (
                     <span className="absolute inset-x-0 bottom-0 bg-neutral-900/70 py-1 text-center text-[11px] font-semibold uppercase text-white">
-                      Inactive
+                      {t('cards.inactive')}
                     </span>
                   )}
                 </div>
                 <p className="mt-3 truncate text-body font-medium text-neutral-900">
-                  {name || 'Untitled design'}
+                  {name || t('cards.upload.untitled')}
                 </p>
                 <p className="truncate font-mono text-caption text-neutral-500">{slug || 'slug'}</p>
-                <p className="mt-1 text-caption capitalize text-neutral-500">
-                  {categories.join(' · ') || 'no category'}
+                <p className="mt-1 text-caption text-neutral-500">
+                  {categories.map((c) => t(`occasion.${c}`)).join(' · ') ||
+                    t('cards.upload.noCategory')}
                 </p>
               </div>
-              <p className="mt-2 text-caption text-neutral-400">
-                Rendered exactly as the mobile app will: artwork on background color, price pill
-                overlaid.
-              </p>
+              <p className="mt-2 text-caption text-neutral-400">{t('cards.upload.previewNote')}</p>
             </div>
           </div>
         </DialogBody>
 
         <DialogFooter>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             variant="primary"
@@ -503,21 +515,26 @@ export function CardUploadDialog({
                   : await catalogService.create({ ...payload, slug });
                 void qc.invalidateQueries({ queryKey: ['catalog'] });
               toast({
-                title: isEdit ? 'Design updated' : 'Design published',
-                description: `${card.name} · ${cost > 0 ? `🍀 ${cost}` : 'free'} · written to the audit trail`,
+                title: isEdit ? t('cards.upload.updated') : t('cards.upload.published'),
+                description: t('cards.upload.savedBody', {
+                  name: card.name,
+                  price: cost > 0 ? `🍀 ${cost}` : t('cards.upload.freeLower'),
+                }),
                 tone: 'success',
               });
                 onOpenChange(false);
               } catch (err) {
                 toast({
-                  title: isEdit ? 'Could not update design' : 'Could not publish design',
+                  title: isEdit
+                    ? t('cards.upload.updateFailed')
+                    : t('cards.upload.publishFailed'),
                   description: (err as ApiError).message,
                   tone: 'danger',
                 });
               }
             }}
           >
-            {isEdit ? 'Save changes' : 'Publish design'}
+            {isEdit ? t('common.saveChanges') : t('cards.upload.publish')}
           </Button>
         </DialogFooter>
       </DialogContent>

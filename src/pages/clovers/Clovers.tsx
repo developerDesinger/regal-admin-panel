@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -44,6 +45,7 @@ import { formatNumber, formatPercent } from '@/lib/format';
 
 /** Screen 10 — Clovers (§10). */
 export default function Clovers() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { can } = useAuth();
@@ -80,17 +82,20 @@ export default function Clovers() {
   return (
     <>
       <PageHeader
-        title="Clovers"
-        subtitle="The in-app reward currency: what mints it, what burns it, and what the platform still owes."
+        title={t('clovers.title')}
+        subtitle={t('clovers.subtitle')}
         actions={
           <>
             <DateRangePicker />
             <ExportButton
               name="clover-ledger"
-              label="Clover ledger"
+              label={t('clovers.exportLabel')}
               columns={cloverColumns}
               rows={cloverLedger}
-              filterSummary={`${rangeLabel(all.range ?? '30d')} · ${cloverLedger.length} transactions`}
+              filterSummary={t('clovers.filterSummary', {
+                range: t(rangeLabel(all.range ?? '30d')),
+                count: cloverLedger.length,
+              })}
             />
           </>
         }
@@ -98,75 +103,75 @@ export default function Clovers() {
 
       <KpiGrid className="mb-6">
         <KpiCard
-          label="Clovers Earned"
+          label={t('clovers.kpi.earned')}
           value={num('cloversEarned')}
           delta={k('cloversEarned')?.delta ?? null}
           accent="secondary"
-          definition="Sum of positive clover ledger amounts in the range — every earn action combined."
+          definition={t('clovers.kpi.earnedDef')}
         />
         <KpiCard
-          label="Clovers Redeemed"
+          label={t('clovers.kpi.redeemed')}
           value={num('cloversRedeemed')}
           delta={k('cloversRedeemed')?.delta ?? null}
           accent="secondary"
-          definition="Absolute sum of negative ledger amounts from card unlocks in the range."
+          definition={t('clovers.kpi.redeemedDef')}
         />
         <KpiCard
-          label="Outstanding Balance"
+          label={t('clovers.kpi.outstanding')}
           value={num('outstandingBalance')}
           delta={k('outstandingBalance')?.delta ?? null}
           invertDelta
-          definition="System-wide unspent clover balance — the platform's outstanding liability."
+          definition={t('clovers.kpi.outstandingDef')}
         />
         <KpiCard
-          label="Redemption Rate"
+          label={t('clovers.kpi.redemptionRate')}
           value={pct('redemptionRate')}
           delta={k('redemptionRate')?.delta ?? null}
           deltaUnit="pp"
-          definition="Users who redeemed ≥1 premium card ÷ users holding enough clovers to redeem one × 100."
+          definition={t('clovers.kpi.redemptionRateDef')}
         />
         <KpiCard
-          label="Clover Burn Rate"
+          label={t('clovers.kpi.burnRate')}
           value={pct('burnRate')}
           delta={k('burnRate')?.delta ?? null}
           deltaUnit="pp"
-          definition="Clovers redeemed ÷ clovers earned × 100. Below 100% means the liability is still growing."
+          definition={t('clovers.kpi.burnRateDef')}
         />
         <KpiCard
-          label="Repeat Redemption"
+          label={t('clovers.kpi.repeatRedemption')}
           value={pct('repeatRedemption')}
           delta={k('repeatRedemption')?.delta ?? null}
           deltaUnit="pp"
-          definition="Users who have unlocked 2 or more premium designs ÷ all users with ≥1 unlock × 100."
+          definition={t('clovers.kpi.repeatRedemptionDef')}
         />
         <KpiCard
-          label="Premium Card Download Rate"
+          label={t('clovers.kpi.premiumDownloadRate')}
           value={pct('premiumCardDownloadRate')}
           delta={k('premiumCardDownloadRate')?.delta ?? null}
           deltaUnit="pp"
           accent="accent"
-          definition="Premium cards downloaded at least once ÷ premium cards unlocked × 100."
+          definition={t('clovers.kpi.premiumDownloadRateDef')}
           onDrillDown={() => navigate('/cards/analytics')}
         />
         <KpiCard
-          label="Anomalies flagged"
+          label={t('clovers.kpi.anomalies')}
           value={formatNumber(cloverAnomalies.length)}
           accent="danger"
-          definition="Users whose earn rate, adjustment count or redemption velocity exceeds the configured threshold."
+          definition={t('clovers.kpi.anomaliesDef')}
           onDrillDown={() => navigate('/alerts?type=clover_anomaly')}
         />
       </KpiGrid>
 
       <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
         <ChartCard
-          title="Earned vs redeemed"
-          subtitle="Daily clover flow"
+          title={t('clovers.charts.flow')}
+          subtitle={t('clovers.charts.flowSub')}
           legend={[
-            { label: 'Earned', color: CHART_COLORS[3] },
-            { label: 'Redeemed', color: CHART_COLORS[4] },
+            { label: t('clovers.charts.earned'), color: CHART_COLORS[3] },
+            { label: t('clovers.charts.redeemed'), color: CHART_COLORS[4] },
           ]}
           tableData={{
-            columns: ['Date', 'Earned', 'Redeemed'],
+            columns: [t('fields.date'), t('clovers.charts.earned'), t('clovers.charts.redeemed')],
             rows: series.map((d) => [d.date, d.earned, d.redeemed]),
           }}
         >
@@ -182,18 +187,30 @@ export default function Clovers() {
               />
               <YAxis tickLine={false} axisLine={false} width={48} />
               <RTooltip content={<ChartTooltip />} cursor={{ fill: 'rgb(var(--neutral-100))' }} />
-              <Bar dataKey="earned" name="Earned" fill={CHART_COLORS[3]} radius={[2, 2, 0, 0]} isAnimationActive={false} />
-              <Bar dataKey="redeemed" name="Redeemed" fill={CHART_COLORS[4]} radius={[2, 2, 0, 0]} isAnimationActive={false} />
+              <Bar
+                dataKey="earned"
+                name={t('clovers.charts.earned')}
+                fill={CHART_COLORS[3]}
+                radius={[2, 2, 0, 0]}
+                isAnimationActive={false}
+              />
+              <Bar
+                dataKey="redeemed"
+                name={t('clovers.charts.redeemed')}
+                fill={CHART_COLORS[4]}
+                radius={[2, 2, 0, 0]}
+                isAnimationActive={false}
+              />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
 
         <ChartCard
-          title="Outstanding balance trend"
-          subtitle="The platform's clover liability curve"
-          legend={[{ label: 'Outstanding balance', color: CHART_COLORS[0] }]}
+          title={t('clovers.charts.liability')}
+          subtitle={t('clovers.charts.liabilitySub')}
+          legend={[{ label: t('clovers.charts.outstanding'), color: CHART_COLORS[0] }]}
           tableData={{
-            columns: ['Date', 'Outstanding'],
+            columns: [t('fields.date'), t('clovers.charts.outstandingCol')],
             rows: series.map((d) => [d.date, d.outstandingBalance]),
           }}
         >
@@ -218,7 +235,7 @@ export default function Clovers() {
               <Area
                 type="monotone"
                 dataKey="outstandingBalance"
-                name="Outstanding balance"
+                name={t('clovers.charts.outstanding')}
                 stroke={CHART_COLORS[0]}
                 strokeWidth={2}
                 fill="url(#liabilityFill)"
@@ -229,10 +246,10 @@ export default function Clovers() {
         </ChartCard>
 
         <ChartCard
-          title="Earn actions breakdown"
-          subtitle="Which behaviors mint the most clovers"
+          title={t('clovers.charts.earnBreakdown')}
+          subtitle={t('clovers.charts.earnBreakdownSub')}
           tableData={{
-            columns: ['Action', 'Clovers'],
+            columns: [t('clovers.charts.action'), t('clovers.charts.clovers')],
             rows: earnRows.map((a) => [a.action, a.clovers]),
           }}
         >
@@ -246,7 +263,12 @@ export default function Clovers() {
               <XAxis type="number" tickLine={false} axisLine={false} />
               <YAxis dataKey="action" type="category" tickLine={false} axisLine={false} width={130} />
               <RTooltip content={<ChartTooltip />} cursor={{ fill: 'rgb(var(--neutral-100))' }} />
-              <Bar dataKey="clovers" name="Clovers minted" radius={[0, 2, 2, 0]} isAnimationActive={false}>
+              <Bar
+                dataKey="clovers"
+                name={t('clovers.charts.cloversMinted')}
+                radius={[0, 2, 2, 0]}
+                isAnimationActive={false}
+              >
                 {earnRows.map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS[3]} fillOpacity={1 - i * 0.11} />
                 ))}
@@ -256,10 +278,14 @@ export default function Clovers() {
         </ChartCard>
 
         <ChartCard
-          title="Redemption by card design"
-          subtitle="Clovers burned per premium design"
+          title={t('clovers.charts.redemptionByDesign')}
+          subtitle={t('clovers.charts.redemptionByDesignSub')}
           tableData={{
-            columns: ['Design', 'Clovers', 'Unlocks'],
+            columns: [
+              t('clovers.charts.design'),
+              t('clovers.charts.clovers'),
+              t('clovers.charts.unlocks'),
+            ],
             rows: redemptionByDesign.map((d) => [d.name, d.clovers, d.redemptions]),
           }}
         >
@@ -273,7 +299,12 @@ export default function Clovers() {
               <XAxis type="number" tickLine={false} axisLine={false} />
               <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={130} />
               <RTooltip content={<ChartTooltip />} cursor={{ fill: 'rgb(var(--neutral-100))' }} />
-              <Bar dataKey="clovers" name="Clovers burned" radius={[0, 2, 2, 0]} isAnimationActive={false}>
+              <Bar
+                dataKey="clovers"
+                name={t('clovers.charts.cloversBurned')}
+                radius={[0, 2, 2, 0]}
+                isAnimationActive={false}
+              >
                 {redemptionByDesign.map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS[4]} fillOpacity={1 - i * 0.09} />
                 ))}
@@ -284,8 +315,8 @@ export default function Clovers() {
       </div>
 
       {/* Anomaly panel — satisfies the brief's clover anomaly alert (§10) */}
-      <SectionHeading description="Users whose earn rate, adjustment count or redemption velocity exceeds the configured threshold. Thresholds are set in Settings.">
-        Anomaly review
+      <SectionHeading description={t('clovers.anomalyDescription')}>
+        {t('clovers.anomalyHeading')}
       </SectionHeading>
       <Card className="mb-6">
         <ul className="divide-y divide-neutral-200">
@@ -310,12 +341,12 @@ export default function Clovers() {
               <div className="flex shrink-0 gap-2">
                 <Button variant="secondary" size="sm" onClick={() => navigate(`/users/${a.user.id}`)}>
                   <Search className="h-3 w-3 text-neutral-400" />
-                  Investigate
+                  {t('clovers.investigate')}
                 </Button>
                 {can('clovers:adjust') && (
                   <Button variant="secondary" size="sm" onClick={() => setFreezing(a)}>
                     <Snowflake className="h-3 w-3 text-neutral-400" />
-                    Freeze earning
+                    {t('clovers.freezeEarning')}
                   </Button>
                 )}
                 <Button
@@ -323,13 +354,13 @@ export default function Clovers() {
                   size="sm"
                   onClick={() =>
                     toast({
-                      title: 'Signal dismissed',
-                      description: 'Feeds threshold tuning in Settings.',
+                      title: t('clovers.dismissed'),
+                      description: t('clovers.dismissedBody'),
                       tone: 'info',
                     })
                   }
                 >
-                  Dismiss
+                  {t('clovers.dismiss')}
                 </Button>
               </div>
             </li>
@@ -337,8 +368,8 @@ export default function Clovers() {
         </ul>
       </Card>
 
-      <SectionHeading description="Every earn, redemption and manual adjustment, newest first.">
-        Clover ledger
+      <SectionHeading description={t('clovers.ledgerDescription')}>
+        {t('clovers.ledgerHeading')}
       </SectionHeading>
       <CloverLedgerTable rows={cloverLedger} showUser />
 
@@ -346,22 +377,22 @@ export default function Clovers() {
         <ConfirmDialog
           open
           onOpenChange={(o) => !o && setFreezing(null)}
-          title="Freeze clover earning"
+          title={t('clovers.freezeTitle')}
           requireReason
           requireTypedConfirmation={freezing.user.name}
           consequence={
-            <>
-              <strong>{freezing.user.name}</strong> will stop accruing clovers from any action. Their
-              existing balance stays spendable and no clovers are removed. This is an authorized
-              operational review measure and is written to the audit trail.
-            </>
+            <Trans
+              i18nKey="clovers.freezeConsequence"
+              values={{ name: freezing.user.name }}
+              components={[<strong key="0" />]}
+            />
           }
-          confirmLabel="Freeze earning"
+          confirmLabel={t('clovers.freezeEarning')}
           onConfirm={(reason) => {
             void mutations.freezeAnomaly(freezing.id, reason);
             toast({
-              title: 'Clover earning frozen',
-              description: `${freezing.user.name} · recorded in the audit trail`,
+              title: t('clovers.frozen'),
+              description: t('clovers.frozenBody', { name: freezing.user.name }),
               tone: 'success',
             });
           }}

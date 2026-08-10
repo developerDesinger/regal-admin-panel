@@ -29,5 +29,7 @@ branch_structure.json
 
 # Local env overrides (Vite convention). .env.development is committed;
 # secrets and per-machine values belong in .env.local / .env.*.local.
-.env.local
 .env.*.local
+
+# Vercel CLI link/pull artifacts (.vercel/project.json, .env.local with an OIDC token)
+.vercel

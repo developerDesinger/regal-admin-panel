@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -20,6 +21,7 @@ const IDLE_MS = 30 * 60 * 1000;
 const WARN_MS = 2 * 60 * 1000;
 
 export function IdleTimeout() {
+  const { t } = useTranslation();
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [warning, setWarning] = React.useState(false);
@@ -67,11 +69,8 @@ export function IdleTimeout() {
     <Dialog open={warning} onOpenChange={(o) => !o && reset()}>
       <DialogContent width={440}>
         <DialogHeader>
-          <DialogTitle>You’ll be signed out soon</DialogTitle>
-          <DialogDescription>
-            For security, your session ends after 30 minutes of inactivity. All activity in this panel
-            is logged.
-          </DialogDescription>
+          <DialogTitle>{t('idle.title')}</DialogTitle>
+          <DialogDescription>{t('idle.body')}</DialogDescription>
         </DialogHeader>
         <DialogBody>
           <p className="tnum text-center text-kpi-value text-neutral-900" role="timer" aria-live="off">
@@ -86,10 +85,10 @@ export function IdleTimeout() {
               navigate('/login');
             }}
           >
-            Sign out now
+            {t('idle.signOutNow')}
           </Button>
           <Button variant="primary" onClick={reset}>
-            Stay signed in
+            {t('idle.staySignedIn')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Clock } from 'lucide-react';
@@ -24,6 +25,7 @@ export function PageHeader({
   dataAsOf?: string;
   className?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className={cn('mb-6', className)}>
       {breadcrumbs && breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} />}
@@ -41,7 +43,7 @@ export function PageHeader({
       {dataAsOf && (
         <p className="mt-2 inline-flex items-center gap-1 text-caption text-neutral-400">
           <Clock className="h-3 w-3" aria-hidden />
-          Data as of <span className="tnum">{formatDateTime(dataAsOf)}</span>
+          {t('common.dataAsOf')} <span className="tnum">{formatDateTime(dataAsOf)}</span>
         </p>
       )}
     </div>
@@ -50,8 +52,9 @@ export function PageHeader({
 
 /** Breadcrumbs — required on all detail pages (§3). */
 export function Breadcrumbs({ items }: { items: { label: string; href?: string }[] }) {
+  const { t } = useTranslation();
   return (
-    <nav aria-label="Breadcrumb" className="mb-2">
+    <nav aria-label={t('nav.breadcrumb')} className="mb-2">
       <ol className="flex flex-wrap items-center gap-1 text-caption text-neutral-500">
         {items.map((item, i) => (
           <li key={`${item.label}-${i}`} className="flex items-center gap-1">

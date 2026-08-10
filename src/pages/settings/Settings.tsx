@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { RotateCcw, Save, Undo2 } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -94,37 +95,39 @@ function toPayload(d: Draft, base: SettingsApi): Partial<SettingsApi> {
 
 interface SettingDef {
   id: string;
-  label: string;
-  help: string;
+  /** Label/help resolve under `settings.<group>.<id>` and `…<id>Help`. */
+  group: 'threshold' | 'clover' | 'financial';
+  /** Fixed symbols (%, ×, MXN) stay literal; word units carry a key. */
   unit?: string;
+  unitKey?: string;
 }
 
 const ALERT_THRESHOLDS: SettingDef[] = [
-  { id: 'stagnant_hours', label: 'Stagnant Event', help: 'Hours after publication with no confirmed contribution before the alert fires.', unit: 'hours' },
-  { id: 'at_risk_progress', label: 'At-Risk Event — goal progress', help: 'Fire when goal progress is below this percentage…', unit: '%' },
-  { id: 'at_risk_hours', label: 'At-Risk Event — time remaining', help: '…and fewer than this many hours remain.', unit: 'hours' },
-  { id: 'inactive_days', label: 'Inactive Event', help: 'Days with no contribution activity before nudging the organizer.', unit: 'days' },
-  { id: 'friction_event', label: 'Payment Friction — per event', help: 'Failed + pending rate on a single event that triggers the alert.', unit: '%' },
-  { id: 'friction_platform', label: 'Payment Friction — platform-wide', help: 'Failed + pending rate across the platform in a 24h window.', unit: '%' },
-  { id: 'unrevealed_hours', label: 'Unrevealed Card', help: 'Hours after closure with the card still unrevealed.', unit: 'hours' },
-  { id: 'premium_unused_days', label: 'Premium Card Not Used', help: 'Days after redemption with no reveal or download.', unit: 'days' },
-  { id: 'withdrawal_hours', label: 'Withdrawal Pending', help: 'Hours with funds available and the withdrawal not completed.', unit: 'hours' },
-  { id: 'clover_multiple', label: 'Clover Anomaly', help: 'Multiple of the user’s 30-day baseline that flags an anomaly.', unit: '×' },
+  { id: 'stagnant_hours', group: 'threshold', unitKey: 'settings.units.hours' },
+  { id: 'at_risk_progress', group: 'threshold', unit: '%' },
+  { id: 'at_risk_hours', group: 'threshold', unitKey: 'settings.units.hours' },
+  { id: 'inactive_days', group: 'threshold', unitKey: 'settings.units.days' },
+  { id: 'friction_event', group: 'threshold', unit: '%' },
+  { id: 'friction_platform', group: 'threshold', unit: '%' },
+  { id: 'unrevealed_hours', group: 'threshold', unitKey: 'settings.units.hours' },
+  { id: 'premium_unused_days', group: 'threshold', unitKey: 'settings.units.days' },
+  { id: 'withdrawal_hours', group: 'threshold', unitKey: 'settings.units.hours' },
+  { id: 'clover_multiple', group: 'threshold', unit: '×' },
 ];
 
 const CLOVER_RULES: SettingDef[] = [
-  { id: 'earn_event_created', label: 'Event created', help: 'Clovers awarded when a user publishes an event.' },
-  { id: 'earn_first_contribution', label: 'First contribution', help: 'Clovers awarded on a user’s first confirmed contribution to any event.' },
-  { id: 'earn_invite_accepted', label: 'Invitation accepted', help: 'Clovers awarded when an invitee joins an event.' },
-  { id: 'earn_referral', label: 'Referral', help: 'Clovers awarded when a referred user registers and verifies.' },
-  { id: 'earn_profile', label: 'Profile completed', help: 'One-time award for a fully completed profile.' },
-  { id: 'cap_daily', label: 'Daily earn cap', help: 'Maximum clovers a single user can earn in 24 hours. 0 disables the cap.' },
-  { id: 'expiry_days', label: 'Clover expiry', help: 'Days of inactivity before unspent clovers expire. 0 means never.', unit: 'days' },
+  { id: 'earn_event_created', group: 'clover' },
+  { id: 'earn_first_contribution', group: 'clover' },
+  { id: 'earn_invite_accepted', group: 'clover' },
+  { id: 'earn_referral', group: 'clover' },
+  { id: 'earn_profile', group: 'clover' },
+  { id: 'cap_daily', group: 'clover' },
+  { id: 'expiry_days', group: 'clover', unitKey: 'settings.units.days' },
 ];
 
 const FINANCIAL: SettingDef[] = [
-  { id: 'platform_fee', label: 'Platform fee', help: 'Percentage taken from each confirmed contribution.', unit: '%' },
-  { id: 'min_withdrawal', label: 'Minimum withdrawal', help: 'Smallest payout a beneficiary can request, in major units.', unit: 'MXN' },
+  { id: 'platform_fee', group: 'financial', unit: '%' },
+  { id: 'min_withdrawal', group: 'financial', unit: 'MXN' },
 ];
 
 const TAB_FIELDS: Record<string, string[]> = {
@@ -134,6 +137,7 @@ const TAB_FIELDS: Record<string, string[]> = {
 };
 
 export default function Settings() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { can } = useAuth();
   const { settings: apiSettings, defaults, isLoading, error, refetch: refetchSettings } = useSettings();
@@ -180,7 +184,7 @@ export default function Settings() {
 
   const discard = () => {
     if (saved) setDraft(structuredClone(saved));
-    toast({ title: 'Changes discarded', tone: 'info' });
+    toast({ title: t('settings.discarded'), tone: 'info' });
   };
 
   // Warn before losing edits on a full page unload.
@@ -197,7 +201,7 @@ export default function Settings() {
   if (isLoading || !draft) {
     return (
       <>
-        <PageHeader title="Settings" subtitle="Thresholds, rules and platform configuration." />
+        <PageHeader title={t('settings.title')} subtitle={t('settings.shortSubtitle')} />
         {error ? (
           <Card className="p-6">
             <p className="text-body text-danger-500" role="alert">
@@ -206,7 +210,7 @@ export default function Settings() {
           </Card>
         ) : (
           <Card className="p-6">
-            <p className="text-body text-neutral-500">Loading settings…</p>
+            <p className="text-body text-neutral-500">{t('settings.loading')}</p>
           </Card>
         )}
       </>
@@ -216,20 +220,20 @@ export default function Settings() {
   return (
     <>
       <PageHeader
-        title="Settings"
-        subtitle="Thresholds, rules and platform configuration. Every change is written to the audit trail with before → after values."
+        title={t('settings.title')}
+        subtitle={t('settings.subtitle')}
         actions={
           readOnly ? (
-            <Chip>Read-only — needs settings:write</Chip>
+            <Chip>{t('settings.readOnly')}</Chip>
           ) : (
             <>
               <Button variant="secondary" disabled={!dirty} onClick={discard}>
                 <Undo2 className="h-4 w-4 text-neutral-400" />
-                Discard
+                {t('common.discard')}
               </Button>
               <Button variant="primary" disabled={!dirty} loading={saving} onClick={() => setConfirmSave(true)}>
                 <Save className="h-4 w-4" />
-                Save changes
+                {t('common.saveChanges')}
                 {changeCount > 0 && (
                   <span className="tnum ml-1 rounded-full bg-white/25 px-1.5 text-[11px] font-semibold">
                     {changeCount}
@@ -244,19 +248,19 @@ export default function Settings() {
       <Tabs defaultValue="thresholds">
         <TabsList>
           <TabsTrigger value="thresholds">
-            Alert Thresholds
+            {t('settings.tabs.thresholds')}
             <DirtyDot count={tabDirtyCount('thresholds')} />
           </TabsTrigger>
           <TabsTrigger value="clovers">
-            Clover Rules
+            {t('settings.tabs.clovers')}
             <DirtyDot count={tabDirtyCount('clovers')} />
           </TabsTrigger>
           <TabsTrigger value="financial">
-            Financial
+            {t('settings.tabs.financial')}
             <DirtyDot count={tabDirtyCount('financial')} />
           </TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="branding">Branding</TabsTrigger>
+          <TabsTrigger value="notifications">{t('settings.tabs.notifications')}</TabsTrigger>
+          <TabsTrigger value="branding">{t('settings.tabs.branding')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="thresholds">
@@ -275,7 +279,7 @@ export default function Settings() {
             values={draft.values}
             defaults={defaults}
             onChange={setValue}
-            unitLabel="clovers"
+            unitLabel={t('settings.units.clovers')}
             disabled={readOnly}
           />
         </TabsContent>
@@ -291,10 +295,8 @@ export default function Settings() {
           <Card className="mt-4 divide-y divide-neutral-200">
             <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div className="min-w-0">
-                <Label htmlFor="fee-payer">Default fee payer</Label>
-                <FieldHelp>
-                  Who absorbs the platform and Stripe fee unless an organizer overrides it.
-                </FieldHelp>
+                <Label htmlFor="fee-payer">{t('settings.defaultFeePayer')}</Label>
+                <FieldHelp>{t('settings.defaultFeePayerHelp')}</FieldHelp>
               </div>
               <Select
                 value={draft.defaultFeePayer}
@@ -305,18 +307,15 @@ export default function Settings() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="contributor">Contributor</SelectItem>
-                  <SelectItem value="beneficiary">Beneficiary</SelectItem>
+                  <SelectItem value="contributor">{t('settings.contributor')}</SelectItem>
+                  <SelectItem value="beneficiary">{t('settings.beneficiary')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div className="min-w-0">
-                <Label>Supported currencies</Label>
-                <FieldHelp>
-                  Aggregates cannot be summed across currencies without an FX rate and a rate-as-of
-                  date — adding a second currency changes every money KPI.
-                </FieldHelp>
+                <Label>{t('settings.supportedCurrencies')}</Label>
+                <FieldHelp>{t('settings.supportedCurrenciesHelp')}</FieldHelp>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <Chip tone="brand">MXN</Chip>
@@ -326,13 +325,13 @@ export default function Settings() {
                   disabled={readOnly}
                   onClick={() =>
                     toast({
-                      title: 'Multi-currency needs an FX policy',
-                      description: 'Open question 1 in the spec — confirm with the client first.',
+                      title: t('settings.fxNeeded'),
+                      description: t('settings.fxNeededBody'),
                       tone: 'warning',
                     })
                   }
                 >
-                  Add currency
+                  {t('settings.addCurrency')}
                 </Button>
               </div>
             </div>
@@ -342,9 +341,9 @@ export default function Settings() {
         <TabsContent value="notifications">
           <Card>
             <div className="border-b border-neutral-200 p-4">
-              <h2 className="text-card-title text-neutral-700">Which alerts email which admins</h2>
+              <h2 className="text-card-title text-neutral-700">{t('settings.notifyHeading')}</h2>
               <p className="mt-1 text-caption text-neutral-500 md:hidden">
-                Scroll sideways to reach every admin column.
+                {t('settings.notifyScrollHint')}
               </p>
             </div>
             <div className="scroll-x">
@@ -355,7 +354,7 @@ export default function Settings() {
                       scope="col"
                       className="min-w-[180px] px-4 py-3 text-left text-table-header uppercase text-neutral-500"
                     >
-                      Alert
+                      {t('settings.alertColumn')}
                     </th>
                     {adminUsers.map((a) => (
                       <th
@@ -375,8 +374,10 @@ export default function Settings() {
                         key={alertType}
                         className={cn('border-b border-neutral-200 last:border-0', i % 2 === 1 && 'bg-neutral-50')}
                       >
-                        <td className="whitespace-nowrap px-4 py-3 text-body capitalize text-neutral-900">
-                          {alertType.split('_').join(' ')}
+                        <td className="whitespace-nowrap px-4 py-3 text-body text-neutral-900">
+                          {t(`alertType.${alertType}`, {
+                            defaultValue: alertType.split('_').join(' '),
+                          })}
                         </td>
                         {adminUsers.map((a) => (
                           <td key={a.id} className="px-4 py-3 text-center">
@@ -398,7 +399,12 @@ export default function Settings() {
                                   };
                                 })
                               }
-                              aria-label={`Email ${a.name} for ${alertType.split('_').join(' ')}`}
+                              aria-label={t('settings.emailFor', {
+                                name: a.name,
+                                alert: t(`alertType.${alertType}`, {
+                                  defaultValue: alertType.split('_').join(' '),
+                                }),
+                              })}
                               className="mx-auto"
                             />
                           </td>
@@ -411,18 +417,18 @@ export default function Settings() {
             </div>
             <div className="flex flex-col gap-3 border-t border-neutral-200 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div>
-                <Label htmlFor="digest">Digest frequency</Label>
-                <FieldHelp>How often non-critical alerts are batched into a single email.</FieldHelp>
+                <Label htmlFor="digest">{t('settings.digest')}</Label>
+                <FieldHelp>{t('settings.digestHelp')}</FieldHelp>
               </div>
               <Select value={draft.digest} onValueChange={(v) => patch({ digest: v })} disabled={readOnly}>
                 <SelectTrigger id="digest" className="w-full sm:w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="realtime">Real time</SelectItem>
-                  <SelectItem value="hourly">Hourly</SelectItem>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="realtime">{t('settings.digestOptions.realtime')}</SelectItem>
+                  <SelectItem value="hourly">{t('settings.digestOptions.hourly')}</SelectItem>
+                  <SelectItem value="daily">{t('settings.digestOptions.daily')}</SelectItem>
+                  <SelectItem value="weekly">{t('settings.digestOptions.weekly')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -432,7 +438,7 @@ export default function Settings() {
         <TabsContent value="branding">
           <Card className="divide-y divide-neutral-200">
             <div className="p-4">
-              <Label>App logo</Label>
+              <Label>{t('settings.appLogo')}</Label>
               <div className="mt-2 flex items-center gap-4">
                 <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-500 text-[20px]">
                   🍀
@@ -441,15 +447,21 @@ export default function Settings() {
                   variant="secondary"
                   size="sm"
                   disabled={readOnly}
-                  onClick={() => toast({ title: 'Logo upload', description: 'Pick a square PNG or SVG, at least 512 × 512 px.', tone: 'info' })}
+                  onClick={() =>
+                    toast({
+                      title: t('settings.logoUpload'),
+                      description: t('settings.logoUploadBody'),
+                      tone: 'info',
+                    })
+                  }
                 >
-                  Replace logo
+                  {t('settings.replaceLogo')}
                 </Button>
               </div>
-              <FieldHelp>PNG or SVG, square, at least 512 × 512 px.</FieldHelp>
+              <FieldHelp>{t('settings.logoHelp')}</FieldHelp>
             </div>
             <div className="p-4">
-              <Label htmlFor="support-email">Support email</Label>
+              <Label htmlFor="support-email">{t('settings.supportEmail')}</Label>
               <Input
                 id="support-email"
                 value={draft.supportEmail}
@@ -459,7 +471,7 @@ export default function Settings() {
               />
             </div>
             <div className="p-4">
-              <Label htmlFor="terms">Terms URL</Label>
+              <Label htmlFor="terms">{t('settings.termsUrl')}</Label>
               <Input
                 id="terms"
                 value={draft.termsUrl}
@@ -469,7 +481,7 @@ export default function Settings() {
               />
             </div>
             <div className="p-4">
-              <Label htmlFor="privacy">Privacy URL</Label>
+              <Label htmlFor="privacy">{t('settings.privacyUrl')}</Label>
               <Input
                 id="privacy"
                 value={draft.privacyUrl}
@@ -480,10 +492,8 @@ export default function Settings() {
             </div>
             <div className="flex items-center justify-between gap-4 p-4">
               <div className="min-w-0">
-                <Label htmlFor="maintenance">Maintenance mode</Label>
-                <FieldHelp>
-                  Shows a maintenance screen in the mobile app. Contributions in flight still settle.
-                </FieldHelp>
+                <Label htmlFor="maintenance">{t('settings.maintenance')}</Label>
+                <FieldHelp>{t('settings.maintenanceHelp')}</FieldHelp>
               </div>
               <Switch
                 id="maintenance"
@@ -501,12 +511,15 @@ export default function Settings() {
       {dirty && !readOnly && (
         <div className="sticky bottom-4 z-30 mt-6 flex flex-col gap-3 rounded-lg border border-brand-300 bg-neutral-0 p-3 shadow-e2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-body text-neutral-700">
-            <span className="tnum font-semibold text-neutral-900">{changeCount}</span> unsaved{' '}
-            {changeCount === 1 ? 'change' : 'changes'}
+            <Trans
+              i18nKey="settings.unsaved"
+              count={changeCount}
+              components={[<span key="0" className="tnum font-semibold text-neutral-900" />]}
+            />
           </p>
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" className="flex-1 sm:flex-none" onClick={discard}>
-              Discard
+              {t('common.discard')}
             </Button>
             <Button
               variant="primary"
@@ -515,7 +528,7 @@ export default function Settings() {
               onClick={() => setConfirmSave(true)}
             >
               <Save className="h-4 w-4" />
-              Save changes
+              {t('common.saveChanges')}
             </Button>
           </div>
         </div>
@@ -524,17 +537,11 @@ export default function Settings() {
       <ConfirmDialog
         open={confirmSave}
         onOpenChange={setConfirmSave}
-        title="Save settings changes"
+        title={t('settings.saveTitle')}
         tone="primary"
         requireReason
-        consequence={
-          <>
-            {changeCount} {changeCount === 1 ? 'setting' : 'settings'} will be updated. Thresholds
-            take effect on the next alert evaluation cycle, within 15 minutes. Each changed value is
-            written to the audit trail with its before → after.
-          </>
-        }
-        confirmLabel="Save changes"
+        consequence={t('settings.saveConsequence', { count: changeCount })}
+        confirmLabel={t('common.saveChanges')}
         onConfirm={(reason) => {
           if (!apiSettings) return;
           setSaving(true);
@@ -542,8 +549,8 @@ export default function Settings() {
             .update({ ...toPayload(draft, apiSettings), reason })
             .then(() => {
               toast({
-                title: 'Settings saved',
-                description: `${changeCount} ${changeCount === 1 ? 'change' : 'changes'} applied · view them in the Audit Trail`,
+                title: t('settings.saved'),
+                description: t('settings.savedBody', { count: changeCount }),
                 tone: 'success',
               });
               void refetchSettings();
@@ -553,7 +560,7 @@ export default function Settings() {
               // { "alertThresholds.stagnant_hours": "must be between 1 and 8760" }
               const fields = Object.entries(err.fieldErrors ?? {});
               toast({
-                title: 'Could not save settings',
+                title: t('settings.saveFailed'),
                 description: fields.length
                   ? fields.map(([k, v]) => `${k.split('.').pop()}: ${v}`).join(' · ')
                   : err.message,
@@ -566,7 +573,7 @@ export default function Settings() {
         {changedKeys.length > 0 && (
           <div className="rounded-md border border-neutral-200">
             <p className="border-b border-neutral-200 px-3 py-2 text-table-header uppercase text-neutral-500">
-              Changed values
+              {t('settings.changedValues')}
             </p>
             <ul className="max-h-[180px] overflow-y-auto p-1">
               {changedKeys.map((k) => (
@@ -590,11 +597,12 @@ export default function Settings() {
 }
 
 function DirtyDot({ count }: { count: number }) {
+  const { t } = useTranslation();
   if (count === 0) return null;
   return (
     <span
       className="tnum ml-2 rounded-full bg-warning-500 px-1.5 text-[11px] font-semibold text-white"
-      aria-label={`${count} unsaved`}
+      aria-label={t('settings.unsavedBadge', { count })}
     >
       {count}
     </span>
@@ -617,11 +625,13 @@ function SettingsList({
   unitLabel?: string;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <Card className="divide-y divide-neutral-200">
       {settings.map((s) => {
         const defaultValue = String(defaults[s.id] ?? '');
         const changed = values[s.id] !== defaultValue;
+        const unit = s.unit ?? (s.unitKey ? t(s.unitKey) : (unitLabel ?? ''));
         return (
           <div
             key={s.id}
@@ -629,16 +639,16 @@ function SettingsList({
           >
             <div className="min-w-0 flex-1">
               <Label htmlFor={s.id}>
-                {s.label}
+                {t(`settings.${s.group}.${s.id}`)}
                 {changed && (
                   <span className="ml-2 rounded-sm bg-warning-50 px-1.5 py-px text-[11px] font-medium text-warning-500">
-                    Modified
+                    {t('settings.modified')}
                   </span>
                 )}
               </Label>
-              <FieldHelp>{s.help}</FieldHelp>
+              <FieldHelp>{t(`settings.${s.group}.${s.id}Help`)}</FieldHelp>
               <p className="mt-1 text-caption text-neutral-400">
-                Default: <span className="tnum">{defaultValue}</span> {s.unit ?? unitLabel ?? ''}
+                {t('settings.defaultValue')} <span className="tnum">{defaultValue}</span> {unit}
                 {changed && !disabled && (
                   <button
                     type="button"
@@ -646,7 +656,7 @@ function SettingsList({
                     className="ml-2 inline-flex items-center gap-1 rounded-sm text-brand-500 hover:underline"
                   >
                     <RotateCcw className="h-3 w-3" aria-hidden />
-                    Reset to default
+                    {t('settings.resetToDefault')}
                   </button>
                 )}
               </p>
@@ -661,9 +671,7 @@ function SettingsList({
                 onChange={(e) => onChange(s.id, e.target.value)}
                 className="tnum w-full text-right sm:w-[110px]"
               />
-              <span className="w-[52px] shrink-0 text-caption text-neutral-500">
-                {s.unit ?? unitLabel ?? ''}
-              </span>
+              <span className="w-[52px] shrink-0 text-caption text-neutral-500">{unit}</span>
             </div>
           </div>
         );

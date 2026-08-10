@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Check, Minus, ShieldCheck, UserPlus } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/common/PageHeader';
@@ -31,17 +32,24 @@ import { cn } from '@/lib/utils';
 
 /** Screen 15 — Admin Users & Roles (§15). */
 
-/** Grouping is presentation; membership comes from the server's permission list. */
-const GROUP_ORDER: { label: string; match: (p: string) => boolean }[] = [
-  { label: 'Events', match: (p) => p.startsWith('events:') },
-  { label: 'Money', match: (p) => /^(contributions|financials|payouts):/.test(p) },
-  { label: 'People', match: (p) => /^(users|pii):/.test(p) },
-  { label: 'Cards & clovers', match: (p) => /^(cards|clovers):/.test(p) },
-  { label: 'Operations', match: (p) => /^(alerts|exports|audit):/.test(p) },
-  { label: 'Administration', match: (p) => /^(admins|settings):/.test(p) },
+/**
+ * Grouping is presentation; membership comes from the server's permission list.
+ * `labelKey` resolves under `admins.group.*` at render time.
+ */
+const GROUP_ORDER: { labelKey: string; match: (p: string) => boolean }[] = [
+  { labelKey: 'admins.group.events', match: (p) => p.startsWith('events:') },
+  {
+    labelKey: 'admins.group.money',
+    match: (p) => /^(contributions|financials|payouts):/.test(p),
+  },
+  { labelKey: 'admins.group.people', match: (p) => /^(users|pii):/.test(p) },
+  { labelKey: 'admins.group.cardsClovers', match: (p) => /^(cards|clovers):/.test(p) },
+  { labelKey: 'admins.group.operations', match: (p) => /^(alerts|exports|audit):/.test(p) },
+  { labelKey: 'admins.group.administration', match: (p) => /^(admins|settings):/.test(p) },
 ];
 
 export default function Admins() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { admin: currentUser } = useAuth();
   const { admins: adminUsers, refetch } = useAdmins();
@@ -52,7 +60,8 @@ export default function Admins() {
     () => (matrix ? (Object.keys(matrix.roles) as AdminRole[]) : []),
     [matrix],
   );
-  const roleLabel = (r: AdminRole) => matrix?.roles[r]?.label ?? r;
+  const roleLabel = (r: AdminRole) =>
+    t(`role.${r}`, { defaultValue: matrix?.roles[r]?.label ?? r });
   const rolePermissions = (r: AdminRole) => matrix?.roles[r]?.permissions ?? [];
 
   /** Anything the server sends that no group claims still gets shown. */
@@ -61,11 +70,11 @@ export default function Admins() {
     const out = GROUP_ORDER.map((g) => {
       const members = permissions.filter((p) => g.match(p));
       members.forEach((p) => claimed.add(p));
-      return { label: g.label, permissions: members };
+      return { label: t(g.labelKey), permissions: members };
     }).filter((g) => g.permissions.length > 0);
     const rest = permissions.filter((p) => !claimed.has(p));
-    return rest.length ? [...out, { label: 'Other', permissions: rest }] : out;
-  }, [permissions]);
+    return rest.length ? [...out, { label: t('admins.group.other'), permissions: rest }] : out;
+  }, [permissions, t]);
   const [revoking, setRevoking] = React.useState<AdminRow | null>(null);
   const [inviting, setInviting] = React.useState(false);
   const [inviteName, setInviteName] = React.useState('');
@@ -75,7 +84,7 @@ export default function Admins() {
   const columns: Column<AdminRow>[] = [
     {
       id: 'admin',
-      header: 'Admin',
+      header: t('admins.table.admin'),
       sortable: true,
       sortValue: (a) => a.name,
       cell: (a) => (
@@ -84,7 +93,7 @@ export default function Admins() {
           <div className="min-w-0">
             <p className="truncate font-medium text-neutral-900">
               {a.name}
-              {a.id === currentUser?.id && <Chip className="ml-2">you</Chip>}
+              {a.id === currentUser?.id && <Chip className="ml-2">{t('common.you')}</Chip>}
             </p>
             <p className="truncate text-caption text-neutral-500">{a.email}</p>
           </div>
@@ -93,11 +102,15 @@ export default function Admins() {
     },
     {
       id: 'role',
-      header: 'Role',
+      header: t('admins.table.role'),
       sortable: true,
       sortValue: (a) => a.role,
       cell: (a) => (
-        <Tooltip content={matrix?.roles[a.role]?.description ?? ''}>
+        <Tooltip
+          content={t(`role.description.${a.role}`, {
+            defaultValue: matrix?.roles[a.role]?.description ?? '',
+          })}
+        >
           <span className="cursor-help">
             <Chip tone={a.role === 'super_admin' ? 'brand' : 'neutral'}>{roleLabel(a.role)}</Chip>
           </span>
@@ -106,44 +119,47 @@ export default function Admins() {
     },
     {
       id: 'permissions',
-      header: 'Permissions',
+      header: t('admins.table.permissions'),
       numeric: true,
       cell: (a) => <span className="tnum">{rolePermissions(a.role).length}</span>,
     },
     {
       id: '2fa',
-      header: '2FA',
+      header: t('admins.table.twoFactor'),
       cell: (a) => (
         <StatusBadge
           status={a.twoFactorEnabled ? 'active' : 'inactive'}
-          label={a.twoFactorEnabled ? 'Enabled' : 'Off'}
+          label={a.twoFactorEnabled ? t('status.enabled') : t('status.off')}
         />
       ),
     },
     {
       id: 'lastLogin',
-      header: 'Last login',
+      header: t('admins.table.lastLogin'),
       sortable: true,
       sortValue: (a) => a.lastLoginAt ?? '',
       cell: (a) =>
         a.lastLoginAt ? (
           <span className="text-neutral-500">{formatRelative(a.lastLoginAt)}</span>
         ) : (
-          <span className="text-neutral-400">Never</span>
+          <span className="text-neutral-400">{t('status.never')}</span>
         ),
     },
     {
       id: 'created',
-      header: 'Added',
+      header: t('admins.table.added'),
       sortable: true,
       sortValue: (a) => a.createdAt,
       cell: (a) => <span className="tnum whitespace-nowrap">{formatDate(a.createdAt)}</span>,
     },
     {
       id: 'status',
-      header: 'Status',
+      header: t('fields.status'),
       cell: (a) => (
-        <StatusBadge status={a.isActive ? 'active' : 'inactive'} label={a.isActive ? 'Active' : 'Disabled'} />
+        <StatusBadge
+          status={a.isActive ? 'active' : 'inactive'}
+          label={a.isActive ? t('status.active') : t('status.disabled')}
+        />
       ),
     },
     {
@@ -154,7 +170,7 @@ export default function Admins() {
         a.id !== currentUser?.id ? (
           <div data-no-row-click>
             <Button variant="ghost" size="sm" onClick={() => setRevoking(a)}>
-              {a.isActive ? 'Revoke access' : 'Restore'}
+              {a.isActive ? t('admins.table.revokeAccess') : t('admins.table.restore')}
             </Button>
           </div>
         ) : null,
@@ -164,12 +180,12 @@ export default function Admins() {
   return (
     <>
       <PageHeader
-        title="Admin Users & Roles"
-        subtitle="Who can see and do what inside this panel."
+        title={t('admins.title')}
+        subtitle={t('admins.subtitle')}
         actions={
           <Button variant="primary" onClick={() => setInviting(true)}>
             <UserPlus className="h-4 w-4" />
-            Invite admin
+            {t('admins.invite')}
           </Button>
         }
       />
@@ -177,8 +193,7 @@ export default function Admins() {
       <div className="mb-4 flex items-start gap-2 rounded-md border border-warning-500/20 bg-warning-50 p-3">
         <ShieldCheck className="mt-px h-4 w-4 shrink-0 text-warning-500" aria-hidden />
         <p className="text-caption text-warning-500">
-          <strong>Enforcement is server-side.</strong> This UI hides what a role can’t do, but the API
-          rejects unauthorized calls regardless — hidden buttons are not security.
+          <Trans i18nKey="admins.enforcementNote" components={[<strong key="0" />]} />
         </p>
       </div>
 
@@ -188,17 +203,17 @@ export default function Admins() {
         rowKey={(a) => a.id}
         storageKey="admins"
         empty={{
-          headline: 'No admin users',
-          description: 'Invite your first administrator to give them access to this panel.',
+          headline: t('admins.table.empty'),
+          description: t('admins.table.emptyBody'),
         }}
       />
 
       {/* Permission matrix — roles × permissions (§15) */}
       <SectionHeading
         className="mt-8"
-        description="Exactly what each role can do. Checked means the permission is granted."
+        description={t('admins.matrixDescription')}
       >
-        Permission matrix
+        {t('admins.matrixHeading')}
       </SectionHeading>
       <Card className="overflow-hidden">
         <div className="scroll-x">
@@ -209,7 +224,7 @@ export default function Admins() {
                   scope="col"
                   className="min-w-[200px] px-4 py-3 text-left text-table-header uppercase text-neutral-500"
                 >
-                  Permission
+                  {t('admins.permission')}
                 </th>
                 {roles.map((r) => (
                   <th
@@ -244,7 +259,9 @@ export default function Admins() {
                         return (
                           <td key={r} className="px-4 py-3 text-center">
                             <span className="sr-only">
-                              {roleLabel(r)} {granted ? 'has' : 'does not have'} {p}
+                              {granted
+                                ? t('admins.granted', { role: roleLabel(r), permission: p })
+                                : t('admins.notGranted', { role: roleLabel(r), permission: p })}
                             </span>
                             <span
                               className={cn(
@@ -272,7 +289,7 @@ export default function Admins() {
       </Card>
 
       {/* Role reference */}
-      <SectionHeading className="mt-8">Role reference</SectionHeading>
+      <SectionHeading className="mt-8">{t('admins.roleReference')}</SectionHeading>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {roles.map((r) => (
           <Card key={r} className="p-4">
@@ -282,10 +299,13 @@ export default function Admins() {
                 {rolePermissions(r).length}/{permissions.length}
               </span>
             </div>
-            <p className="mt-2 text-body text-neutral-500">{matrix?.roles[r]?.description}</p>
+            <p className="mt-2 text-body text-neutral-500">
+              {t(`role.description.${r}`, { defaultValue: matrix?.roles[r]?.description ?? '' })}
+            </p>
             <p className="mt-3 text-caption text-neutral-400">
-              {adminUsers.filter((a) => a.role === r).length} admin
-              {adminUsers.filter((a) => a.role === r).length === 1 ? '' : 's'} with this role
+              {t('admins.adminsWithRole', {
+                count: adminUsers.filter((a) => a.role === r).length,
+              })}
             </p>
           </Card>
         ))}
@@ -295,31 +315,29 @@ export default function Admins() {
         <ConfirmDialog
           open
           onOpenChange={(o) => !o && setRevoking(null)}
-          title={revoking.isActive ? 'Revoke admin access' : 'Restore admin access'}
+          title={revoking.isActive ? t('admins.revokeTitle') : t('admins.restoreTitle')}
           tone={revoking.isActive ? 'danger' : 'primary'}
           requireReason
           requireTypedConfirmation={revoking.isActive ? revoking.name : undefined}
           consequence={
-            revoking.isActive ? (
-              <>
-                <strong>{revoking.name}</strong> will be signed out of all sessions immediately and
-                will lose access to this panel. Their audit history is retained.
-              </>
-            ) : (
-              <>
-                <strong>{revoking.name}</strong> regains {roleLabel(revoking.role)} access to this
-                panel at their next sign-in.
-              </>
-            )
+            <Trans
+              i18nKey={
+                revoking.isActive ? 'admins.revokeConsequence' : 'admins.restoreConsequence'
+              }
+              values={{ name: revoking.name, role: roleLabel(revoking.role) }}
+              components={[<strong key="0" />]}
+            />
           }
-          confirmLabel={revoking.isActive ? 'Revoke access' : 'Restore access'}
+          confirmLabel={
+            revoking.isActive ? t('admins.table.revokeAccess') : t('admins.restoreConfirm')
+          }
           onConfirm={(reason) => {
             void (revoking.isActive
               ? adminsService.revoke(revoking.id, reason)
               : adminsService.restore(revoking.id, reason)
             ).then(refetch);
             toast({
-              title: revoking.isActive ? 'Access revoked' : 'Access restored',
+              title: revoking.isActive ? t('admins.revoked') : t('admins.restored'),
               description: revoking.name,
               tone: 'success',
             });
@@ -330,26 +348,20 @@ export default function Admins() {
       <ConfirmDialog
         open={inviting}
         onOpenChange={setInviting}
-        title="Invite a new admin"
+        title={t('admins.inviteTitle')}
         tone="primary"
-        consequence={
-          <>
-            The backend generates the credential and emails a single-use activation link — no
-            password is ever sent from this screen. The new admin must set their own before their
-            first sign-in.
-          </>
-        }
-        confirmLabel="Send invitation"
+        consequence={t('admins.inviteConsequence')}
+        confirmLabel={t('admins.inviteConfirm')}
         onConfirm={() => {
           if (!inviteName.trim() || !inviteEmail.trim()) {
-            toast({ title: 'Name and email are required', tone: 'warning' });
+            toast({ title: t('admins.inviteRequired'), tone: 'warning' });
             return;
           }
           adminsService
             .create({ name: inviteName.trim(), email: inviteEmail.trim(), role: inviteRole })
             .then((created) => {
               toast({
-                title: 'Invitation sent',
+                title: t('admins.inviteSent'),
                 description: `${created.name} · ${roleLabel(created.role)}`,
                 tone: 'success',
               });
@@ -360,7 +372,7 @@ export default function Admins() {
             .catch((err: ApiError) => {
               const fields = Object.entries(err.fieldErrors ?? {});
               toast({
-                title: 'Could not send invitation',
+                title: t('admins.inviteFailed'),
                 description: fields.length
                   ? fields.map(([k, v]) => `${k}: ${v}`).join(' · ')
                   : err.message,
@@ -372,32 +384,32 @@ export default function Admins() {
         <div className="space-y-4">
           <div>
             <Label htmlFor="invite-name" required>
-              Full name
+              {t('admins.fullName')}
             </Label>
             <Input
               id="invite-name"
               value={inviteName}
               onChange={(e) => setInviteName(e.target.value)}
-              placeholder="Ana Ramírez"
+              placeholder={t('admins.namePlaceholder')}
               className="mt-1"
             />
           </div>
           <div>
             <Label htmlFor="invite-email" required>
-              Email
+              {t('auth.email')}
             </Label>
             <Input
               id="invite-email"
               type="email"
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="ana@regal.app"
+              placeholder={t('admins.emailPlaceholder')}
               className="mt-1"
             />
           </div>
           <div>
             <Label htmlFor="invite-role" required>
-              Role
+              {t('admins.role')}
             </Label>
             <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as AdminRole)}>
               <SelectTrigger id="invite-role" className="mt-1">
@@ -411,7 +423,11 @@ export default function Admins() {
                 ))}
               </SelectContent>
             </Select>
-            <FieldHelp>{matrix?.roles[inviteRole]?.description}</FieldHelp>
+            <FieldHelp>
+              {t(`role.description.${inviteRole}`, {
+                defaultValue: matrix?.roles[inviteRole]?.description ?? '',
+              })}
+            </FieldHelp>
           </div>
         </div>
       </ConfirmDialog>

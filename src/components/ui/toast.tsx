@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import { ToastContext, type ToastItem, type ToastTone, type ToastContextValue } from '@/hooks/use-toast';
@@ -43,6 +44,7 @@ const TONE_META: Record<ToastTone, { icon: typeof Info; className: string; iconC
 };
 
 function ToastCard({ item, onDismiss }: { item: ToastItem; onDismiss: () => void }) {
+  const { t } = useTranslation();
   const meta = TONE_META[item.tone];
   const Icon = meta.icon;
   return (
@@ -63,7 +65,7 @@ function ToastCard({ item, onDismiss }: { item: ToastItem; onDismiss: () => void
         type="button"
         onClick={onDismiss}
         className="rounded-sm p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-        aria-label="Dismiss notification"
+        aria-label={t('common.dismissNotification')}
       >
         <X className="h-3 w-3" />
       </button>

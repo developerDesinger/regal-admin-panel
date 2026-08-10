@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import type { StatusTone } from '@/lib/types';
 
@@ -85,6 +86,7 @@ export function StatusBadge({
   className?: string;
   dot?: boolean;
 }) {
+  const { t } = useTranslation();
   const resolved = tone ?? statusTone(status);
   const c = TONE_CLASSES[resolved];
   return (
@@ -96,7 +98,7 @@ export function StatusBadge({
       )}
     >
       {dot && <span className={cn('h-[6px] w-[6px] shrink-0 rounded-full', c.dot)} aria-hidden />}
-      {label ?? statusLabel(status)}
+      {label ?? t(`status.${status.toLowerCase()}`, { defaultValue: statusLabel(status) })}
     </span>
   );
 }

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Check, Eye, EyeOff, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -12,7 +13,7 @@ export function PasswordFields({
   onPassword,
   onConfirm,
   idPrefix = 'new',
-  label = 'New password',
+  label,
   autoFocus,
 }: {
   password: string;
@@ -23,6 +24,7 @@ export function PasswordFields({
   label?: string;
   autoFocus?: boolean;
 }) {
+  const { t } = useTranslation();
   const [show, setShow] = React.useState(false);
   const mismatch = confirm.length > 0 && confirm !== password;
 
@@ -30,7 +32,7 @@ export function PasswordFields({
     <>
       <div>
         <Label htmlFor={`${idPrefix}-password`} required>
-          {label}
+          {label ?? t('auth.passwordRules.newPassword')}
         </Label>
         <div className="relative mt-1">
           <Input
@@ -45,7 +47,7 @@ export function PasswordFields({
           <button
             type="button"
             onClick={() => setShow((v) => !v)}
-            aria-label={show ? 'Hide password' : 'Show password'}
+            aria-label={show ? t('common.hidePassword') : t('common.showPassword')}
             className="absolute right-1 top-1/2 -translate-y-1/2 rounded-sm p-2 text-neutral-400 transition-colors hover:text-neutral-700"
           >
             {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -53,7 +55,7 @@ export function PasswordFields({
         </div>
       </div>
 
-      <ul className="space-y-1" aria-label="Password requirements">
+      <ul className="space-y-1" aria-label={t('auth.passwordRules.aria')}>
         {PASSWORD_RULES.map((rule) => {
           const ok = rule.test(password);
           return (
@@ -63,8 +65,12 @@ export function PasswordFields({
               ) : (
                 <X className="h-3 w-3 shrink-0 text-neutral-300" aria-hidden />
               )}
-              <span className={cn(ok ? 'text-success-500' : 'text-neutral-500')}>{rule.label}</span>
-              <span className="sr-only">{ok ? 'met' : 'not met'}</span>
+              <span className={cn(ok ? 'text-success-500' : 'text-neutral-500')}>
+                {t(`auth.passwordRules.${rule.id}`)}
+              </span>
+              <span className="sr-only">
+                {ok ? t('auth.passwordRules.met') : t('auth.passwordRules.notMet')}
+              </span>
             </li>
           );
         })}
@@ -72,7 +78,7 @@ export function PasswordFields({
 
       <div>
         <Label htmlFor={`${idPrefix}-confirm`} required>
-          Confirm password
+          {t('auth.passwordRules.confirmPassword')}
         </Label>
         <Input
           id={`${idPrefix}-confirm`}
@@ -85,7 +91,7 @@ export function PasswordFields({
         />
         {mismatch && (
           <p className="mt-1 text-caption text-danger-500" role="alert">
-            Passwords don’t match.
+            {t('auth.passwordRules.mismatch')}
           </p>
         )}
       </div>
@@ -103,6 +109,7 @@ export function AuthCard({
   subtitle?: string;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-brand-500 px-4 py-12">
       <span
@@ -119,7 +126,7 @@ export function AuthCard({
           </div>
           {children}
           <p className="mt-6 border-t border-neutral-200 pt-4 text-center text-caption text-neutral-500">
-            Restricted access. All activity is logged.
+            {t('common.restrictedAccess')}
           </p>
         </div>
       </main>

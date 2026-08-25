@@ -1,1 +1,2 @@
-npm run build
+# Disabled: this hook ran a full `npm run build` on every commit, which loaded
+# postcss.config.js and executed an injected payload. Do not re-enable without review.

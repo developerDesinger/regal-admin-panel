@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "../RegalMobileApp"
+		},
+		{
+			"path": "../regal-backend"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {}
+}

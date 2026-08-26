@@ -88,6 +88,8 @@ export interface RegalEvent {
   stripeAccountStatus: StripeAccountStatus;
 }
 
+export type PaymentProvider = 'stripe' | 'openpay';
+
 export interface Contribution {
   id: string;
   eventId: string;
@@ -96,9 +98,18 @@ export interface Contribution {
   isGuest: boolean;
   guestName: string | null;
   guestEmail: string | null;
+  /** Stripe PaymentIntent id or Openpay charge id — see `provider`. */
   stripePaymentIntentId: string;
+  /**
+   * Which processor took the money, and so: whose dashboard the charge is in,
+   * whose schedule `stripeFee` follows, and which API a refund goes through.
+   * Openpay MX charges 2.9% + MX$2.50 where Stripe MX charges 3.6% + MX$3.00,
+   * so the same gift carries a different fee depending on this.
+   */
+  provider: PaymentProvider;
   amount: number;
   platformFee: number;
+  /** The processor's cut. Named for Stripe historically — see `provider`. */
   stripeFee: number;
   totalCharged: number;
   creditedAmount: number;

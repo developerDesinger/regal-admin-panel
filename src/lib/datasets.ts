@@ -54,7 +54,11 @@ export const contributionColumns: ExportColumn<Contribution>[] = [
   { key: 'isGuest', header: 'Guest checkout', value: (c) => c.isGuest },
   { key: 'amount', header: 'Amount', value: (c) => moneyCell(c.amount) },
   { key: 'platformFee', header: 'Platform fee', value: (c) => moneyCell(c.platformFee) },
-  { key: 'stripeFee', header: 'Stripe fee', value: (c) => moneyCell(c.stripeFee) },
+  // Header stays processor-neutral now that either one can have taken it —
+  // the `provider` column below says which, and a spreadsheet labelled
+  // "Stripe fee" containing Openpay commissions is a reconciliation trap.
+  { key: 'provider', header: 'Processor', value: (c) => c.provider },
+  { key: 'stripeFee', header: 'Processor fee', value: (c) => moneyCell(c.stripeFee) },
   { key: 'totalCharged', header: 'Total charged', value: (c) => moneyCell(c.totalCharged) },
   { key: 'creditedAmount', header: 'Credited', value: (c) => moneyCell(c.creditedAmount) },
   { key: 'currency', header: 'Currency', value: (c) => c.currency },
@@ -64,7 +68,10 @@ export const contributionColumns: ExportColumn<Contribution>[] = [
   { key: 'paymentMethod', header: 'Payment method', value: (c) => c.paymentMethod },
   {
     key: 'stripePaymentIntentId',
-    header: 'Stripe PaymentIntent',
+    // Holds a Stripe PaymentIntent id or an Openpay charge id depending on the
+    // `provider` column; the key is unchanged so saved export presets keep
+    // working.
+    header: 'Processor reference',
     value: (c) => c.stripePaymentIntentId,
   },
   { key: 'createdAt', header: 'Created at (UTC)', value: (c) => c.createdAt },

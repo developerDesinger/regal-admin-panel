@@ -715,10 +715,15 @@
       "revealed": "Revelada",
       "stripeFee": "Comisión de Stripe",
       "stripePaymentIntent": "PaymentIntent de Stripe",
-      "totalCharged": "Total cobrado"
+      "totalCharged": "Total cobrado",
+      "processorFee": "Comisión de {{processor}}"
     },
     "title": "Aportaciones y finanzas",
-    "totalInView": "Total en esta vista: <1>{{amount}}</1> en {{count}} registros."
+    "totalInView": "Total en esta vista: <1>{{amount}}</1> en {{count}} registros.",
+    "provider": {
+      "stripe": "Stripe",
+      "openpay": "Openpay"
+    }
   },
   "dashboard": {
     "activeAlerts": "Alertas activas",

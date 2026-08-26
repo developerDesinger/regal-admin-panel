@@ -115,6 +115,9 @@ export function adaptContribution(c: ContributionRow): Contribution {
     guestName: c.guestName,
     guestEmail: c.guestEmail,
     stripePaymentIntentId: c.stripePaymentIntentId,
+    // Defaulted rather than left undefined: every row predating Openpay was a
+    // Stripe charge, and a blank processor column would read as "unknown".
+    provider: c.provider ?? 'stripe',
     amount: c.amount,
     platformFee: c.platformFee,
     stripeFee: c.stripeFee,

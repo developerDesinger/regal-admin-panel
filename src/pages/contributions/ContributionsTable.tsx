@@ -210,6 +210,10 @@ export function ContributionsTable({
             <div className="flex items-center gap-3">
               <StatusBadge status={detail.status} />
               <Chip>{detail.paymentMethod}</Chip>
+              {/* Which processor took it — the first thing you need when
+                  looking a charge up, since the two have separate dashboards
+                  and separate refund APIs. */}
+              <Chip>{t(`contributions.provider.${detail.provider}`)}</Chip>
               {detail.isGuest && <Chip tone="brand">{t('contributions.table.guestCheckout')}</Chip>}
             </div>
 
@@ -235,7 +239,14 @@ export function ContributionsTable({
                 <DetailRow label={t('contributions.table.platformFee')}>
                   <MoneyValue amount={detail.platformFee} currency={detail.currency} />
                 </DetailRow>
-                <DetailRow label={t('contributions.table.stripeFee')}>
+                {/* Labelled with the processor that actually charged it —
+                    the two are priced differently, so calling an Openpay fee
+                    "Stripe fee" attributes money to the wrong company. */}
+                <DetailRow
+                  label={t('contributions.table.processorFee', {
+                    processor: t(`contributions.provider.${detail.provider}`),
+                  })}
+                >
                   <MoneyValue amount={detail.stripeFee} currency={detail.currency} />
                 </DetailRow>
                 <DetailRow label={t('contributions.table.totalCharged')}>

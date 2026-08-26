@@ -715,10 +715,15 @@
       "revealed": "Revealed",
       "stripeFee": "Stripe fee",
       "stripePaymentIntent": "Stripe PaymentIntent",
-      "totalCharged": "Total charged"
+      "totalCharged": "Total charged",
+      "processorFee": "{{processor}} fee"
     },
     "title": "Contributions & Financials",
-    "totalInView": "Total in view: <1>{{amount}}</1> across {{count}} records."
+    "totalInView": "Total in view: <1>{{amount}}</1> across {{count}} records.",
+    "provider": {
+      "stripe": "Stripe",
+      "openpay": "Openpay"
+    }
   },
   "dashboard": {
     "activeAlerts": "Active alerts",

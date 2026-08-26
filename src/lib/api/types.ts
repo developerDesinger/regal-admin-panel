@@ -294,12 +294,25 @@ export interface ContributionRow {
   status: ContributionStatusApi;
   failureReason: string | null;
   paymentMethod: string;
+  /**
+   * Which processor took the money. Absent on rows written before Openpay
+   * existed — read those as `stripe`, which is what they were.
+   */
+  provider?: PaymentProviderApi;
+  /**
+   * The processor's reference for this charge. A Stripe PaymentIntent id or an
+   * Openpay charge id, whichever applies — the backend collapses the two so
+   * nothing here has to know which field was populated.
+   */
   stripePaymentIntentId: string;
+  openpayChargeId?: string | null;
   cardSlug: string | null;
   revealed: boolean;
   message: string;
   createdAt: string;
 }
+
+export type PaymentProviderApi = 'stripe' | 'openpay';
 
 export interface ContributionDetailApi extends ContributionRow {
   beneficiary: UserBrief;

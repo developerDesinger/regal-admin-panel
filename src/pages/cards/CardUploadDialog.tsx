@@ -36,7 +36,8 @@ import { cn } from '@/lib/utils';
  */
 
 const CATEGORIES: Occasion[] = [
-  'birthday', 'wedding', 'farewell', 'graduation', 'baby', 'thanks', 'holiday', 'general',
+  'birthday', 'wedding', 'farewell', 'graduation', 'historical', 'baby', 'thanks',
+  'holiday', 'general',
 ];
 
 const ACCEPTED_MIME = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];

@@ -335,6 +335,7 @@ export default function CardCatalog() {
               'wedding',
               'farewell',
               'graduation',
+              'historical',
               'baby',
               'thanks',
               'holiday',

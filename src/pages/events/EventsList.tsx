@@ -314,6 +314,7 @@ export default function EventsList() {
               'wedding',
               'farewell',
               'graduation',
+              'historical',
               'baby',
               'thanks',
               'holiday',

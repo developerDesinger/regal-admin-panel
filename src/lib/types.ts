@@ -34,6 +34,7 @@ export type Occasion =
   | 'wedding'
   | 'farewell'
   | 'graduation'
+  | 'historical'
   | 'baby'
   | 'thanks'
   | 'holiday'

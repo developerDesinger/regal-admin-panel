@@ -57,6 +57,13 @@ export default function Contributions() {
         if (all.guest === 'registered' && c.isGuest) return false;
         if (all.feePayer && all.feePayer !== 'all' && c.feePayer !== all.feePayer) return false;
         if (all.method && all.method !== 'all' && !c.paymentMethod.startsWith(all.method)) return false;
+        // `stripe` also matches rows with no provider recorded: every
+        // contribution written before Openpay existed was a Stripe charge, and
+        // excluding them would under-report exactly the history you reconcile.
+        if (all.provider && all.provider !== 'all') {
+          const p = c.provider ?? 'stripe';
+          if (p !== all.provider) return false;
+        }
         if (all.amount && all.amount !== 'all') {
           const major = c.amount / 100;
           const ranges: Record<string, [number, number]> = {
@@ -71,6 +78,8 @@ export default function Contributions() {
         }
         if (all.q) {
           const q = all.q.toLowerCase();
+          // `stripePaymentIntentId` carries the Openpay charge id too — the
+          // backend collapses both id spaces into it (see adaptContribution).
           const hay = `${c.id} ${c.stripePaymentIntentId} ${c.eventName} ${c.contributor?.name ?? ''} ${c.guestName ?? ''} ${c.guestEmail ?? ''}`.toLowerCase();
           if (!hay.includes(q)) return false;
         }
@@ -356,6 +365,15 @@ export default function Contributions() {
             options: [
               { value: 'contributor', label: t('contributions.filters.contributor') },
               { value: 'beneficiary', label: t('contributions.filters.beneficiary') },
+            ],
+          },
+          {
+            id: 'provider',
+            label: t('contributions.filters.provider'),
+            options: [
+              { value: 'openpay', label: t('contributions.provider.openpay') },
+              { value: 'stripe', label: t('contributions.provider.stripe') },
+              { value: 'wallet', label: t('contributions.provider.wallet') },
             ],
           },
           {

@@ -665,7 +665,8 @@
       "feePayer": "Paga la comisión",
       "guest": "Invitado",
       "method": "Método",
-      "registered": "Registrado"
+      "registered": "Registrado",
+      "provider": "Procesador"
     },
     "kpi": {
       "average": "Aportación media",
@@ -722,7 +723,8 @@
     "totalInView": "Total en esta vista: <1>{{amount}}</1> en {{count}} registros.",
     "provider": {
       "stripe": "Stripe",
-      "openpay": "Openpay"
+      "openpay": "Openpay",
+      "wallet": "Saldo de cartera"
     }
   },
   "dashboard": {

@@ -88,7 +88,12 @@ export interface RegalEvent {
   stripeAccountStatus: StripeAccountStatus;
 }
 
-export type PaymentProvider = 'stripe' | 'openpay';
+/**
+ * How a contribution was paid. `wallet` means it came out of an existing
+ * balance — no card, no processor, and nothing that will ever appear on a
+ * Stripe or Openpay statement.
+ */
+export type PaymentProvider = 'stripe' | 'openpay' | 'wallet';
 
 export interface Contribution {
   id: string;

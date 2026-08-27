@@ -665,7 +665,8 @@
       "feePayer": "Fee payer",
       "guest": "Guest",
       "method": "Method",
-      "registered": "Registered"
+      "registered": "Registered",
+      "provider": "Processor"
     },
     "kpi": {
       "average": "Average Contribution",
@@ -722,7 +723,8 @@
     "totalInView": "Total in view: <1>{{amount}}</1> across {{count}} records.",
     "provider": {
       "stripe": "Stripe",
-      "openpay": "Openpay"
+      "openpay": "Openpay",
+      "wallet": "Wallet balance"
     }
   },
   "dashboard": {

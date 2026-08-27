@@ -312,7 +312,7 @@ export interface ContributionRow {
   createdAt: string;
 }
 
-export type PaymentProviderApi = 'stripe' | 'openpay';
+export type PaymentProviderApi = 'stripe' | 'openpay' | 'wallet';
 
 export interface ContributionDetailApi extends ContributionRow {
   beneficiary: UserBrief;

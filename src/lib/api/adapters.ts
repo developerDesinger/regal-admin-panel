@@ -115,9 +115,11 @@ export function adaptContribution(c: ContributionRow): Contribution {
     guestName: c.guestName,
     guestEmail: c.guestEmail,
     stripePaymentIntentId: c.stripePaymentIntentId,
-    // Defaulted rather than left undefined: every row predating Openpay was a
-    // Stripe charge, and a blank processor column would read as "unknown".
-    provider: c.provider ?? 'stripe',
+    // Backfilled by payer, matching the server: a guest row could only have
+    // been a Stripe card charge, an account row could only have been wallet.
+    // Defaulting everything to 'stripe' would label every wallet-funded gift as
+    // a card charge Stripe never processed.
+    provider: c.provider ?? (c.isGuest ? 'stripe' : 'wallet'),
     amount: c.amount,
     platformFee: c.platformFee,
     stripeFee: c.stripeFee,

@@ -470,11 +470,48 @@ export interface CatalogRow {
   updatedAt: string;
 }
 
+/**
+ * A card / event category — what the apps call an "occasion".
+ *
+ * `key` is the stable machine identity: designs are tagged with it and the
+ * mobile app sends it as an event's occasion, so the API refuses to change it
+ * after creation. Renaming means `name` / `nameEs`.
+ */
+export interface CardCategoryRow {
+  id: string;
+  key: string;
+  name: string;
+  nameEs: string | null;
+  description: string | null;
+  /** Accent colour, hex — the background of the chip clients render. */
+  color: string;
+  emoji: string | null;
+  /** Rendered artwork, inline `data:` URIs. Null until something is uploaded. */
+  images: { icon: string | null; banner: string | null };
+  sortOrder: number;
+  isActive: boolean;
+  /** Built into a client, so it can be edited and retired but never deleted. */
+  isSystem: boolean;
+  /** How many designs carry this key, and how many events use it as occasion. */
+  designs: number;
+  events: number;
+  /** The server's answer — don't infer it from the two counters above. */
+  canDelete: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface UploadTarget {
   uploadUrl: string;
   assetId: string;
   expiresIn: number;
-  method: 'PUT' | 'POST';
+  /**
+   * What the server hands back for this target. It is `POST_MULTIPART` in this
+   * deployment — artwork is stored on the API's own disk, never a bucket — and
+   * that endpoint is not the one the panel uses; see `uploadArtwork`, which
+   * posts the bytes as base64 on a single JSON request instead.
+   */
+  method: 'PUT' | 'POST' | 'POST_MULTIPART';
   storage: 's3' | 'local';
 }
 
@@ -635,11 +672,24 @@ export interface SettingsApi {
   alertThresholds: Record<string, number>;
   cloverRules: Record<string, number>;
   financial: {
+    /** Regal's own service fee, percent of each contribution. */
     platform_fee: number;
     default_fee_payer: string;
     supported_currencies: Currency[];
     /** MAJOR units — an admin config value, not a transaction amount. */
     min_withdrawal: number;
+    // Each processor's own commission, separate from `platform_fee` because the
+    // two are charged together: a gift pays Regal's percentage PLUS whichever
+    // processor took it. `*_fee_percent` / `*_fee_fixed` are the pre-IVA base
+    // parts of the peso schedule; `*_iva_percent` is the tax on that base.
+    stripe_fee_percent: number;
+    /** MAJOR units (MXN), pre-IVA, charged once per contribution. */
+    stripe_fee_fixed: number;
+    stripe_iva_percent: number;
+    openpay_fee_percent: number;
+    /** MAJOR units (MXN), pre-IVA, charged once per contribution. */
+    openpay_fee_fixed: number;
+    openpay_iva_percent: number;
   };
   notifications: { digest: string; routing: Record<string, string[]> };
   branding: {

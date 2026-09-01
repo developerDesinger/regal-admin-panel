@@ -6,6 +6,7 @@ import { PageHeader, DetailRow, SectionHeading } from '@/components/common/PageH
 import { EmptyState } from '@/components/common/EmptyState';
 import { StatusBadge, Chip } from '@/components/common/StatusBadge';
 import { CloverValue } from '@/components/common/MoneyValue';
+import { CardArtwork } from './CardArtwork';
 import { CardUploadDialog } from './CardUploadDialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -79,11 +80,7 @@ export default function CardDetail() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="p-4">
-          <div
-            className="relative flex aspect-[3/4] w-full items-center justify-center rounded-md text-[72px]"
-            style={{ backgroundColor: card.bg }}
-          >
-            <span aria-hidden>{card.emojiKey}</span>
+          <CardArtwork card={card} scale="lg" className="aspect-[3/4] w-full rounded-md">
             {card.cloverCost > 0 ? (
               <span className="tnum absolute right-3 top-3 rounded-full bg-neutral-900/70 px-2 py-1 text-[12px] font-semibold text-white">
                 🍀 {card.cloverCost}
@@ -93,7 +90,7 @@ export default function CardDetail() {
                 {t('cards.freeUpper')}
               </span>
             )}
-          </div>
+          </CardArtwork>
           <p className="mt-3 text-caption text-neutral-500">
             {t('cards.detail.background')} <code className="font-mono">{card.bg}</code>
           </p>

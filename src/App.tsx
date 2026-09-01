@@ -22,6 +22,7 @@ const UsersList = lazy(() => import('@/pages/users/UsersList'));
 const UserDetail = lazy(() => import('@/pages/users/UserDetail'));
 const CardAnalytics = lazy(() => import('@/pages/cards/CardAnalytics'));
 const CardCatalog = lazy(() => import('@/pages/cards/CardCatalog'));
+const CardCategories = lazy(() => import('@/pages/cards/CardCategories'));
 const CardDetail = lazy(() => import('@/pages/cards/CardDetail'));
 const Clovers = lazy(() => import('@/pages/clovers/Clovers'));
 const Withdrawals = lazy(() => import('@/pages/withdrawals/Withdrawals'));
@@ -70,6 +71,7 @@ export default function App() {
               <Route path="cards/analytics" element={<CardAnalytics />} />
               <Route path="cards/catalog" element={<CardCatalog />} />
               <Route path="cards/catalog/:cardId" element={<CardDetail />} />
+              <Route path="cards/categories" element={<CardCategories />} />
               <Route path="clovers" element={<Clovers />} />
               <Route path="withdrawals" element={<Withdrawals />} />
               <Route path="alerts" element={<Alerts />} />

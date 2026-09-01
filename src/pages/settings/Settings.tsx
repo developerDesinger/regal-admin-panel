@@ -46,8 +46,13 @@ function toDraft(s: SettingsApi): Draft {
   const values: Record<string, string> = {};
   for (const [k, v] of Object.entries(s.alertThresholds ?? {})) values[k] = String(v);
   for (const [k, v] of Object.entries(s.cloverRules ?? {})) values[k] = String(v);
-  values.platform_fee = String(s.financial?.platform_fee ?? '');
-  values.min_withdrawal = String(s.financial?.min_withdrawal ?? '');
+  // Every editable financial field, including the two processor commissions —
+  // one list so a new rate never has to be remembered in three places.
+  for (const def of FINANCIAL) {
+    values[def.id] = String(
+      (s.financial as Record<string, unknown> | undefined)?.[def.id] ?? '',
+    );
+  }
   return {
     values,
     defaultFeePayer: s.financial?.default_fee_payer ?? 'contributor',
@@ -60,6 +65,28 @@ function toDraft(s: SettingsApi): Draft {
   };
 }
 
+/**
+ * The financial group: every commission the admin can edit, plus who pays.
+ *
+ * A blank or unusable box is left out rather than sent as 0 — an older API that
+ * doesn't know a rate yet leaves its field empty here, and posting that empty
+ * box as a number would set that commission to zero.
+ */
+function financialPatch(d: Draft, base: SettingsApi): SettingsApi['financial'] {
+  const financial: Record<string, unknown> = {
+    ...base.financial,
+    default_fee_payer: d.defaultFeePayer,
+  };
+  for (const def of FINANCIAL) {
+    const raw = d.values[def.id];
+    const numeric = Number(raw);
+    if (raw !== undefined && raw.trim() !== '' && Number.isFinite(numeric)) {
+      financial[def.id] = numeric;
+    }
+  }
+  return financial as SettingsApi['financial'];
+}
+
 /** Sends back only the groups the admin actually touched. */
 function toPayload(d: Draft, base: SettingsApi): Partial<SettingsApi> {
   const num = (k: string) => Number(d.values[k]);
@@ -68,12 +95,7 @@ function toPayload(d: Draft, base: SettingsApi): Partial<SettingsApi> {
   return {
     alertThresholds: pick(Object.keys(base.alertThresholds ?? {})),
     cloverRules: pick(Object.keys(base.cloverRules ?? {})),
-    financial: {
-      ...base.financial,
-      platform_fee: num('platform_fee'),
-      min_withdrawal: num('min_withdrawal'),
-      default_fee_payer: d.defaultFeePayer,
-    },
+    financial: financialPatch(d, base),
     notifications: { digest: d.digest, routing: d.notify },
     branding: {
       ...base.branding,
@@ -125,9 +147,41 @@ const CLOVER_RULES: SettingDef[] = [
   { id: 'expiry_days', group: 'clover', unitKey: 'settings.units.days' },
 ];
 
-const FINANCIAL: SettingDef[] = [
+/**
+ * The financial tab lists three commissions separately, because that is how a
+ * contribution is actually charged: Regal's service fee PLUS the cut of
+ * whichever processor took the money. They are not a split of one total, so
+ * showing them in one undifferentiated list reads as if they were.
+ *
+ * Each processor block is its own peso schedule — a percentage and a fixed
+ * amount per charge, both pre-IVA, then the IVA billed on that base.
+ */
+const REGAL_FINANCIAL: SettingDef[] = [
   { id: 'platform_fee', group: 'financial', unit: '%' },
+];
+
+/** Not a commission — kept out of the three blocks above so it isn't read as one. */
+const PAYOUT_FINANCIAL: SettingDef[] = [
   { id: 'min_withdrawal', group: 'financial', unit: 'MXN' },
+];
+
+const STRIPE_FINANCIAL: SettingDef[] = [
+  { id: 'stripe_fee_percent', group: 'financial', unit: '%' },
+  { id: 'stripe_fee_fixed', group: 'financial', unit: 'MXN' },
+  { id: 'stripe_iva_percent', group: 'financial', unit: '%' },
+];
+
+const OPENPAY_FINANCIAL: SettingDef[] = [
+  { id: 'openpay_fee_percent', group: 'financial', unit: '%' },
+  { id: 'openpay_fee_fixed', group: 'financial', unit: 'MXN' },
+  { id: 'openpay_iva_percent', group: 'financial', unit: '%' },
+];
+
+const FINANCIAL: SettingDef[] = [
+  ...REGAL_FINANCIAL,
+  ...STRIPE_FINANCIAL,
+  ...OPENPAY_FINANCIAL,
+  ...PAYOUT_FINANCIAL,
 ];
 
 const TAB_FIELDS: Record<string, string[]> = {
@@ -286,7 +340,38 @@ export default function Settings() {
 
         <TabsContent value="financial">
           <SettingsList
-            settings={FINANCIAL}
+            title={t('settings.regalCommission')}
+            description={t('settings.regalCommissionHelp')}
+            settings={REGAL_FINANCIAL}
+            values={draft.values}
+            defaults={defaults}
+            onChange={setValue}
+            disabled={readOnly}
+          />
+          <SettingsList
+            className="mt-4"
+            title={t('settings.stripeCommission')}
+            description={t('settings.stripeCommissionHelp')}
+            settings={STRIPE_FINANCIAL}
+            values={draft.values}
+            defaults={defaults}
+            onChange={setValue}
+            disabled={readOnly}
+          />
+          <SettingsList
+            className="mt-4"
+            title={t('settings.openpayCommission')}
+            description={t('settings.openpayCommissionHelp')}
+            settings={OPENPAY_FINANCIAL}
+            values={draft.values}
+            defaults={defaults}
+            onChange={setValue}
+            disabled={readOnly}
+          />
+          <SettingsList
+            className="mt-4"
+            title={t('settings.payouts')}
+            settings={PAYOUT_FINANCIAL}
             values={draft.values}
             defaults={defaults}
             onChange={setValue}
@@ -616,6 +701,9 @@ function SettingsList({
   onChange,
   unitLabel,
   disabled,
+  title,
+  description,
+  className,
 }: {
   settings: SettingDef[];
   values: Record<string, string>;
@@ -624,10 +712,20 @@ function SettingsList({
   onChange: (id: string, v: string) => void;
   unitLabel?: string;
   disabled?: boolean;
+  /** Names the block when a tab shows several — e.g. one card per commission. */
+  title?: string;
+  description?: string;
+  className?: string;
 }) {
   const { t } = useTranslation();
   return (
-    <Card className="divide-y divide-neutral-200">
+    <Card className={cn('divide-y divide-neutral-200', className)}>
+      {title && (
+        <div className="p-4">
+          <h3 className="text-body font-medium text-neutral-900">{title}</h3>
+          {description && <FieldHelp>{description}</FieldHelp>}
+        </div>
+      )}
       {settings.map((s) => {
         const defaultValue = String(defaults[s.id] ?? '');
         const changed = values[s.id] !== defaultValue;

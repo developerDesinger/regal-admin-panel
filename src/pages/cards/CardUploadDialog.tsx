@@ -17,6 +17,7 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/misc';
 import { useToast } from '@/hooks/use-toast';
+import { CardArtwork } from './CardArtwork';
 import { catalogService, uploadArtwork } from '@/lib/api/services';
 import { useCatalog } from '@/hooks/data';
 import { useQueryClient } from '@tanstack/react-query';
@@ -83,8 +84,15 @@ export function CardUploadDialog({
   const [availableUntil, setAvailableUntil] = React.useState('');
   const [fileError, setFileError] = React.useState<string | null>(null);
   const [fileName, setFileName] = React.useState<string | null>(null);
-  // The bytes themselves, needed for the presigned upload on save.
+  // The bytes themselves, needed for the upload on save.
   const [file, setFile] = React.useState<File | null>(null);
+  /**
+   * Object URL of the picked file, so the preview shows the artwork that is
+   * about to be published rather than a placeholder. Revoked whenever it is
+   * replaced and when the dialog closes — an object URL is a live handle on the
+   * file, not a copy of it.
+   */
+  const [filePreview, setFilePreview] = React.useState<string | null>(null);
   const [dragging, setDragging] = React.useState(false);
 
   React.useEffect(() => {
@@ -103,7 +111,19 @@ export function CardUploadDialog({
     setFileError(null);
     setFileName(null);
     setFile(null);
+    setFilePreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
   }, [open, editing, giftCards.length]);
+
+  // Release the last object URL when the dialog unmounts.
+  React.useEffect(
+    () => () => {
+      if (filePreview) URL.revokeObjectURL(filePreview);
+    },
+    [filePreview],
+  );
 
   React.useEffect(() => {
     if (!slugEdited && !isEdit) setSlug(slugify(name));
@@ -131,11 +151,22 @@ export function CardUploadDialog({
     !isEdit && giftCards.some((c) => c.slug === slug && c.id !== editing?.id) && slug.length > 0;
   const nameOk = name.trim().length > 0 && name.length <= 60;
   const costOk = cardType === 'standard' || (Number.isInteger(cost) && cost >= 1);
-  const canSave = nameOk && slug.length > 0 && !slugTaken && costOk;
+  // What the preview should show: the file being published, else what this
+  // design already has, else nothing (the emoji placeholder takes over).
+  const artwork = filePreview ?? editing?.imageUrl ?? null;
+  // A rejected file must not reach Publish — the upload would fail on the
+  // server for the same reason it was rejected here. Artwork is marked required
+  // on a new design, so an empty picker blocks it too.
+  const artworkOk = !fileError && (isEdit || Boolean(file));
+  const canSave = nameOk && slug.length > 0 && !slugTaken && costOk && artworkOk;
 
   const validateFile = (file: File) => {
     setFileName(file.name);
     setFile(file);
+    setFilePreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
     if (!ACCEPTED_MIME.includes(file.type)) {
       setFileError(
         t('cards.upload.unsupportedType', {
@@ -241,6 +272,10 @@ export function CardUploadDialog({
                         onClick={() => {
                           setFileName(null);
                           setFile(null);
+                          setFilePreview((prev) => {
+                            if (prev) URL.revokeObjectURL(prev);
+                            return null;
+                          });
                         }}
                         aria-label={t('cards.upload.removeFile')}
                         className="rounded-sm p-0.5 hover:bg-neutral-100"
@@ -446,13 +481,15 @@ export function CardUploadDialog({
             <div className="lg:sticky lg:top-0 lg:self-start">
               <p className="mb-2 text-card-title text-neutral-700">{t('cards.upload.livePreview')}</p>
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
-                <div
-                  className="relative flex aspect-[3/4] w-full items-center justify-center rounded-md"
-                  style={{ backgroundColor: bg }}
+                {/* Same swatch the catalog and detail screens draw, so the
+                    preview is the design as it will actually be listed: the
+                    picked file first, then this design's published artwork,
+                    then its key — laid out as a word when it is one. */}
+                <CardArtwork
+                  card={{ bg, imageUrl: artwork, emojiKey: editing?.emojiKey ?? '🎁' }}
+                  scale="md"
+                  className="aspect-[3/4] w-full rounded-md"
                 >
-                  <span className="text-[56px]" aria-hidden>
-                    {editing?.emojiKey ?? '🎁'}
-                  </span>
                   {cost > 0 ? (
                     <span className="tnum absolute right-2 top-2 rounded-full bg-neutral-900/70 px-2 py-1 text-[11px] font-semibold text-white">
                       🍀 {cost}
@@ -467,7 +504,7 @@ export function CardUploadDialog({
                       {t('cards.inactive')}
                     </span>
                   )}
-                </div>
+                </CardArtwork>
                 <p className="mt-3 truncate text-body font-medium text-neutral-900">
                   {name || t('cards.upload.untitled')}
                 </p>
@@ -493,12 +530,7 @@ export function CardUploadDialog({
               try {
                 // Artwork is never mutated in place — supplying a new assetId
                 // creates a new version, so v1 unlockers keep what they paid for.
-                let assetId: string | undefined;
-                if (file) {
-                  const target = await catalogService.uploadUrl(file.name, file.type, file.size);
-                  await uploadArtwork(target, file);
-                  assetId = target.assetId;
-                }
+                const assetId = file ? await uploadArtwork(file) : undefined;
                 const payload = {
                   assetId,
                   name: name.trim(),

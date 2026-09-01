@@ -28,6 +28,7 @@ import type {
   CardErrorsResponse,
   CardKpis,
   CardTemplateRow,
+  CardCategoryRow,
   CardVersion,
   CatalogRow,
   CloverAnomaly,
@@ -256,6 +257,25 @@ export const catalogService = {
       (r) => r.data,
     ),
 
+  /**
+   * Upload artwork as a base64 `data:` URI on one authenticated JSON request.
+   *
+   * This is the path the API is built around (see `createLocalAssetFromBase64`
+   * on the server). The two-step `uploadUrl` + multipart POST it replaced could
+   * not work from here: every admin POST route validates its body as a JSON
+   * object, and a multipart request leaves that body unparsed — the server
+   * answered "body must be object" before the handler ran, which is what an
+   * admin saw as "Failed to publish design".
+   */
+  uploadBase64: (filename: string, contentType: string, data: string) =>
+    apiPost<{ assetId: string; uploaded: boolean; byteSize: number }>(
+      '/cards/catalog/upload-base64',
+      { filename, contentType, data },
+      // ~1.37× the file once base64-encoded, so a 5 MB image is ~6.7 MB on the
+      // wire. The route allows 8 MB; axios needs telling not to cap it lower.
+      { maxBodyLength: Infinity, maxContentLength: Infinity },
+    ).then((r) => r.data),
+
   create: (payload: CatalogPayload) =>
     apiPost<CatalogRow>('/cards/catalog', payload).then((r) => r.data),
   update: (id: string, payload: CatalogPayload) =>
@@ -283,23 +303,72 @@ export const catalogService = {
     apiPost<CatalogRow[]>('/cards/catalog/bulk', { cards }).then((r) => r.data),
 };
 
-/** Uploads the bytes to wherever `uploadUrl` points. */
-export async function uploadArtwork(target: UploadTarget, file: File): Promise<void> {
-  if (target.method === 'PUT') {
-    const res = await fetch(target.uploadUrl, {
-      method: 'PUT',
-      body: file,
-      headers: { 'Content-Type': file.type },
-    });
-    if (!res.ok) throw new Error(`Artwork upload failed (${res.status})`);
-    return;
-  }
-  // Local fallback when S3 isn't configured — same-origin, needs session + CSRF.
-  const form = new FormData();
-  form.append('file', file);
-  await apiPost(target.uploadUrl.replace('/api/v1/admin', ''), form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+/* ------------------------------------------------ card categories -- */
+
+/**
+ * The occasion vocabulary the apps group cards and events by.
+ *
+ * Artwork rides along on the same request as a base64 `data:` URI rather than
+ * going through the catalog's presigned-upload dance — a category glyph is
+ * small, and there is then no orphaned asset to clean up if the admin closes
+ * the dialog.
+ */
+export interface CategoryPayload {
+  key?: string;
+  name?: string;
+  nameEs?: string | null;
+  description?: string | null;
+  color?: string;
+  emoji?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+  /** Base64 `data:` URI of the source image. */
+  image?: string;
+  imageContentType?: string;
+  /** Explicitly clear the stored artwork. Omit to leave it untouched. */
+  removeImage?: boolean;
+  reason?: string;
+}
+
+export const categoriesService = {
+  list: (p: Params = {}) =>
+    apiGet<CardCategoryRow[], PageMeta>('/cards/categories', cleanParams(p)),
+  detail: (id: string) =>
+    apiGet<CardCategoryRow>(`/cards/categories/${id}`).then((r) => r.data),
+
+  create: (payload: CategoryPayload) =>
+    apiPost<CardCategoryRow>('/cards/categories', payload).then((r) => r.data),
+  update: (id: string, payload: CategoryPayload) =>
+    apiPatch<CardCategoryRow>(`/cards/categories/${id}`, payload).then((r) => r.data),
+
+  activate: (id: string, reason?: string) =>
+    apiPost<CardCategoryRow>(`/cards/categories/${id}/activate`, { reason }),
+  deactivate: (id: string, reason?: string) =>
+    apiPost<CardCategoryRow & { retainedByExistingDesigns: boolean }>(
+      `/cards/categories/${id}/deactivate`,
+      { reason },
+    ),
+  reorder: (orderedIds: string[]) =>
+    apiPut<{ reordered: number }>('/cards/categories/order', { orderedIds }),
+  remove: (id: string, reason: string) =>
+    apiDelete<{ id: string; deleted: boolean }>(`/cards/categories/${id}`, { reason }),
+};
+
+/** Reads a picked file as the `data:<mime>;base64,…` URI the API expects. */
+function readAsDataUri(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('The file could not be read.'));
+    reader.readAsDataURL(file);
   });
+}
+
+/** Uploads card artwork and returns the asset id to attach to the design. */
+export async function uploadArtwork(file: File): Promise<string> {
+  const dataUri = await readAsDataUri(file);
+  const asset = await catalogService.uploadBase64(file.name, file.type, dataUri);
+  return asset.assetId;
 }
 
 /* ----------------------------------------------------------- clovers -- */

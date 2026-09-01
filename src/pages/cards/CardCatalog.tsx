@@ -10,6 +10,7 @@ import {
   MoreHorizontal,
   Pencil,
   Search,
+  Shapes,
   Smartphone,
   Table2,
   Trash2,
@@ -21,6 +22,7 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Chip, StatusBadge } from '@/components/common/StatusBadge';
 import { CloverValue } from '@/components/common/MoneyValue';
+import { CardArtwork } from './CardArtwork';
 import { CardUploadDialog } from './CardUploadDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,16 +138,10 @@ export default function CardCatalog() {
       sortValue: (c) => c.name,
       cell: (c) => (
         <div className="flex min-w-0 items-center gap-3">
-          <span
-            className={cn(
-              'flex h-10 w-8 shrink-0 items-center justify-center rounded-sm text-[16px]',
-              !c.isActive && 'opacity-50',
-            )}
-            style={{ backgroundColor: c.bg }}
-            aria-hidden
-          >
-            {c.emojiKey}
-          </span>
+          <CardArtwork
+            card={c}
+            className={cn('h-10 w-10 shrink-0 rounded-sm', !c.isActive && 'opacity-50')}
+          />
           <div className="min-w-0">
             <p className="truncate font-medium text-neutral-900">{c.name}</p>
             <p className="truncate font-mono text-caption text-neutral-500">{c.slug}</p>
@@ -277,6 +273,13 @@ export default function CardCatalog() {
                 total: giftCards.length,
               })}
             />
+            {/* The vocabulary these designs are filed under. Reachable from the
+                sidebar too, but the sub-item only appears once you are inside
+                Gift Cards — and this is the screen you are on when you need it. */}
+            <Button variant="secondary" onClick={() => navigate('/cards/categories')}>
+              <Shapes className="h-4 w-4 text-neutral-400" />
+              {t('nav.categories')}
+            </Button>
             {can('cards:write') && (
               <>
                 <Button
@@ -452,11 +455,7 @@ export default function CardCatalog() {
                 )}
 
                 <Link to={`/cards/catalog/${card.id}`} className="block">
-                  <div
-                    className="relative flex aspect-[3/4] items-center justify-center rounded-md text-[44px]"
-                    style={{ backgroundColor: card.bg }}
-                  >
-                    <span aria-hidden>{card.emojiKey}</span>
+                  <CardArtwork card={card} scale="md" className="aspect-[3/4] w-full rounded-md">
                     {card.cloverCost > 0 ? (
                       <span className="tnum absolute right-2 top-2 rounded-full bg-neutral-900/70 px-2 py-1 text-[11px] font-semibold text-white">
                         🍀 {card.cloverCost}
@@ -466,7 +465,7 @@ export default function CardCatalog() {
                         {t('cards.freeUpper')}
                       </span>
                     )}
-                  </div>
+                  </CardArtwork>
                   <p className="mt-2 truncate text-body font-medium text-neutral-900">{card.name}</p>
                 </Link>
 

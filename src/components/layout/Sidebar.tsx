@@ -64,6 +64,7 @@ const NAV_GROUPS: { items: NavItem[] }[] = [
         children: [
           { labelKey: 'nav.analytics', to: '/cards/analytics' },
           { labelKey: 'nav.catalog', to: '/cards/catalog' },
+          { labelKey: 'nav.categories', to: '/cards/categories' },
         ],
       },
       { labelKey: 'nav.clovers', to: '/clovers', icon: Clover, permission: 'clovers:read' },

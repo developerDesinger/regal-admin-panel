@@ -29,6 +29,7 @@ import {
   auditService,
   cardAnalyticsService,
   catalogService,
+  categoriesService,
   cloversService,
   contributionsService,
   dashboardService,
@@ -234,6 +235,26 @@ export const useCatalog = (params: Params = {}, page = 1): ListResult<GiftCardDe
     () => catalogService.list({ ...params, page, pageSize: 100 }),
     adaptCatalogCard,
   );
+
+/**
+ * The category vocabulary. Unpaginated by design — the server returns the whole
+ * list because an admin reorders it by hand, and paging would split a drag.
+ */
+export function useCardCategories(params: Params = {}) {
+  const q = useQuery({
+    queryKey: ['card-categories', params],
+    queryFn: () => categoriesService.list(params),
+  });
+  // Memoised: a fresh `[]` on every render while the query is pending would
+  // retrigger any effect that watches the list.
+  const rows = React.useMemo(() => q.data?.data ?? [], [q.data]);
+  return {
+    rows,
+    isLoading: q.isPending,
+    error: errorMessage(q.error),
+    refetch: () => void q.refetch(),
+  };
+}
 
 export function useCatalogCard(cardId: string | undefined) {
   const q = useQuery({

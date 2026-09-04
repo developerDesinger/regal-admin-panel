@@ -388,7 +388,14 @@
       "updateFailed": "Could not save the changes",
       "unsupportedType": "{{type}} is not supported. Use PNG, JPG, WEBP or SVG.",
       "tooLarge": "That file is {{size}} MB. A category image must be 3 MB or smaller.",
-      "tooSmall": "That image is {{width}} × {{height}} px. A category image must be at least {{min}} × {{min}} px."
+      "tooSmall": "That image is {{width}} × {{height}} px. A category image must be at least {{min}} × {{min}} px.",
+      "deleteForcedConsequence": "The category is removed permanently. {{designs}} design(s) tagged with it are untagged and stay in the catalog; {{events}} event(s) keep an occasion that no longer has a name. This cannot be undone.",
+      "deleteForcedConsequence_system": "This category is built into the mobile app — deleting it removes an occasion the app expects, and the app falls back to its default label wherever it appears. {{designs}} design(s) tagged with it are untagged and stay in the catalog; {{events}} event(s) keep an occasion that no longer has a name. This cannot be undone.",
+      "deletedForcedBody": "{{designs}} design(s) untagged, {{events}} event(s) left without a named occasion.",
+      "cowArtwork": "Cow illustration",
+      "cowConstraints": "PNG · JPG · WEBP · SVG — max 3 MB, min 128 × 128 px. Drawn on the large tile in the app’s category picker.",
+      "removeCow": "Remove the current cow illustration",
+      "noCow": "No cow illustration — the app draws the one it ships for this category"
     },
     "catalog": {
       "actionsFor": "Actions for {{name}}",
@@ -466,7 +473,10 @@
       "uploadAction": "Upload card",
       "uploadCard": "Upload Card",
       "uses": "{{count}} uses",
-      "viewMode": "View mode"
+      "viewMode": "View mode",
+      "deleteInUseTitle": "Delete this design anyway?",
+      "deleteInUseBody": "<0>{{name}}</0> has <2>{{unlocks}} unlocks</2> and has been used on <4>{{events}} events</4>. Deleting it removes the design and every unlock record for it — the clovers users paid are not refunded, and events that chose it lose their artwork. This cannot be undone.",
+      "deletedForcedBody": "{{name}} deleted with {{unlocks}} unlock(s); {{events}} event(s) lost their artwork."
     },
     "detail": {
       "availableFrom": "Available from",
@@ -558,7 +568,8 @@
       "unsupportedType": "Unsupported file type “{{type}}”. Use PNG, JPG, WEBP or SVG.",
       "untitled": "Untitled design",
       "updateFailed": "Could not update design",
-      "updated": "Design updated"
+      "updated": "Design updated",
+      "categoryRequired": "Pick at least one — a design with no category never appears in the app’s occasion filters."
     }
   },
   "chart": {

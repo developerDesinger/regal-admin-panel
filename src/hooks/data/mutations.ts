@@ -131,10 +131,13 @@ export function useAdminMutations() {
         return copy;
       },
 
-      /** 409 when unlocks exist — the caller offers Deactivate instead. */
-      async deleteCard(card: GiftCardDesign, reason: string) {
-        await catalogService.remove(card.id, reason);
-        invalidate('catalog', 'audit');
+      /**
+       * 409 when unlocks or events exist, unless `force` — the caller shows
+       * those counts and asks for an explicit forced confirmation first.
+       */
+      async deleteCard(card: GiftCardDesign, reason: string, force = false) {
+        await catalogService.remove(card.id, reason, force);
+        invalidate('catalog', 'catalog-card', 'audit');
       },
 
       async reorderCards(orderedIds: string[]) {

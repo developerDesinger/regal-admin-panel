@@ -47,6 +47,7 @@ import {
   useEventActivity,
   useEventFinancials,
   useEventCard,
+  useCardCategories,
 } from '@/hooks/data';
 
 import { useAdminMutations } from '@/hooks/data/mutations';
@@ -93,6 +94,13 @@ export default function EventDetail() {
   const { toast } = useToast();
   const { can } = useAuth();
   const { rows: giftCards } = useCatalog();
+  // The occasion's name as the category manager holds it — the panel's older
+  // compiled-in list had no name for the categories an admin added.
+  const { rows: categories } = useCardCategories();
+  const categoryLabel = React.useCallback(
+    (key: string) => categories.find((c) => c.key === key)?.name ?? key,
+    [categories],
+  );
   const { rows: auditEntries } = useEventActivity(eventId);
   const { financials } = useEventFinancials(eventId);
   // Reveal/download stats and card errors live on their own endpoint.
@@ -171,7 +179,7 @@ export default function EventDetail() {
         subtitle={
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <StatusBadge status={event.status} />
-            <Chip>{t(`occasion.${event.occasion}`, { defaultValue: event.occasion })}</Chip>
+            <Chip>{categoryLabel(event.occasion)}</Chip>
             <Link
               to={`/users/${event.organizer.id}`}
               className="inline-flex items-center gap-2 rounded-sm transition-colors hover:text-brand-500"

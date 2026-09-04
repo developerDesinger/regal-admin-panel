@@ -297,8 +297,19 @@ export const catalogService = {
     apiPost<CatalogRow>(`/cards/catalog/${id}/duplicate`, {}).then((r) => r.data),
   reorder: (orderedIds: string[]) =>
     apiPut<{ reordered: number }>('/cards/catalog/order', { orderedIds }),
-  remove: (id: string, reason: string) =>
-    apiDelete<{ id: string; deleted: boolean }>(`/cards/catalog/${id}`, { reason }),
+  /**
+   * `force` deletes a design that people already unlocked or events already
+   * chose — the API refuses without it and answers with the counts, which is
+   * what the panel shows before asking for the forced confirmation.
+   */
+  remove: (id: string, reason: string, force = false) =>
+    apiDelete<{
+      id: string;
+      deleted: boolean;
+      forced: boolean;
+      removedUnlocks: number;
+      affectedEvents: number;
+    }>(`/cards/catalog/${id}`, { reason, force }),
   bulkCreate: (cards: CatalogPayload[]) =>
     apiPost<CatalogRow[]>('/cards/catalog/bulk', { cards }).then((r) => r.data),
 };
@@ -327,6 +338,13 @@ export interface CategoryPayload {
   imageContentType?: string;
   /** Explicitly clear the stored artwork. Omit to leave it untouched. */
   removeImage?: boolean;
+  /**
+   * The cow mascot, same encoding — a separate picture from the glyph above,
+   * so uploading or clearing one never touches the other.
+   */
+  cowImage?: string;
+  cowImageContentType?: string;
+  removeCowImage?: boolean;
   reason?: string;
 }
 
@@ -350,8 +368,19 @@ export const categoriesService = {
     ),
   reorder: (orderedIds: string[]) =>
     apiPut<{ reordered: number }>('/cards/categories/order', { orderedIds }),
-  remove: (id: string, reason: string) =>
-    apiDelete<{ id: string; deleted: boolean }>(`/cards/categories/${id}`, { reason }),
+  /**
+   * `force` deletes a built-in category, or one designs and events still use;
+   * the designs are untagged server-side. Without it the API refuses and names
+   * what is in the way.
+   */
+  remove: (id: string, reason: string, force = false) =>
+    apiDelete<{
+      id: string;
+      deleted: boolean;
+      forced: boolean;
+      untaggedDesigns: number;
+      orphanedEvents: number;
+    }>(`/cards/categories/${id}`, { reason, force }),
 };
 
 /** Reads a picked file as the `data:<mime>;base64,…` URI the API expects. */

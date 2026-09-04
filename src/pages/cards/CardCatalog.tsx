@@ -44,7 +44,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdminMutations } from '@/hooks/data/mutations';
-import { useCatalog } from '@/hooks/data';
+import { useCardCategories, useCatalog } from '@/hooks/data';
 import { cardColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { useUrlState } from '@/hooks/useUrlState';
@@ -63,6 +63,13 @@ export default function CardCatalog() {
   const { toast } = useToast();
   const { can } = useAuth();
   const { rows: giftCards } = useCatalog();
+  // Names and keys as the category manager holds them, so the filter and the
+  // chips speak the admin's vocabulary rather than the panel's older one.
+  const { rows: categoryRows } = useCardCategories();
+  const categoryLabel = React.useCallback(
+    (key: string) => categoryRows.find((c) => c.key === key)?.name ?? key,
+    [categoryRows],
+  );
   const mutations = useAdminMutations();
   const { get, set, all } = useUrlState();
 
@@ -155,7 +162,7 @@ export default function CardCatalog() {
       cell: (c) => (
         <div className="flex flex-wrap gap-1">
           {c.categories.map((cat) => (
-            <Chip key={cat}>{t(`occasion.${cat}`, { defaultValue: cat })}</Chip>
+            <Chip key={cat}>{categoryLabel(cat)}</Chip>
           ))}
         </div>
       ),
@@ -333,19 +340,11 @@ export default function CardCatalog() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('cards.catalog.allCategories')}</SelectItem>
-            {[
-              'birthday',
-              'wedding',
-              'farewell',
-              'graduation',
-              'historical',
-              'baby',
-              'thanks',
-              'holiday',
-              'general',
-            ].map((c) => (
-              <SelectItem key={c} value={c}>
-                {t(`occasion.${c}`)}
+            {/* The admin's own vocabulary, not a list compiled into the panel —
+                filtering by a category that exists is the point. */}
+            {categoryRows.map((c) => (
+              <SelectItem key={c.key} value={c.key}>
+                {c.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -470,9 +469,7 @@ export default function CardCatalog() {
                 </Link>
 
                 <div className="mt-1 flex items-center justify-between gap-2">
-                  <Chip>
-                    {t(`occasion.${card.categories[0]}`, { defaultValue: card.categories[0] })}
-                  </Chip>
+                  <Chip>{categoryLabel(card.categories[0] ?? '')}</Chip>
                   <span className="tnum text-caption text-neutral-500">
                     {t('cards.catalog.uses', { count: formatNumber(card.timesSelected) })}
                   </span>
@@ -600,18 +597,20 @@ export default function CardCatalog() {
 
       <CardUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} editing={editing} />
 
-      {/* Deleting a card with unlocks is blocked — offer Deactivate instead (§09) */}
+      {/* A design with unlocks or events behind it is still deletable, but only
+          through the forced confirmation, which names what goes with it (§09) */}
       {deleting &&
         (deleting.unlocks > 0 || deleting.timesSelected > 0 ? (
           <ConfirmDialog
             open
             onOpenChange={(o) => !o && setDeleting(null)}
-            title={t('cards.catalog.cannotDelete')}
-            tone="primary"
-            confirmLabel={t('cards.catalog.deactivateInstead')}
+            title={t('cards.catalog.deleteInUseTitle')}
+            requireTypedConfirmation={deleting.name}
+            requireReason
+            confirmLabel={t('cards.catalog.deleteConfirm')}
             consequence={
               <Trans
-                i18nKey="cards.catalog.cannotDeleteBody"
+                i18nKey="cards.catalog.deleteInUseBody"
                 values={{
                   name: deleting.name,
                   unlocks: deleting.unlocks.toLocaleString(),
@@ -627,10 +626,14 @@ export default function CardCatalog() {
               />
             }
             onConfirm={(reason) => {
-              void mutations.setCardActive(deleting, false, reason);
+              void mutations.deleteCard(deleting, reason, true);
               toast({
-                title: t('cards.catalog.deactivated'),
-                description: t('cards.catalog.unlocksPreserved', { name: deleting.name }),
+                title: t('cards.catalog.deleted'),
+                description: t('cards.catalog.deletedForcedBody', {
+                  name: deleting.name,
+                  unlocks: deleting.unlocks.toLocaleString(),
+                  events: deleting.timesSelected.toLocaleString(),
+                }),
                 tone: 'success',
               });
             }}

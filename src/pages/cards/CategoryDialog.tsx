@@ -43,6 +43,221 @@ const MAX_BYTES = 3 * 1024 * 1024;
 const MIN_PX = 128;
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+/** One upload slot: the picked file, its data URI, and the "clear it" flag. */
+interface ArtworkSlot {
+  dataUri: string | null;
+  type: string | null;
+  fileName: string | null;
+  error: string | null;
+  remove: boolean;
+  dragging: boolean;
+  setDragging: (v: boolean) => void;
+  setRemove: (v: boolean) => void;
+  accept: (file: File) => Promise<void>;
+  clear: () => void;
+  reset: () => void;
+}
+
+/**
+ * The picking and validating half of an artwork field.
+ *
+ * A hook rather than one more block of state per picture: the dialog now
+ * carries two — the row glyph and the cow — and they validate identically, so
+ * a second copy of this logic would be a second place for the rules to drift.
+ */
+function useArtwork(): ArtworkSlot {
+  const { t } = useTranslation();
+  const [dataUri, setDataUri] = React.useState<string | null>(null);
+  const [type, setType] = React.useState<string | null>(null);
+  const [fileName, setFileName] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  const [remove, setRemove] = React.useState(false);
+  const [dragging, setDragging] = React.useState(false);
+
+  const accept = React.useCallback(
+    async (file: File) => {
+      setFileName(file.name);
+      if (!ACCEPTED_MIME.includes(file.type)) {
+        setDataUri(null);
+        setError(
+          t('cards.categories.unsupportedType', {
+            type: file.type || t('cards.upload.unknownType'),
+          }),
+        );
+        return;
+      }
+      if (file.size > MAX_BYTES) {
+        setDataUri(null);
+        setError(t('cards.categories.tooLarge', { size: (file.size / 1024 / 1024).toFixed(1) }));
+        return;
+      }
+
+      // SVG is resolution-independent, so there is no pixel floor to check.
+      if (file.type !== 'image/svg+xml') {
+        const dimensions = await new Promise<{ width: number; height: number } | null>(
+          (resolve) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+              resolve({ width: img.width, height: img.height });
+              URL.revokeObjectURL(url);
+            };
+            img.onerror = () => {
+              resolve(null);
+              URL.revokeObjectURL(url);
+            };
+            img.src = url;
+          },
+        );
+        if (!dimensions) {
+          setDataUri(null);
+          setError(t('cards.upload.notAnImage'));
+          return;
+        }
+        if (dimensions.width < MIN_PX || dimensions.height < MIN_PX) {
+          setDataUri(null);
+          setError(
+            t('cards.categories.tooSmall', {
+              width: dimensions.width,
+              height: dimensions.height,
+              min: MIN_PX,
+            }),
+          );
+          return;
+        }
+      }
+
+      try {
+        setDataUri(await readAsDataUri(file));
+        setType(file.type);
+        setError(null);
+        // Picking a file is the opposite of clearing one.
+        setRemove(false);
+      } catch {
+        setDataUri(null);
+        setError(t('cards.upload.notAnImage'));
+      }
+    },
+    [t],
+  );
+
+  const clear = React.useCallback(() => {
+    setFileName(null);
+    setDataUri(null);
+    setType(null);
+    setError(null);
+  }, []);
+
+  const reset = React.useCallback(() => {
+    clear();
+    setRemove(false);
+    setDragging(false);
+  }, [clear]);
+
+  return {
+    dataUri,
+    type,
+    fileName,
+    error,
+    remove,
+    dragging,
+    setDragging,
+    setRemove,
+    accept,
+    clear,
+    reset,
+  };
+}
+
+/** One drag-and-drop artwork field, bound to a slot from `useArtwork`. */
+function ArtworkField({
+  label,
+  help,
+  slot,
+  current,
+  removeLabel,
+}: {
+  label: string;
+  help: string;
+  slot: ArtworkSlot;
+  /** The stored image this field would replace, if the category has one. */
+  current: string | null;
+  removeLabel: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div>
+      <Label>{label}</Label>
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          slot.setDragging(true);
+        }}
+        onDragLeave={() => slot.setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          slot.setDragging(false);
+          const file = e.dataTransfer.files[0];
+          if (file) void slot.accept(file);
+        }}
+        className={cn(
+          'mt-1 flex flex-col items-center justify-center rounded-md border-2 border-dashed p-6 text-center transition-colors',
+          slot.dragging ? 'border-brand-500 bg-brand-50' : 'border-neutral-300 bg-neutral-50',
+          slot.error && 'border-danger-500 bg-danger-50',
+        )}
+      >
+        <ImageUp className="mb-2 h-6 w-6 text-neutral-400" aria-hidden />
+        <p className="text-body text-neutral-700">
+          {t('cards.upload.dragHere')}{' '}
+          <label className="cursor-pointer font-medium text-brand-500 hover:underline">
+            {t('cards.upload.browse')}
+            <input
+              type="file"
+              className="sr-only"
+              accept={ACCEPTED_MIME.join(',')}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void slot.accept(file);
+              }}
+            />
+          </label>
+        </p>
+        <p className="mt-1 text-caption text-neutral-500">{help}</p>
+        {slot.fileName && !slot.error && (
+          <p className="mt-2 flex items-center gap-2 text-caption text-success-500">
+            {slot.fileName}
+            <button
+              type="button"
+              onClick={slot.clear}
+              aria-label={t('cards.upload.removeFile')}
+              className="rounded-sm p-0.5 hover:bg-neutral-100"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </p>
+        )}
+      </div>
+      {slot.error && (
+        <p className="mt-1 flex items-start gap-1 text-caption text-danger-500" role="alert">
+          <AlertCircle className="mt-px h-3 w-3 shrink-0" aria-hidden />
+          {slot.error}
+        </p>
+      )}
+      {current && !slot.dataUri && (
+        <label className="mt-2 flex items-center gap-2 text-caption text-neutral-600">
+          <input
+            type="checkbox"
+            checked={slot.remove}
+            onChange={(e) => slot.setRemove(e.target.checked)}
+          />
+          {removeLabel}
+        </label>
+      )}
+    </div>
+  );
+}
+
 /** The server's KEY_PATTERN, restated so the field can validate as it is typed. */
 const KEY_PATTERN = /^[a-z][a-zA-Z0-9]{1,39}$/;
 
@@ -99,13 +314,10 @@ export function CategoryDialog({
   const [isActive, setIsActive] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
 
-  // Artwork: the data URI actually posted, plus what it was read from.
-  const [imageDataUri, setImageDataUri] = React.useState<string | null>(null);
-  const [imageType, setImageType] = React.useState<string | null>(null);
-  const [fileName, setFileName] = React.useState<string | null>(null);
-  const [fileError, setFileError] = React.useState<string | null>(null);
-  const [removeImage, setRemoveImage] = React.useState(false);
-  const [dragging, setDragging] = React.useState(false);
+  // Two pictures, each with its own upload state: the small glyph beside a row
+  // and the cow the mobile app draws on its large category tiles.
+  const icon = useArtwork();
+  const cow = useArtwork();
 
   React.useEffect(() => {
     if (!open) return;
@@ -117,12 +329,12 @@ export function CategoryDialog({
     setColor(editing?.color ?? '#7C3AED');
     setEmoji(editing?.emoji ?? '');
     setIsActive(editing?.isActive ?? true);
-    setImageDataUri(null);
-    setImageType(null);
-    setFileName(null);
-    setFileError(null);
-    setRemoveImage(false);
+    icon.reset();
+    cow.reset();
     setSaving(false);
+    // The two upload slots are stable objects from `useArtwork`; listing them
+    // here would re-run the reset on every keystroke they record.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editing]);
 
   // The key is derived from the name until an admin types one, and never on an
@@ -131,77 +343,15 @@ export function CategoryDialog({
     if (!isEdit && !keyEdited) setKey(keyify(name));
   }, [name, keyEdited, isEdit]);
 
-  const acceptFile = async (file: File) => {
-    setFileName(file.name);
-    if (!ACCEPTED_MIME.includes(file.type)) {
-      setImageDataUri(null);
-      setFileError(
-        t('cards.categories.unsupportedType', {
-          type: file.type || t('cards.upload.unknownType'),
-        }),
-      );
-      return;
-    }
-    if (file.size > MAX_BYTES) {
-      setImageDataUri(null);
-      setFileError(
-        t('cards.categories.tooLarge', { size: (file.size / 1024 / 1024).toFixed(1) }),
-      );
-      return;
-    }
-
-    // SVG is resolution-independent, so there is no pixel floor to check.
-    if (file.type !== 'image/svg+xml') {
-      const dimensions = await new Promise<{ width: number; height: number } | null>((resolve) => {
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-        img.onload = () => {
-          resolve({ width: img.width, height: img.height });
-          URL.revokeObjectURL(url);
-        };
-        img.onerror = () => {
-          resolve(null);
-          URL.revokeObjectURL(url);
-        };
-        img.src = url;
-      });
-      if (!dimensions) {
-        setImageDataUri(null);
-        setFileError(t('cards.upload.notAnImage'));
-        return;
-      }
-      if (dimensions.width < MIN_PX || dimensions.height < MIN_PX) {
-        setImageDataUri(null);
-        setFileError(
-          t('cards.categories.tooSmall', {
-            width: dimensions.width,
-            height: dimensions.height,
-            min: MIN_PX,
-          }),
-        );
-        return;
-      }
-    }
-
-    try {
-      setImageDataUri(await readAsDataUri(file));
-      setImageType(file.type);
-      setFileError(null);
-      // Picking a file is the opposite of clearing one.
-      setRemoveImage(false);
-    } catch {
-      setImageDataUri(null);
-      setFileError(t('cards.upload.notAnImage'));
-    }
-  };
-
   const nameOk = name.trim().length > 0 && name.trim().length <= 60;
   const keyOk = isEdit || KEY_PATTERN.test(key);
   const colorOk = HEX_COLOR.test(color);
-  const canSave = nameOk && keyOk && colorOk && !fileError && !saving;
+  const canSave = nameOk && keyOk && colorOk && !icon.error && !cow.error && !saving;
 
   const currentIcon = editing?.images.icon ?? null;
-  const previewImage = imageDataUri ?? (removeImage ? null : currentIcon);
+  const currentCow = editing?.images.cow ?? null;
+  const previewImage = icon.dataUri ?? (icon.remove ? null : currentIcon);
+  const previewCow = cow.dataUri ?? (cow.remove ? null : currentCow);
 
   const save = async () => {
     setSaving(true);
@@ -215,8 +365,14 @@ export function CategoryDialog({
         color,
         emoji: emoji.trim() || null,
         isActive,
-        ...(imageDataUri ? { image: imageDataUri, imageContentType: imageType ?? 'image/png' } : {}),
-        ...(removeImage && !imageDataUri ? { removeImage: true } : {}),
+        ...(icon.dataUri
+          ? { image: icon.dataUri, imageContentType: icon.type ?? 'image/png' }
+          : {}),
+        ...(icon.remove && !icon.dataUri ? { removeImage: true } : {}),
+        ...(cow.dataUri
+          ? { cowImage: cow.dataUri, cowImageContentType: cow.type ?? 'image/png' }
+          : {}),
+        ...(cow.remove && !cow.dataUri ? { removeCowImage: true } : {}),
       };
       const saved = editing
         ? await categoriesService.update(editing.id, payload)
@@ -260,83 +416,23 @@ export function CategoryDialog({
           <div className="flex flex-col-reverse gap-6 lg:grid lg:grid-cols-[1fr_220px]">
             {/* ------------------------------------------------------ form -- */}
             <div className="space-y-4">
-              <div>
-                <Label>{t('cards.categories.artwork')}</Label>
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragging(true);
-                  }}
-                  onDragLeave={() => setDragging(false)}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setDragging(false);
-                    const file = e.dataTransfer.files[0];
-                    if (file) void acceptFile(file);
-                  }}
-                  className={cn(
-                    'mt-1 flex flex-col items-center justify-center rounded-md border-2 border-dashed p-6 text-center transition-colors',
-                    dragging ? 'border-brand-500 bg-brand-50' : 'border-neutral-300 bg-neutral-50',
-                    fileError && 'border-danger-500 bg-danger-50',
-                  )}
-                >
-                  <ImageUp className="mb-2 h-6 w-6 text-neutral-400" aria-hidden />
-                  <p className="text-body text-neutral-700">
-                    {t('cards.upload.dragHere')}{' '}
-                    <label className="cursor-pointer font-medium text-brand-500 hover:underline">
-                      {t('cards.upload.browse')}
-                      <input
-                        type="file"
-                        className="sr-only"
-                        accept={ACCEPTED_MIME.join(',')}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) void acceptFile(file);
-                        }}
-                      />
-                    </label>
-                  </p>
-                  <p className="mt-1 text-caption text-neutral-500">
-                    {t('cards.categories.imageConstraints')}
-                  </p>
-                  {fileName && !fileError && (
-                    <p className="mt-2 flex items-center gap-2 text-caption text-success-500">
-                      {fileName}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFileName(null);
-                          setImageDataUri(null);
-                          setImageType(null);
-                        }}
-                        aria-label={t('cards.upload.removeFile')}
-                        className="rounded-sm p-0.5 hover:bg-neutral-100"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </p>
-                  )}
-                </div>
-                {fileError && (
-                  <p
-                    className="mt-1 flex items-start gap-1 text-caption text-danger-500"
-                    role="alert"
-                  >
-                    <AlertCircle className="mt-px h-3 w-3 shrink-0" aria-hidden />
-                    {fileError}
-                  </p>
-                )}
-                {currentIcon && !imageDataUri && (
-                  <label className="mt-2 flex items-center gap-2 text-caption text-neutral-600">
-                    <input
-                      type="checkbox"
-                      checked={removeImage}
-                      onChange={(e) => setRemoveImage(e.target.checked)}
-                    />
-                    {t('cards.categories.removeArtwork')}
-                  </label>
-                )}
-              </div>
+              {/* Two pictures, because the app draws two: the glyph beside a
+                  category row, and the cow on the large picker tile. */}
+              <ArtworkField
+                label={t('cards.categories.artwork')}
+                help={t('cards.categories.imageConstraints')}
+                slot={icon}
+                current={currentIcon}
+                removeLabel={t('cards.categories.removeArtwork')}
+              />
+
+              <ArtworkField
+                label={t('cards.categories.cowArtwork')}
+                help={t('cards.categories.cowConstraints')}
+                slot={cow}
+                current={currentCow}
+                removeLabel={t('cards.categories.removeCow')}
+              />
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -458,6 +554,17 @@ export function CategoryDialog({
                     />
                   ) : (
                     <span className="text-[32px] leading-none">{emoji || '🎁'}</span>
+                  )}
+                </div>
+                {/* The tile the mobile app draws in its picker — the cow over
+                    a pale wash of the category colour. */}
+                <div className="mt-2 flex h-24 items-center justify-center rounded-md border border-neutral-200 bg-white">
+                  {previewCow ? (
+                    <img src={previewCow} alt="" className="max-h-20 max-w-20 object-contain" />
+                  ) : (
+                    <span className="text-caption text-neutral-400">
+                      {t('cards.categories.noCow')}
+                    </span>
                   )}
                 </div>
                 <p className="mt-3 truncate text-body font-medium text-neutral-900">

@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { useEvents } from '@/hooks/data';
+import { useCardCategories, useEvents } from '@/hooks/data';
 import { eventColumns } from '@/lib/datasets';
 import { ExportButton } from '@/components/common/ExportButton';
 import { rangeLabel } from '@/lib/date-ranges';
@@ -33,6 +33,14 @@ export default function EventsList() {
   const { all } = useUrlState();
   const { toast } = useToast();
   const { rows: events, isLoading, error, refetch } = useEvents(all);
+  // The occasion vocabulary as the category manager holds it — the same list
+  // the app offers. Filtering by an occasion the panel had compiled in meant
+  // the ones an admin added were unfilterable and unlabelled.
+  const { rows: categories } = useCardCategories();
+  const occasionLabel = React.useCallback(
+    (key: string) => categories.find((c) => c.key === key)?.name ?? key,
+    [categories],
+  );
 
   const filtered = React.useMemo(() => {
     return events.filter((e) => {
@@ -74,7 +82,7 @@ export default function EventsList() {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="truncate font-medium text-neutral-900">{e.name}</span>
-            <Chip>{t(`occasion.${e.occasion}`, { defaultValue: e.occasion })}</Chip>
+            <Chip>{occasionLabel(e.occasion)}</Chip>
           </div>
           <p className="truncate text-caption text-neutral-500">{e.organizer.name}</p>
         </div>
@@ -309,17 +317,7 @@ export default function EventsList() {
           {
             id: 'occasion',
             label: t('fields.occasion'),
-            options: [
-              'birthday',
-              'wedding',
-              'farewell',
-              'graduation',
-              'historical',
-              'baby',
-              'thanks',
-              'holiday',
-              'general',
-            ].map((o) => ({ value: o, label: t(`occasion.${o}`) })),
+            options: categories.map((c) => ({ value: c.key, label: c.name })),
           },
           {
             id: 'source',

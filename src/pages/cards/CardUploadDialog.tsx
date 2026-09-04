@@ -19,9 +19,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/misc';
 import { useToast } from '@/hooks/use-toast';
 import { CardArtwork } from './CardArtwork';
 import { catalogService, uploadArtwork } from '@/lib/api/services';
-import { useCatalog } from '@/hooks/data';
+import { useCardCategories, useCatalog } from '@/hooks/data';
 import { useQueryClient } from '@tanstack/react-query';
-import type { GiftCardDesign, Occasion } from '@/lib/types';
+import type { GiftCardDesign } from '@/lib/types';
 import { ApiError } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
 
@@ -35,11 +35,6 @@ import { cn } from '@/lib/utils';
  *  · Slug is immutable after creation — it's the stable seed id
  *  · Standard forces clover cost to 0 and disables the field
  */
-
-const CATEGORIES: Occasion[] = [
-  'birthday', 'wedding', 'farewell', 'graduation', 'historical', 'baby', 'thanks',
-  'holiday', 'general',
-];
 
 const ACCEPTED_MIME = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -68,13 +63,30 @@ export function CardUploadDialog({
   const { t } = useTranslation();
   const { toast } = useToast();
   const { rows: giftCards } = useCatalog();
+  /**
+   * The occasions a design can be filed under, straight from the category
+   * manager. This was a nine-key list compiled into the panel, which is why
+   * categories the apps do use — Teacher's Day, XV's, Baptism — could not be
+   * picked at all, and a card meant for one of them had to be filed elsewhere.
+   * Only active categories are offered; a retired one already on a design is
+   * added back below so editing that design does not silently drop the tag.
+   */
+  const { rows: categoryRows } = useCardCategories();
   const qc = useQueryClient();
   const isEdit = Boolean(editing);
 
   const [name, setName] = React.useState('');
   const [slug, setSlug] = React.useState('');
   const [slugEdited, setSlugEdited] = React.useState(false);
-  const [categories, setCategories] = React.useState<Occasion[]>(['general']);
+  /**
+   * The category keys this design is filed under.
+   *
+   * Empty by default, and required before saving. It used to default to
+   * `general`, which silently added that tag to every design an admin created
+   * — so a card ticked "Birthday" was saved as both, and the apps, which read
+   * the first tag, showed it as General.
+   */
+  const [categories, setCategories] = React.useState<string[]>([]);
   const [bg, setBg] = React.useState('#7C3AED');
   const [cardType, setCardType] = React.useState<'standard' | 'premium'>('standard');
   const [cloverCost, setCloverCost] = React.useState('');
@@ -100,7 +112,7 @@ export function CardUploadDialog({
     setName(editing?.name ?? '');
     setSlug(editing?.slug ?? '');
     setSlugEdited(false);
-    setCategories(editing?.categories ?? ['general']);
+    setCategories(editing?.categories ?? []);
     setBg(editing?.bg ?? '#7C3AED');
     setCardType(editing && editing.cloverCost > 0 ? 'premium' : 'standard');
     setCloverCost(editing?.cloverCost ? String(editing.cloverCost) : '');
@@ -158,7 +170,32 @@ export function CardUploadDialog({
   // server for the same reason it was rejected here. Artwork is marked required
   // on a new design, so an empty picker blocks it too.
   const artworkOk = !fileError && (isEdit || Boolean(file));
-  const canSave = nameOk && slug.length > 0 && !slugTaken && costOk && artworkOk;
+  // At least one category, because an untagged design is invisible in every
+  // occasion-filtered picker in the apps.
+  const categoriesOk = categories.length > 0;
+  const canSave =
+    nameOk && slug.length > 0 && !slugTaken && costOk && artworkOk && categoriesOk;
+
+  /** Active categories in the admin's order, plus any retired tag this design already carries. */
+  const categoryOptions = React.useMemo(() => {
+    const options = categoryRows
+      .filter((c) => c.isActive)
+      .map((c) => ({ key: c.key, label: c.name }));
+    const known = new Set(options.map((o) => o.key));
+    return [
+      ...options,
+      ...categories.filter((key) => !known.has(key)).map((key) => {
+        const row = categoryRows.find((c) => c.key === key);
+        return { key, label: row?.name ?? key };
+      }),
+    ];
+  }, [categoryRows, categories]);
+
+  /** A key's display name, for the preview line. */
+  const categoryLabel = React.useCallback(
+    (key: string) => categoryOptions.find((o) => o.key === key)?.label ?? key,
+    [categoryOptions],
+  );
 
   const validateFile = (file: File) => {
     setFileName(file.name);
@@ -337,21 +374,27 @@ export function CardUploadDialog({
               <div>
                 <Label>{t('cards.upload.categoryLabel')}</Label>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
-                  {CATEGORIES.map((c) => (
-                    <label key={c} className="flex cursor-pointer items-center gap-2">
+                  {categoryOptions.map((c) => (
+                    <label key={c.key} className="flex cursor-pointer items-center gap-2">
                       <Checkbox
-                        checked={categories.includes(c)}
+                        checked={categories.includes(c.key)}
                         onCheckedChange={(checked) =>
                           setCategories((prev) =>
-                            checked ? [...prev, c] : prev.filter((x) => x !== c),
+                            checked
+                              ? [...new Set([...prev, c.key])]
+                              : prev.filter((x) => x !== c.key),
                           )
                         }
                       />
-                      <span className="text-body text-neutral-700">{t(`occasion.${c}`)}</span>
+                      <span className="text-body text-neutral-700">{c.label}</span>
                     </label>
                   ))}
                 </div>
-                <FieldHelp>{t('cards.upload.categoryHelp')}</FieldHelp>
+                <FieldHelp>
+                  {categoriesOk
+                    ? t('cards.upload.categoryHelp')
+                    : t('cards.upload.categoryRequired')}
+                </FieldHelp>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -510,8 +553,7 @@ export function CardUploadDialog({
                 </p>
                 <p className="truncate font-mono text-caption text-neutral-500">{slug || 'slug'}</p>
                 <p className="mt-1 text-caption text-neutral-500">
-                  {categories.map((c) => t(`occasion.${c}`)).join(' · ') ||
-                    t('cards.upload.noCategory')}
+                  {categories.map(categoryLabel).join(' · ') || t('cards.upload.noCategory')}
                 </p>
               </div>
               <p className="mt-2 text-caption text-neutral-400">{t('cards.upload.previewNote')}</p>

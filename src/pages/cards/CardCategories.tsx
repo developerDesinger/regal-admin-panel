@@ -170,11 +170,23 @@ export default function CardCategories() {
     }
   };
 
-  const remove = async (category: CardCategoryRow, reason: string) => {
+  const remove = async (category: CardCategoryRow, reason: string, force: boolean) => {
     try {
-      await categoriesService.remove(category.id, reason);
+      const res = await categoriesService.remove(category.id, reason, force);
       refetch();
-      toast({ title: t('cards.categories.deleted', { name: category.name }), tone: 'success' });
+      toast({
+        title: t('cards.categories.deleted', { name: category.name }),
+        // A forced delete moves records that were not asked about — say so
+        // rather than letting the admin discover it in the catalog later.
+        description:
+          res.data.untaggedDesigns || res.data.orphanedEvents
+            ? t('cards.categories.deletedForcedBody', {
+                designs: res.data.untaggedDesigns,
+                events: res.data.orphanedEvents,
+              })
+            : undefined,
+        tone: 'success',
+      });
     } catch (err) {
       toast({
         title: t('cards.categories.deleteFailed'),
@@ -323,10 +335,9 @@ export default function CardCategories() {
                       : t('cards.categories.activate')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    disabled={!c.canDelete}
-                    onSelect={() => c.canDelete && setDeleting(c)}
-                  >
+                  {/* Always offered: a category in use, or one built into the
+                      app, is deleted through the forced confirmation below. */}
+                  <DropdownMenuItem destructive onSelect={() => setDeleting(c)}>
                     <Trash2 className="h-4 w-4" />
                     {t('cards.categories.delete')}
                   </DropdownMenuItem>
@@ -464,14 +475,24 @@ export default function CardCategories() {
         open={Boolean(deleting)}
         onOpenChange={(o) => !o && setDeleting(null)}
         title={t('cards.categories.deleteTitle', { name: deleting?.name ?? '' })}
-        consequence={t('cards.categories.deleteConsequence')}
+        consequence={
+          deleting && !deleting.canDelete
+            ? t('cards.categories.deleteForcedConsequence', {
+                designs: deleting.designs,
+                events: deleting.events,
+                context: deleting.isSystem ? 'system' : undefined,
+              })
+            : t('cards.categories.deleteConsequence')
+        }
         confirmLabel={t('cards.categories.delete')}
         requireTypedConfirmation={deleting?.name}
         requireReason
         onConfirm={(reason) => {
           const target = deleting;
           setDeleting(null);
-          if (target) void remove(target, reason);
+          // Force only where the plain delete would be refused, so an unused
+          // category is still deleted under the ordinary rules.
+          if (target) void remove(target, reason, !target.canDelete);
         }}
       />
     </>

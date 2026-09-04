@@ -388,7 +388,14 @@
       "updateFailed": "No se pudieron guardar los cambios",
       "unsupportedType": "{{type}} no es compatible. Use PNG, JPG, WEBP o SVG.",
       "tooLarge": "Ese archivo pesa {{size}} MB. Una imagen de categoría debe pesar 3 MB o menos.",
-      "tooSmall": "Esa imagen mide {{width}} × {{height}} px. Una imagen de categoría debe medir al menos {{min}} × {{min}} px."
+      "tooSmall": "Esa imagen mide {{width}} × {{height}} px. Una imagen de categoría debe medir al menos {{min}} × {{min}} px.",
+      "deleteForcedConsequence": "La categoría se elimina de forma permanente. {{designs}} diseño(s) etiquetado(s) con ella quedan sin esa etiqueta y siguen en el catálogo; {{events}} evento(s) conservan una ocasión que ya no tiene nombre. Esto no se puede deshacer.",
+      "deleteForcedConsequence_system": "Esta categoría viene integrada en la app móvil: al eliminarla desaparece una ocasión que la app espera y usará su etiqueta por defecto donde aparezca. {{designs}} diseño(s) quedan sin esa etiqueta y siguen en el catálogo; {{events}} evento(s) conservan una ocasión que ya no tiene nombre. Esto no se puede deshacer.",
+      "deletedForcedBody": "{{designs}} diseño(s) sin etiqueta, {{events}} evento(s) sin ocasión con nombre.",
+      "cowArtwork": "Ilustración de la vaquita",
+      "cowConstraints": "PNG · JPG · WEBP · SVG — máx. 3 MB, mín. 128 × 128 px. Se muestra en el mosaico grande del selector de categorías de la app.",
+      "removeCow": "Quitar la ilustración de la vaquita actual",
+      "noCow": "Sin ilustración de vaquita: la app usa la que trae para esta categoría"
     },
     "catalog": {
       "actionsFor": "Acciones para {{name}}",
@@ -466,7 +473,10 @@
       "uploadAction": "Subir tarjeta",
       "uploadCard": "Subir tarjeta",
       "uses": "{{count}} usos",
-      "viewMode": "Modo de vista"
+      "viewMode": "Modo de vista",
+      "deleteInUseTitle": "¿Eliminar este diseño de todos modos?",
+      "deleteInUseBody": "<0>{{name}}</0> tiene <2>{{unlocks}} desbloqueos</2> y se ha usado en <4>{{events}} eventos</4>. Al eliminarlo se borran el diseño y todos sus registros de desbloqueo: los tréboles pagados no se devuelven y los eventos que lo eligieron pierden su arte. Esto no se puede deshacer.",
+      "deletedForcedBody": "{{name}} eliminado con {{unlocks}} desbloqueo(s); {{events}} evento(s) perdieron su arte."
     },
     "detail": {
       "availableFrom": "Disponible desde",
@@ -558,7 +568,8 @@
       "unsupportedType": "Tipo de archivo no admitido: «{{type}}». Use PNG, JPG, WEBP o SVG.",
       "untitled": "Diseño sin título",
       "updateFailed": "No se pudo actualizar el diseño",
-      "updated": "Diseño actualizado"
+      "updated": "Diseño actualizado",
+      "categoryRequired": "Elige al menos una: un diseño sin categoría no aparece en los filtros de ocasión de la app."
     }
   },
   "chart": {

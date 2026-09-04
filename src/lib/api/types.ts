@@ -450,7 +450,8 @@ export interface CatalogRow {
   id: string;
   slug: string;
   name: string;
-  categories: Occasion[];
+  /** Category keys from the category manager — an open vocabulary. */
+  categories: string[];
   bg: string;
   emojiKey: string;
   images: { thumb: string; preview: string; full: string };
@@ -486,8 +487,12 @@ export interface CardCategoryRow {
   /** Accent colour, hex — the background of the chip clients render. */
   color: string;
   emoji: string | null;
-  /** Rendered artwork, inline `data:` URIs. Null until something is uploaded. */
-  images: { icon: string | null; banner: string | null };
+  /**
+   * Rendered artwork, inline `data:` URIs. Null until something is uploaded.
+   * `icon`/`banner` are the glyph; `cow` is the mascot the mobile app draws on
+   * its large category tiles, uploaded and cleared independently.
+   */
+  images: { icon: string | null; banner: string | null; cow: string | null };
   sortOrder: number;
   isActive: boolean;
   /** Built into a client, so it can be edited and retired but never deleted. */

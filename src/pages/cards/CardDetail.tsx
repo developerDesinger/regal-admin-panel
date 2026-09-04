@@ -12,7 +12,12 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CopyableId } from '@/components/ui/misc';
 import { useAuth } from '@/hooks/use-auth';
-import { useCatalogCard, useCardVersions, useAuditTrail } from '@/hooks/data';
+import {
+  useCatalogCard,
+  useCardVersions,
+  useAuditTrail,
+  useCardCategories,
+} from '@/hooks/data';
 import { formatDate, formatDateTime, formatNumber, formatPercent } from '@/lib/format';
 
 /** Card catalog detail (§09) — includes the version history strip. */
@@ -22,6 +27,13 @@ export default function CardDetail() {
   const navigate = useNavigate();
   const { can } = useAuth();
   const { rows: auditEntries } = useAuditTrail({ resourceType: 'Gift card' });
+  // Category names come from the manager, so a category an admin added or
+  // renamed reads the same here as it does in the app.
+  const { rows: categories } = useCardCategories();
+  const categoryLabel = React.useCallback(
+    (key: string) => categories.find((c) => c.key === key)?.name ?? key,
+    [categories],
+  );
   const { card } = useCatalogCard(cardId);
   const versions = useCardVersions(cardId);
   const [editOpen, setEditOpen] = React.useState(false);
@@ -62,7 +74,7 @@ export default function CardDetail() {
               {card.cloverCost > 0 ? t('cards.premium') : t('cards.standard')}
             </Chip>
             {card.categories.map((c) => (
-              <Chip key={c}>{t(`occasion.${c}`, { defaultValue: c })}</Chip>
+              <Chip key={c}>{categoryLabel(c)}</Chip>
             ))}
             <CopyableId value={card.slug} label={t('cards.detail.slug')} />
             <span className="text-neutral-400">v{card.version}</span>

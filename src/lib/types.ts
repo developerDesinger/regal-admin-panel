@@ -154,7 +154,12 @@ export interface GiftCardDesign {
   id: string;
   slug: string;
   name: string;
-  categories: Occasion[];
+  /**
+   * Category keys, as the category manager holds them — not the `Occasion`
+   * union, which is this build's older nine-key list. An admin can add a
+   * category, so the vocabulary is data and cannot be a compiled-in type.
+   */
+  categories: string[];
   bg: string; // hex — artwork background, author-supplied content not a design token
   imageUrl: string | null;
   emojiKey: string;

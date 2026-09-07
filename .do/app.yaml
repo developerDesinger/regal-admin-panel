@@ -20,17 +20,23 @@ services:
     instance_size_slug: basic-xxs
     instance_count: 1
     http_port: 8080
-    github:
-      repo: developerDesinger/regal-admin-panel
+    # Plain git source rather than the GitHub integration: that integration
+    # needs an OAuth grant in the DO console, which this account has not given.
+    # The trade-off is no auto-deploy on push — ship with
+    # `doctl apps create-deployment <app-id>`.
+    git:
+      repo_clone_url: https://github.com/developerDesinger/regal-admin-panel.git
       branch: main
-      deploy_on_push: true
     build_command: npm run build
     run_command: node server.js
     health_check:
       http_path: /healthz
     envs:
+      # RUN_TIME only. At BUILD time this makes npm skip devDependencies, and
+      # the build needs them — `tsc -b` reads @types/node and vite/client, so a
+      # production install fails with "Cannot find type definition file".
       - key: NODE_ENV
-        scope: RUN_AND_BUILD_TIME
+        scope: RUN_TIME
         value: production
       # Where /api is forwarded. Point this at a custom API domain later if the
       # backend moves off its ondigitalocean.app hostname.

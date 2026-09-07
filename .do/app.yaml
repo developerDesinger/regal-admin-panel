@@ -1,0 +1,48 @@
+# DigitalOcean App Platform spec for the admin panel.
+#
+# A service rather than a static site, because the panel must call the API from
+# its OWN origin: the admin session cookie is `Secure; SameSite=Strict`, and a
+# static host cannot rewrite /api to another host. `server.js` serves the build
+# and proxies /api, which is what `vercel.json` does on Vercel.
+name: regal-admin-panel
+region: nyc
+features:
+  - buildpack-stack=ubuntu-22
+ingress:
+  rules:
+    - component:
+        name: web
+      match:
+        path:
+          prefix: /
+services:
+  - name: web
+    instance_size_slug: basic-xxs
+    instance_count: 1
+    http_port: 8080
+    github:
+      repo: developerDesinger/regal-admin-panel
+      branch: main
+      deploy_on_push: true
+    build_command: npm run build
+    run_command: node server.js
+    health_check:
+      http_path: /healthz
+    envs:
+      - key: NODE_ENV
+        scope: RUN_AND_BUILD_TIME
+        value: production
+      # Where /api is forwarded. Point this at a custom API domain later if the
+      # backend moves off its ondigitalocean.app hostname.
+      - key: API_ORIGIN
+        scope: RUN_TIME
+        value: https://regal-backend-ypkwe.ondigitalocean.app
+      # MUST stay empty: the panel calls same-origin /api and `server.js`
+      # forwards it. Setting an absolute URL here makes the call cross-site and
+      # the session cookie stops being sent.
+      - key: VITE_API_BASE_URL
+        scope: BUILD_TIME
+        value: ""
+      - key: VITE_ENV
+        scope: BUILD_TIME
+        value: production

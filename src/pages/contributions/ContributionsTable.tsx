@@ -3,6 +3,7 @@ import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
 import { DataTable, type Column } from '@/components/common/DataTable';
+import { ProviderLogo, hasProviderLogo } from '@/components/common/ProviderLogo';
 import { DrillDownDrawer } from '@/components/common/DrillDownDrawer';
 import { StatusBadge, Chip } from '@/components/common/StatusBadge';
 import { MoneyValue } from '@/components/common/MoneyValue';
@@ -213,7 +214,13 @@ export function ContributionsTable({
               {/* Which processor took it — the first thing you need when
                   looking a charge up, since the two have separate dashboards
                   and separate refund APIs. */}
-              <Chip>{t(`contributions.provider.${detail.provider}`)}</Chip>
+              <Chip>
+                {hasProviderLogo(detail.provider) ? (
+                  <ProviderLogo provider={detail.provider} />
+                ) : (
+                  t(`contributions.provider.${detail.provider}`)
+                )}
+              </Chip>
               {detail.isGuest && <Chip tone="brand">{t('contributions.table.guestCheckout')}</Chip>}
             </div>
 

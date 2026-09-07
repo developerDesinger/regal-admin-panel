@@ -2,6 +2,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { RotateCcw, Save, Undo2 } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
+import { ProviderLogo, hasProviderLogo } from '@/components/common/ProviderLogo';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { Chip } from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -350,6 +351,7 @@ export default function Settings() {
           />
           <SettingsList
             className="mt-4"
+            provider="stripe"
             title={t('settings.stripeCommission')}
             description={t('settings.stripeCommissionHelp')}
             settings={STRIPE_FINANCIAL}
@@ -360,6 +362,7 @@ export default function Settings() {
           />
           <SettingsList
             className="mt-4"
+            provider="openpay"
             title={t('settings.openpayCommission')}
             description={t('settings.openpayCommissionHelp')}
             settings={OPENPAY_FINANCIAL}
@@ -704,6 +707,7 @@ function SettingsList({
   title,
   description,
   className,
+  provider,
 }: {
   settings: SettingDef[];
   values: Record<string, string>;
@@ -716,13 +720,24 @@ function SettingsList({
   title?: string;
   description?: string;
   className?: string;
+  /**
+   * Shows the processor's wordmark beside the title. The commission cards are
+   * per-processor and their rates differ, so the brand is the fastest way to
+   * tell which schedule you are editing.
+   */
+  provider?: string;
 }) {
   const { t } = useTranslation();
   return (
     <Card className={cn('divide-y divide-neutral-200', className)}>
       {title && (
         <div className="p-4">
-          <h3 className="text-body font-medium text-neutral-900">{title}</h3>
+          <div className="flex items-center gap-2">
+            {provider && hasProviderLogo(provider) && (
+              <ProviderLogo provider={provider} />
+            )}
+            <h3 className="text-body font-medium text-neutral-900">{title}</h3>
+          </div>
           {description && <FieldHelp>{description}</FieldHelp>}
         </div>
       )}

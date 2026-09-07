@@ -20,13 +20,11 @@ services:
     instance_size_slug: basic-xxs
     instance_count: 1
     http_port: 8080
-    # Plain git source rather than the GitHub integration: that integration
-    # needs an OAuth grant in the DO console, which this account has not given.
-    # The trade-off is no auto-deploy on push — ship with
-    # `doctl apps create-deployment <app-id>`.
-    git:
-      repo_clone_url: https://github.com/developerDesinger/regal-admin-panel.git
+    # DigitalOcean's GitHub integration, so a push to main deploys itself.
+    github:
+      repo: developerDesinger/regal-admin-panel
       branch: main
+      deploy_on_push: true
     build_command: npm run build
     run_command: node server.js
     health_check:

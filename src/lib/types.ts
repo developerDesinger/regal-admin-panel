@@ -193,8 +193,14 @@ export interface CloverTransaction {
 export interface Withdrawal {
   id: string;
   beneficiary: UserRef;
-  eventId: string;
-  eventName: string;
+  /**
+   * Where the payout landed — the bank account label snapshotted on the
+   * transaction. A withdrawal draws on the wallet, which pools every event's
+   * proceeds, so there is no event to name here: the column used to show the
+   * beneficiary's most recent event, which made new events appear to have
+   * old payouts against them.
+   */
+  destination: string | null;
   amount: number;
   currency: Currency;
   status: Exclude<WithdrawalStatus, 'none'>;

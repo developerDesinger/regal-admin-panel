@@ -569,8 +569,10 @@ export interface WithdrawalRow {
   id: string;
   beneficiary: UserBrief;
   /** Best-effort: payouts are per-user, not per-event. May be null. */
-  eventId: string | null;
-  eventName: string | null;
+  eventId: null;
+  eventName: null;
+  /** Bank account the payout was sent to, snapshotted at request time. */
+  destination: string | null;
   amount: number;
   currency: Currency;
   status: Exclude<WithdrawalStatusApi, 'none'>;

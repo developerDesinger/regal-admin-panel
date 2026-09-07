@@ -1619,7 +1619,8 @@
       "payoutId": "Payout ID",
       "requested": "Requested",
       "retry": "Retry",
-      "stripePayout": "Stripe payout"
+      "stripePayout": "Stripe payout",
+      "destination": "Destination"
     },
     "title": "Withdrawals & Payouts"
   }

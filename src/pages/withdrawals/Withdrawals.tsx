@@ -48,7 +48,7 @@ export default function Withdrawals() {
         if (all.account && all.account !== 'all' && w.stripeAccountStatus !== all.account) return false;
         if (all.q) {
           const q = all.q.toLowerCase();
-          if (!`${w.beneficiary.name} ${w.eventName} ${w.stripePayoutId ?? ''}`.toLowerCase().includes(q))
+          if (!`${w.beneficiary.name} ${w.destination ?? ''} ${w.stripePayoutId ?? ''}`.toLowerCase().includes(q))
             return false;
         }
         return true;
@@ -86,19 +86,15 @@ export default function Withdrawals() {
       ),
     },
     {
-      id: 'event',
-      header: t('withdrawals.table.event'),
+      // Not an event: a payout comes out of the wallet, which every event the
+      // beneficiary ran has paid into. Naming one event here attributed old
+      // payouts to whichever event was created most recently.
+      id: 'destination',
+      header: t('withdrawals.table.destination'),
       sortable: true,
-      sortValue: (w) => w.eventName,
+      sortValue: (w) => w.destination ?? '',
       cell: (w) => (
-        <Link
-          to={`/events/${w.eventId}`}
-          data-no-row-click
-          onClick={(e) => e.stopPropagation()}
-          className="truncate rounded-sm transition-colors hover:text-brand-500"
-        >
-          {w.eventName}
-        </Link>
+        <span className="truncate text-muted-foreground">{w.destination ?? '—'}</span>
       ),
     },
     {

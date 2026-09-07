@@ -221,9 +221,8 @@ export function adaptWithdrawal(w: WithdrawalRow): Withdrawal {
   return {
     id: w.id,
     beneficiary: toUserRef(w.beneficiary),
-    // Payouts are per-user, not per-event: eventId is best-effort and nullable.
-    eventId: w.eventId ?? '',
-    eventName: w.eventName ?? '—',
+    // Payouts are per-user, never per-event — see `Withdrawal.destination`.
+    destination: w.destination ?? null,
     amount: w.amount,
     currency: w.currency,
     status: w.status,

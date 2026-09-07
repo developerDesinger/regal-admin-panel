@@ -1619,7 +1619,8 @@
       "payoutId": "ID del pago",
       "requested": "Solicitado",
       "retry": "Reintentar",
-      "stripePayout": "Pago de Stripe"
+      "stripePayout": "Pago de Stripe",
+      "destination": "Destino"
     },
     "title": "Retiros y pagos"
   }

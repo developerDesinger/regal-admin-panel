@@ -143,8 +143,8 @@ export const withdrawalColumns: ExportColumn<Withdrawal>[] = [
   { key: 'id', header: 'Withdrawal ID', value: (w) => w.id },
   { key: 'beneficiaryId', header: 'Beneficiary ID', value: (w) => w.beneficiary.id },
   { key: 'beneficiaryName', header: 'Beneficiary', value: (w) => w.beneficiary.name },
-  { key: 'eventId', header: 'Event ID', value: (w) => w.eventId },
-  { key: 'eventName', header: 'Event', value: (w) => w.eventName },
+  // No event column: a payout is drawn from the wallet, not from one event.
+  { key: 'destination', header: 'Destination', value: (w) => w.destination ?? '' },
   { key: 'amount', header: 'Amount', value: (w) => moneyCell(w.amount) },
   { key: 'currency', header: 'Currency', value: (w) => w.currency },
   { key: 'status', header: 'Status', value: (w) => w.status },

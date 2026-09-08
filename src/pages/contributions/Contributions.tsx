@@ -160,6 +160,26 @@ export default function Contributions() {
           definition={t('contributions.kpi.failureRateDef')}
           onDrillDown={() => navigate('/contributions?status=failed')}
         />
+        {/* One tile per company that earns a commission, never a blended
+            "fees" number: Regalapp's cut is revenue, the processor cuts are
+            money that leaves the platform, and Stripe and Openpay price
+            differently enough that summing them attributes one company's
+            earnings to the other. */}
+        <KpiCard
+          label={t('contributions.kpi.platformFees')}
+          {...kpi('platformFees', (v) => formatMoney(v))}
+          definition={t('contributions.kpi.platformFeesDef')}
+        />
+        <KpiCard
+          label={t('contributions.kpi.stripeFees')}
+          {...kpi('stripeFees', (v) => formatMoney(v))}
+          definition={t('contributions.kpi.stripeFeesDef')}
+        />
+        <KpiCard
+          label={t('contributions.kpi.openpayFees')}
+          {...kpi('openpayFees', (v) => formatMoney(v))}
+          definition={t('contributions.kpi.openpayFeesDef')}
+        />
         <KpiCard
           label={t('contributions.kpi.totalFees')}
           {...kpi('totalFees', (v) => formatMoney(v))}

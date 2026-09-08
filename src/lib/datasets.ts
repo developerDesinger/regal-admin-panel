@@ -53,12 +53,27 @@ export const contributionColumns: ExportColumn<Contribution>[] = [
   },
   { key: 'isGuest', header: 'Guest checkout', value: (c) => c.isGuest },
   { key: 'amount', header: 'Amount', value: (c) => moneyCell(c.amount) },
-  { key: 'platformFee', header: 'Platform fee', value: (c) => moneyCell(c.platformFee) },
-  // Header stays processor-neutral now that either one can have taken it —
-  // the `provider` column below says which, and a spreadsheet labelled
-  // "Stripe fee" containing Openpay commissions is a reconciliation trap.
+  { key: 'platformFee', header: 'Regalapp fee', value: (c) => moneyCell(c.platformFee) },
   { key: 'provider', header: 'Processor', value: (c) => c.provider },
-  { key: 'stripeFee', header: 'Processor fee', value: (c) => moneyCell(c.stripeFee) },
+  // Three columns rather than one, so a spreadsheet can be totalled per company
+  // without first pivoting on `provider`. Each row fills exactly one of them;
+  // the other is blank, NOT zero, because a blank sums to nothing while a
+  // column of zeroes reads as "this processor worked for free".
+  {
+    key: 'stripeFee',
+    header: 'Stripe fee',
+    value: (c) => (c.provider === 'stripe' ? moneyCell(c.stripeFee) : ''),
+  },
+  {
+    key: 'openpayFee',
+    header: 'Openpay fee',
+    value: (c) => (c.provider === 'openpay' ? moneyCell(c.stripeFee) : ''),
+  },
+  {
+    key: 'processorFee',
+    header: 'Processor fee (total)',
+    value: (c) => moneyCell(c.stripeFee),
+  },
   { key: 'totalCharged', header: 'Total charged', value: (c) => moneyCell(c.totalCharged) },
   { key: 'creditedAmount', header: 'Credited', value: (c) => moneyCell(c.creditedAmount) },
   { key: 'currency', header: 'Currency', value: (c) => c.currency },

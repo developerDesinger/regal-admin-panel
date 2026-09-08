@@ -774,7 +774,13 @@
       "totalConfirmed": "Total Confirmed",
       "totalConfirmedDef": "Sum of contribution.amount where status = succeeded, in minor units ÷ 100.",
       "totalFees": "Total Fees Collected",
-      "totalFeesDef": "Platform fee + Stripe fee across confirmed contributions. Hover any row’s Fee cell to see the split."
+      "totalFeesDef": "Regalapp fee + processor fees across confirmed contributions. See the three tiles beside it for who earned each part.",
+      "platformFees": "Regalapp Fees",
+      "platformFeesDef": "Regalapp's own commission (4.9%) across confirmed contributions. This is platform revenue.",
+      "stripeFees": "Stripe Fees",
+      "stripeFeesDef": "Stripe processing commission incl. IVA, on confirmed contributions Stripe processed. Paid to Stripe — not platform revenue.",
+      "openpayFees": "Openpay Fees",
+      "openpayFeesDef": "Openpay processing commission incl. IVA, on confirmed contributions Openpay processed. Paid to Openpay — not platform revenue."
     },
     "searchPlaceholder": "Search contributor, event, PaymentIntent…",
     "subtitle": "Every payment into the platform, with the fee split and the reason behind each failure.",
@@ -792,7 +798,7 @@
       "emptyBody": "Widen the date range or clear the status filter. Failed payments are excluded unless you select them explicitly.",
       "fee": "Fee",
       "feePayer": "Fee payer",
-      "feeTooltip": "Platform {{platform}} · Stripe {{stripe}}",
+      "feeTooltip": "Regalapp {{platform}} · {{processor}} {{processorFee}}",
       "guest": "Guest",
       "guestCheckout": "Guest checkout",
       "message": "Message",
@@ -800,14 +806,15 @@
       "openInStripe": "Open in Stripe dashboard",
       "paymentIntent": "PaymentIntent",
       "paymentIntentId": "PaymentIntent ID",
-      "platformFee": "Platform fee",
+      "platformFee": "Regalapp fee",
       "rawPayload": "Raw webhook payload",
       "record": "Record",
       "revealed": "Revealed",
       "stripeFee": "Stripe fee",
       "stripePaymentIntent": "Stripe PaymentIntent",
       "totalCharged": "Total charged",
-      "processorFee": "{{processor}} fee"
+      "processorFee": "{{processor}} fee",
+      "openpayFee": "Openpay fee"
     },
     "title": "Contributions & Financials",
     "totalInView": "Total in view: <1>{{amount}}</1> across {{count}} records.",
@@ -1050,7 +1057,8 @@
     "uniqueDownloaders": "Unique downloaders",
     "uniqueDownloads": "Unique downloads",
     "withdrawalStatus": "Withdrawal status",
-    "writtenToAudit": "Written to the audit trail · see the Activity Log tab"
+    "writtenToAudit": "Written to the audit trail · see the Activity Log tab",
+    "openpayFees": "Openpay fees"
   },
   "events": {
     "actionsFor": "Actions for {{name}}",

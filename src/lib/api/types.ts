@@ -229,8 +229,20 @@ export interface EventFinancials {
   contributionCount: number;
   averageContribution: number;
   medianContribution: number;
+  /** Regalapp's own commission — the platform's revenue on this event. */
   platformFees: number;
+  /** Stripe's cut, and its two halves. Base + IVA always equal `stripeFees`. */
   stripeFees: number;
+  stripeFeesBase: number;
+  stripeFeesIva: number;
+  /** Openpay's cut, and its two halves. Priced differently from Stripe's. */
+  openpayFees: number;
+  openpayFeesBase: number;
+  openpayFeesIva: number;
+  /** Contributions paid from wallet balance — no processor took this. */
+  walletFees: number;
+  /** Stripe + Openpay + wallet-funded. */
+  processorFees: number;
   netToBeneficiary: number;
 }
 
@@ -332,6 +344,33 @@ export interface ContributionKpis {
   medianContribution: Kpi;
   /** failed ÷ (succeeded + failed) — pending is not a failure. */
   failureRate: Kpi;
+  /**
+   * Commissions, one line per company that earns them.
+   *
+   * Deliberately never pre-added by the API: `platformFees` is Regalapp's own
+   * revenue, while the processor lines are money that leaves for Stripe or
+   * Openpay and was never the platform's. The two processors also price
+   * differently, so they are reported apart — a single blended figure credited
+   * one company with the other's money.
+   */
+  platformFees: Kpi;
+  stripeFees: Kpi;
+  /** Stripe's own cut and the IVA on it. Always sum to `stripeFees`. */
+  stripeFeesBase: Kpi;
+  stripeFeesIva: Kpi;
+  openpayFees: Kpi;
+  /** Openpay's own cut and the IVA on it. Always sum to `openpayFees`. */
+  openpayFeesBase: Kpi;
+  openpayFeesIva: Kpi;
+  /**
+   * Contributions paid from wallet balance: a fee was charged, but no processor
+   * handled it — the card was charged earlier, at top-up. Its own line so the
+   * processor buckets still reconcile to `processorFees`.
+   */
+  walletFees: Kpi;
+  /** Every processor bucket together — Stripe + Openpay + wallet-funded. */
+  processorFees: Kpi;
+  /** Platform + processors. Legacy; prefer the individual lines above. */
   totalFees: Kpi;
 }
 

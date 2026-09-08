@@ -774,7 +774,13 @@
       "totalConfirmed": "Total confirmado",
       "totalConfirmedDef": "Suma de contribution.amount con estado «succeeded», en unidades menores ÷ 100.",
       "totalFees": "Comisiones cobradas",
-      "totalFeesDef": "Comisión de la plataforma + comisión de Stripe en las aportaciones confirmadas. Pase el cursor por la celda «Comisión» de cualquier fila para ver el desglose."
+      "totalFeesDef": "Comisión de Regalapp + comisiones de los procesadores en las aportaciones confirmadas. Vea los tres indicadores contiguos para saber quién cobró cada parte.",
+      "platformFees": "Comisiones de Regalapp",
+      "platformFeesDef": "Comisión propia de Regalapp (4.9%) en las aportaciones confirmadas. Es ingreso de la plataforma.",
+      "stripeFees": "Comisiones de Stripe",
+      "stripeFeesDef": "Comisión de procesamiento de Stripe con IVA, en las aportaciones confirmadas que procesó Stripe. Se paga a Stripe: no es ingreso de la plataforma.",
+      "openpayFees": "Comisiones de Openpay",
+      "openpayFeesDef": "Comisión de procesamiento de Openpay con IVA, en las aportaciones confirmadas que procesó Openpay. Se paga a Openpay: no es ingreso de la plataforma."
     },
     "searchPlaceholder": "Buscar por participante, evento o PaymentIntent…",
     "subtitle": "Todos los pagos que entran en la plataforma, con el desglose de comisiones y el motivo de cada fallo.",
@@ -792,7 +798,7 @@
       "emptyBody": "Amplíe el intervalo de fechas o quite el filtro de estado. Los pagos fallidos quedan excluidos salvo que los seleccione expresamente.",
       "fee": "Comisión",
       "feePayer": "Paga la comisión",
-      "feeTooltip": "Plataforma {{platform}} · Stripe {{stripe}}",
+      "feeTooltip": "Regalapp {{platform}} · {{processor}} {{processorFee}}",
       "guest": "Invitado",
       "guestCheckout": "Pago como invitado",
       "message": "Mensaje",
@@ -800,14 +806,15 @@
       "openInStripe": "Abrir en el panel de Stripe",
       "paymentIntent": "PaymentIntent",
       "paymentIntentId": "ID de PaymentIntent",
-      "platformFee": "Comisión de la plataforma",
+      "platformFee": "Comisión de Regalapp",
       "rawPayload": "Payload del webhook",
       "record": "Registro",
       "revealed": "Revelada",
       "stripeFee": "Comisión de Stripe",
       "stripePaymentIntent": "PaymentIntent de Stripe",
       "totalCharged": "Total cobrado",
-      "processorFee": "Comisión de {{processor}}"
+      "processorFee": "Comisión de {{processor}}",
+      "openpayFee": "Comisión de Openpay"
     },
     "title": "Aportaciones y finanzas",
     "totalInView": "Total en esta vista: <1>{{amount}}</1> en {{count}} registros.",
@@ -1050,7 +1057,8 @@
     "uniqueDownloaders": "Personas que descargaron",
     "uniqueDownloads": "Descargas únicas",
     "withdrawalStatus": "Estado del retiro",
-    "writtenToAudit": "Registrado en el historial de auditoría · consulte la pestaña «Registro de actividad»"
+    "writtenToAudit": "Registrado en el historial de auditoría · consulte la pestaña «Registro de actividad»",
+    "openpayFees": "Comisiones de Openpay"
   },
   "events": {
     "actionsFor": "Acciones para {{name}}",

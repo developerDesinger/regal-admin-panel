@@ -93,6 +93,59 @@ export function ContributionsTable({
       sortValue: (c) => c.amount,
       cell: (c) => <MoneyValue amount={c.amount} currency={c.currency} showCurrency={false} />,
     },
+    /*
+     * Three fee columns, not one.
+     *
+     * The combined "fee" column below stays (it is what most people scan and
+     * what the row total reconciles against), but it can no longer be the only
+     * place a commission appears: it hid whose money each part was, and its
+     * tooltip called every processor cut "Stripe" even when Openpay took it.
+     *
+     * Regalapp's own commission is on by default because it is the platform's
+     * revenue line. The two processor columns default to hidden — a given row
+     * only ever has one of them — and are one click away in the column picker
+     * for anyone reconciling a processor statement.
+     */
+    {
+      id: 'platformFee',
+      header: t('contributions.table.platformFee'),
+      numeric: true,
+      sortable: true,
+      sortValue: (c) => c.platformFee,
+      cell: (c) => (
+        <MoneyValue amount={c.platformFee} currency={c.currency} showCurrency={false} />
+      ),
+    },
+    {
+      id: 'stripeFee',
+      header: t('contributions.table.stripeFee'),
+      numeric: true,
+      sortable: true,
+      defaultHidden: true,
+      sortValue: (c) => (c.provider === 'stripe' ? c.stripeFee : 0),
+      // A dash, not a zero: Openpay never charged a Stripe fee on this row, and
+      // a column of zeroes reads as "Stripe processed it for free".
+      cell: (c) =>
+        c.provider === 'stripe' ? (
+          <MoneyValue amount={c.stripeFee} currency={c.currency} showCurrency={false} />
+        ) : (
+          <span className="text-neutral-400">—</span>
+        ),
+    },
+    {
+      id: 'openpayFee',
+      header: t('contributions.table.openpayFee'),
+      numeric: true,
+      sortable: true,
+      defaultHidden: true,
+      sortValue: (c) => (c.provider === 'openpay' ? c.stripeFee : 0),
+      cell: (c) =>
+        c.provider === 'openpay' ? (
+          <MoneyValue amount={c.stripeFee} currency={c.currency} showCurrency={false} />
+        ) : (
+          <span className="text-neutral-400">—</span>
+        ),
+    },
     {
       id: 'fee',
       header: t('contributions.table.fee'),
@@ -103,7 +156,8 @@ export function ContributionsTable({
         <Tooltip
           content={t('contributions.table.feeTooltip', {
             platform: formatMoney(c.platformFee, c.currency),
-            stripe: formatMoney(c.stripeFee, c.currency),
+            processor: t(`contributions.provider.${c.provider}`),
+            processorFee: formatMoney(c.stripeFee, c.currency),
           })}
         >
           <span className="cursor-help underline decoration-neutral-300 decoration-dotted underline-offset-4">
@@ -246,15 +300,24 @@ export function ContributionsTable({
                 <DetailRow label={t('contributions.table.platformFee')}>
                   <MoneyValue amount={detail.platformFee} currency={detail.currency} />
                 </DetailRow>
-                {/* Labelled with the processor that actually charged it —
-                    the two are priced differently, so calling an Openpay fee
-                    "Stripe fee" attributes money to the wrong company. */}
-                <DetailRow
-                  label={t('contributions.table.processorFee', {
-                    processor: t(`contributions.provider.${detail.provider}`),
-                  })}
-                >
-                  <MoneyValue amount={detail.stripeFee} currency={detail.currency} />
+                {/* Both processors get a row on every record, so the reader can
+                    see which one took the money AND that the other took none —
+                    a single row labelled with whichever processor ran the charge
+                    left people unsure whether the other had been counted
+                    somewhere they could not see. */}
+                <DetailRow label={t('contributions.table.stripeFee')}>
+                  {detail.provider === 'stripe' ? (
+                    <MoneyValue amount={detail.stripeFee} currency={detail.currency} />
+                  ) : (
+                    <span className="text-neutral-400">—</span>
+                  )}
+                </DetailRow>
+                <DetailRow label={t('contributions.table.openpayFee')}>
+                  {detail.provider === 'openpay' ? (
+                    <MoneyValue amount={detail.stripeFee} currency={detail.currency} />
+                  ) : (
+                    <span className="text-neutral-400">—</span>
+                  )}
                 </DetailRow>
                 <DetailRow label={t('contributions.table.totalCharged')}>
                   <MoneyValue amount={detail.totalCharged} currency={detail.currency} emphasis="strong" />

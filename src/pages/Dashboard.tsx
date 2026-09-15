@@ -269,6 +269,21 @@ export default function Dashboard() {
           }
         />
         <KpiCard
+          label={t('dashboard.kpi.appInvites')}
+          value={
+            // Sent / accepted, guarded field by field the way cardDownloads is:
+            // a partial payload must degrade to the fallback, not take the
+            // dashboard down with it.
+            apiKpis?.appInvites
+              ? `${formatNumber(apiKpis.appInvites.total)} / ${formatNumber(apiKpis.appInvites.accepted ?? 0)}`
+              : '—'
+          }
+          secondary={t('dashboard.kpi.appInvitesSecondary')}
+          delta={apiKpis?.appInvites?.delta ?? null}
+          accent="accent"
+          definition={apiKpis?.appInvites?.definition ?? t('dashboard.kpi.appInvitesDef')}
+        />
+        <KpiCard
           label={t('dashboard.kpi.cloverRedemption')}
           {...kpi('cloverRedemptionRate', t('dashboard.kpi.cloverRedemptionDef'), formatPercent)}
           deltaUnit="pp"

@@ -42,6 +42,22 @@ export interface DownloadsKpi extends Omit<Kpi, 'value'> {
   total: number;
 }
 
+/**
+ * App invitations: sent, by how many people, and how many turned into accounts.
+ *
+ * `accepted` is the number that says whether inviting works at all — an
+ * invitation is credited when the person it was sent to registers, matched
+ * either by the code in the link they followed or by the phone number it was
+ * addressed to.
+ */
+export interface InvitesKpi extends Omit<Kpi, 'value'> {
+  value?: number;
+  unique: number;
+  total: number;
+  accepted?: number;
+  acceptanceRate?: number;
+}
+
 export interface RangeMeta {
   from: string;
   to: string;
@@ -104,6 +120,7 @@ export interface DashboardKpis {
   participationRate: Kpi;
   cardDownloads: DownloadsKpi;
   cloverRedemptionRate: Kpi;
+  appInvites?: InvitesKpi;
 }
 
 export interface TimeseriesPoint {

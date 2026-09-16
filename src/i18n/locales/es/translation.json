@@ -770,17 +770,15 @@
       "median": "Aportación mediana",
       "medianDef": "Percentil 50 de los importes confirmados: no se ve afectada por un único valor muy alto.",
       "pending": "Pendiente",
-      "pendingDef": "Suma de los importes de pagos aún en curso: verificaciones 3DS, vales OXXO y transferencias SPEI.",
+      "pendingDef": "Suma de los importes de pagos con tarjeta aún en curso, por ejemplo una verificación 3DS que el pagador no ha terminado.",
       "totalConfirmed": "Total confirmado",
       "totalConfirmedDef": "Suma de contribution.amount con estado «succeeded», en unidades menores ÷ 100.",
       "totalFees": "Comisiones cobradas",
-      "totalFeesDef": "Comisión de Regalapp + comisiones de los procesadores en las aportaciones confirmadas. Vea los tres indicadores contiguos para saber quién cobró cada parte.",
+      "totalFeesDef": "Comisión de Regalapp + comisión de Stripe en las aportaciones confirmadas. Vea los dos indicadores contiguos para saber quién cobró cada parte.",
       "platformFees": "Comisiones de Regalapp",
       "platformFeesDef": "Comisión propia de Regalapp (4.9%) en las aportaciones confirmadas. Es ingreso de la plataforma.",
       "stripeFees": "Comisiones de Stripe",
-      "stripeFeesDef": "Comisión de procesamiento de Stripe con IVA, en las aportaciones confirmadas que procesó Stripe. Se paga a Stripe: no es ingreso de la plataforma.",
-      "openpayFees": "Comisiones de Openpay",
-      "openpayFeesDef": "Comisión de procesamiento de Openpay con IVA, en las aportaciones confirmadas que procesó Openpay. Se paga a Openpay: no es ingreso de la plataforma."
+      "stripeFeesDef": "Comisión de procesamiento de Stripe con IVA, en las aportaciones confirmadas que procesó Stripe. Se paga a Stripe: no es ingreso de la plataforma."
     },
     "searchPlaceholder": "Buscar por participante, evento o PaymentIntent…",
     "subtitle": "Todos los pagos que entran en la plataforma, con el desglose de comisiones y el motivo de cada fallo.",
@@ -813,14 +811,12 @@
       "stripeFee": "Comisión de Stripe",
       "stripePaymentIntent": "PaymentIntent de Stripe",
       "totalCharged": "Total cobrado",
-      "processorFee": "Comisión de {{processor}}",
-      "openpayFee": "Comisión de Openpay"
+      "processorFee": "Comisión de {{processor}}"
     },
     "title": "Aportaciones y finanzas",
     "totalInView": "Total en esta vista: <1>{{amount}}</1> en {{count}} registros.",
     "provider": {
       "stripe": "Stripe",
-      "openpay": "Openpay",
       "wallet": "Saldo de cartera"
     }
   },
@@ -1060,8 +1056,7 @@
     "uniqueDownloaders": "Personas que descargaron",
     "uniqueDownloads": "Descargas únicas",
     "withdrawalStatus": "Estado del retiro",
-    "writtenToAudit": "Registrado en el historial de auditoría · consulte la pestaña «Registro de actividad»",
-    "openpayFees": "Comisiones de Openpay"
+    "writtenToAudit": "Registrado en el historial de auditoría · consulte la pestaña «Registro de actividad»"
   },
   "events": {
     "actionsFor": "Acciones para {{name}}",
@@ -1284,12 +1279,6 @@
     "financial": {
       "min_withdrawal": "Retiro mínimo",
       "min_withdrawalHelp": "El pago más pequeño que puede solicitar un beneficiario, en unidades mayores.",
-      "openpay_fee_fixed": "Cuota fija de Openpay",
-      "openpay_fee_fixedHelp": "Importe fijo que Openpay cobra por aportación, sin IVA, además del porcentaje.",
-      "openpay_fee_percent": "Comisión por aportación de Openpay",
-      "openpay_fee_percentHelp": "Porcentaje que Openpay retiene de cada aportación que procesa, sin IVA.",
-      "openpay_iva_percent": "IVA sobre la comisión de Openpay",
-      "openpay_iva_percentHelp": "Impuesto sobre la comisión de Openpay. Se factura a la cuenta de comercio, así que aplica sea cual sea la divisa del cargo.",
       "platform_fee": "Comisión por aportación de Regalapp",
       "platform_feeHelp": "Porcentaje que Regalapp retiene de cada aportación confirmada; se cobra además de la comisión del procesador.",
       "stripe_fee_fixed": "Cuota fija de Stripe",
@@ -1300,8 +1289,6 @@
       "stripe_iva_percentHelp": "Impuesto sobre la comisión de Stripe. Se factura a la cuenta de comercio, así que aplica sea cual sea la divisa del cargo."
     },
     "payouts": "Retiros",
-    "openpayCommission": "Comisión de Openpay",
-    "openpayCommissionHelp": "Lo que cobra Openpay por procesar una aportación con tarjeta, trasladado a costo. Es independiente de la comisión de Regalapp: un regalo que pasa por Openpay paga ambas.",
     "regalCommission": "Comisión de Regalapp",
     "regalCommissionHelp": "La comisión de servicio propia de Regalapp. Se cobra además de la comisión del procesador, no se descuenta de ella.",
     "stripeCommission": "Comisión de Stripe",
@@ -1630,8 +1617,7 @@
       "payoutId": "ID del pago",
       "requested": "Solicitado",
       "retry": "Reintentar",
-      "stripePayout": "Pago de Stripe",
-      "destination": "Destino"
+      "stripePayout": "Pago de Stripe"
     },
     "title": "Retiros y pagos"
   }

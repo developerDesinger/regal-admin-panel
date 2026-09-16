@@ -252,13 +252,9 @@ export interface EventFinancials {
   stripeFees: number;
   stripeFeesBase: number;
   stripeFeesIva: number;
-  /** Openpay's cut, and its two halves. Priced differently from Stripe's. */
-  openpayFees: number;
-  openpayFeesBase: number;
-  openpayFeesIva: number;
   /** Contributions paid from wallet balance — no processor took this. */
   walletFees: number;
-  /** Stripe + Openpay + wallet-funded. */
+  /** Stripe + wallet-funded. */
   processorFees: number;
   netToBeneficiary: number;
 }
@@ -324,24 +320,19 @@ export interface ContributionRow {
   failureReason: string | null;
   paymentMethod: string;
   /**
-   * Which processor took the money. Absent on rows written before Openpay
-   * existed — read those as `stripe`, which is what they were.
+   * Which processor took the money. Absent on older rows — read those as
+   * `stripe`, which is what they were.
    */
   provider?: PaymentProviderApi;
-  /**
-   * The processor's reference for this charge. A Stripe PaymentIntent id or an
-   * Openpay charge id, whichever applies — the backend collapses the two so
-   * nothing here has to know which field was populated.
-   */
+  /** The processor's reference for this charge — a Stripe PaymentIntent id. */
   stripePaymentIntentId: string;
-  openpayChargeId?: string | null;
   cardSlug: string | null;
   revealed: boolean;
   message: string;
   createdAt: string;
 }
 
-export type PaymentProviderApi = 'stripe' | 'openpay' | 'wallet';
+export type PaymentProviderApi = 'stripe' | 'wallet';
 
 export interface ContributionDetailApi extends ContributionRow {
   beneficiary: UserBrief;
@@ -365,27 +356,22 @@ export interface ContributionKpis {
    * Commissions, one line per company that earns them.
    *
    * Deliberately never pre-added by the API: `platformFees` is Regalapp's own
-   * revenue, while the processor lines are money that leaves for Stripe or
-   * Openpay and was never the platform's. The two processors also price
-   * differently, so they are reported apart — a single blended figure credited
-   * one company with the other's money.
+   * revenue, while the processor line is money that leaves for Stripe and was
+   * never the platform's. A single blended figure would credit one company with
+   * the other's money.
    */
   platformFees: Kpi;
   stripeFees: Kpi;
   /** Stripe's own cut and the IVA on it. Always sum to `stripeFees`. */
   stripeFeesBase: Kpi;
   stripeFeesIva: Kpi;
-  openpayFees: Kpi;
-  /** Openpay's own cut and the IVA on it. Always sum to `openpayFees`. */
-  openpayFeesBase: Kpi;
-  openpayFeesIva: Kpi;
   /**
    * Contributions paid from wallet balance: a fee was charged, but no processor
    * handled it — the card was charged earlier, at top-up. Its own line so the
    * processor buckets still reconcile to `processorFees`.
    */
   walletFees: Kpi;
-  /** Every processor bucket together — Stripe + Openpay + wallet-funded. */
+  /** Every processor bucket together — Stripe + wallet-funded. */
   processorFees: Kpi;
   /** Platform + processors. Legacy; prefer the individual lines above. */
   totalFees: Kpi;
@@ -627,8 +613,6 @@ export interface WithdrawalRow {
   /** Best-effort: payouts are per-user, not per-event. May be null. */
   eventId: null;
   eventName: null;
-  /** Bank account the payout was sent to, snapshotted at request time. */
-  destination: string | null;
   amount: number;
   currency: Currency;
   status: Exclude<WithdrawalStatusApi, 'none'>;
@@ -741,18 +725,14 @@ export interface SettingsApi {
     supported_currencies: Currency[];
     /** MAJOR units — an admin config value, not a transaction amount. */
     min_withdrawal: number;
-    // Each processor's own commission, separate from `platform_fee` because the
-    // two are charged together: a gift pays Regal's percentage PLUS whichever
-    // processor took it. `*_fee_percent` / `*_fee_fixed` are the pre-IVA base
-    // parts of the peso schedule; `*_iva_percent` is the tax on that base.
+    // Stripe's own commission, separate from `platform_fee` because the two are
+    // charged together: a gift pays Regal's percentage PLUS the processor's.
+    // `stripe_fee_percent` / `stripe_fee_fixed` are the pre-IVA base parts of
+    // the peso schedule; `stripe_iva_percent` is the tax on that base.
     stripe_fee_percent: number;
     /** MAJOR units (MXN), pre-IVA, charged once per contribution. */
     stripe_fee_fixed: number;
     stripe_iva_percent: number;
-    openpay_fee_percent: number;
-    /** MAJOR units (MXN), pre-IVA, charged once per contribution. */
-    openpay_fee_fixed: number;
-    openpay_iva_percent: number;
   };
   notifications: { digest: string; routing: Record<string, string[]> };
   branding: {

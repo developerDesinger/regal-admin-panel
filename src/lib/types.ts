@@ -91,9 +91,9 @@ export interface RegalEvent {
 /**
  * How a contribution was paid. `wallet` means it came out of an existing
  * balance — no card, no processor, and nothing that will ever appear on a
- * Stripe or Openpay statement.
+ * Stripe statement.
  */
-export type PaymentProvider = 'stripe' | 'openpay' | 'wallet';
+export type PaymentProvider = 'stripe' | 'wallet';
 
 export interface Contribution {
   id: string;
@@ -103,13 +103,12 @@ export interface Contribution {
   isGuest: boolean;
   guestName: string | null;
   guestEmail: string | null;
-  /** Stripe PaymentIntent id or Openpay charge id — see `provider`. */
+  /** Stripe PaymentIntent id. */
   stripePaymentIntentId: string;
   /**
-   * Which processor took the money, and so: whose dashboard the charge is in,
-   * whose schedule `stripeFee` follows, and which API a refund goes through.
-   * Openpay MX charges 2.9% + MX$2.50 where Stripe MX charges 3.6% + MX$3.00,
-   * so the same gift carries a different fee depending on this.
+   * How the money arrived: a Stripe card charge, or the contributor's own
+   * wallet balance. Only a `stripe` row carries a processor fee in `stripeFee`
+   * and has a charge to look up in the Stripe dashboard.
    */
   provider: PaymentProvider;
   amount: number;
@@ -193,14 +192,6 @@ export interface CloverTransaction {
 export interface Withdrawal {
   id: string;
   beneficiary: UserRef;
-  /**
-   * Where the payout landed — the bank account label snapshotted on the
-   * transaction. A withdrawal draws on the wallet, which pools every event's
-   * proceeds, so there is no event to name here: the column used to show the
-   * beneficiary's most recent event, which made new events appear to have
-   * old payouts against them.
-   */
-  destination: string | null;
   amount: number;
   currency: Currency;
   status: Exclude<WithdrawalStatus, 'none'>;

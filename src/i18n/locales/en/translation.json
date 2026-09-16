@@ -770,17 +770,15 @@
       "median": "Median Contribution",
       "medianDef": "50th percentile of confirmed contribution amounts — resistant to a single large outlier.",
       "pending": "Pending",
-      "pendingDef": "Sum of amounts for payments still processing — 3DS challenges, OXXO vouchers, SPEI transfers.",
+      "pendingDef": "Sum of amounts for card payments still processing, such as a 3DS challenge the payer has not finished.",
       "totalConfirmed": "Total Confirmed",
       "totalConfirmedDef": "Sum of contribution.amount where status = succeeded, in minor units ÷ 100.",
       "totalFees": "Total Fees Collected",
-      "totalFeesDef": "Regalapp fee + processor fees across confirmed contributions. See the three tiles beside it for who earned each part.",
+      "totalFeesDef": "Regalapp fee + Stripe fee across confirmed contributions. See the two tiles beside it for who earned each part.",
       "platformFees": "Regalapp Fees",
       "platformFeesDef": "Regalapp's own commission (4.9%) across confirmed contributions. This is platform revenue.",
       "stripeFees": "Stripe Fees",
-      "stripeFeesDef": "Stripe processing commission incl. IVA, on confirmed contributions Stripe processed. Paid to Stripe — not platform revenue.",
-      "openpayFees": "Openpay Fees",
-      "openpayFeesDef": "Openpay processing commission incl. IVA, on confirmed contributions Openpay processed. Paid to Openpay — not platform revenue."
+      "stripeFeesDef": "Stripe processing commission incl. IVA, on confirmed contributions Stripe processed. Paid to Stripe — not platform revenue."
     },
     "searchPlaceholder": "Search contributor, event, PaymentIntent…",
     "subtitle": "Every payment into the platform, with the fee split and the reason behind each failure.",
@@ -813,14 +811,12 @@
       "stripeFee": "Stripe fee",
       "stripePaymentIntent": "Stripe PaymentIntent",
       "totalCharged": "Total charged",
-      "processorFee": "{{processor}} fee",
-      "openpayFee": "Openpay fee"
+      "processorFee": "{{processor}} fee"
     },
     "title": "Contributions & Financials",
     "totalInView": "Total in view: <1>{{amount}}</1> across {{count}} records.",
     "provider": {
       "stripe": "Stripe",
-      "openpay": "Openpay",
       "wallet": "Wallet balance"
     }
   },
@@ -1060,8 +1056,7 @@
     "uniqueDownloaders": "Unique downloaders",
     "uniqueDownloads": "Unique downloads",
     "withdrawalStatus": "Withdrawal status",
-    "writtenToAudit": "Written to the audit trail · see the Activity Log tab",
-    "openpayFees": "Openpay fees"
+    "writtenToAudit": "Written to the audit trail · see the Activity Log tab"
   },
   "events": {
     "actionsFor": "Actions for {{name}}",
@@ -1284,12 +1279,6 @@
     "financial": {
       "min_withdrawal": "Minimum withdrawal",
       "min_withdrawalHelp": "Smallest payout a beneficiary can request, in major units.",
-      "openpay_fee_fixed": "Openpay fixed fee",
-      "openpay_fee_fixedHelp": "Fixed amount Openpay charges per contribution, before IVA, on top of the percentage.",
-      "openpay_fee_percent": "Openpay contribution fee",
-      "openpay_fee_percentHelp": "Percentage Openpay takes from each contribution it processes, before IVA.",
-      "openpay_iva_percent": "IVA on Openpay's fee",
-      "openpay_iva_percentHelp": "Tax charged on Openpay's fee. Billed on the merchant account, so it applies whatever currency the card was charged in.",
       "platform_fee": "Regalapp contribution fee",
       "platform_feeHelp": "Percentage Regalapp takes from each confirmed contribution, charged on top of the processor's commission.",
       "stripe_fee_fixed": "Stripe fixed fee",
@@ -1300,8 +1289,6 @@
       "stripe_iva_percentHelp": "Tax charged on Stripe's fee. Billed on the merchant account, so it applies whatever currency the card was charged in."
     },
     "payouts": "Payouts",
-    "openpayCommission": "Openpay commission",
-    "openpayCommissionHelp": "What Openpay charges to process a card contribution, passed through at cost. Separate from the Regalapp fee — a gift routed through Openpay pays both.",
     "regalCommission": "Regalapp commission",
     "regalCommissionHelp": "Regalapp's own service fee. It is charged on top of the processor's commission, not carved out of it.",
     "stripeCommission": "Stripe commission",
@@ -1630,8 +1617,7 @@
       "payoutId": "Payout ID",
       "requested": "Requested",
       "retry": "Retry",
-      "stripePayout": "Stripe payout",
-      "destination": "Destination"
+      "stripePayout": "Stripe payout"
     },
     "title": "Withdrawals & Payouts"
   }

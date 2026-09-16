@@ -48,7 +48,7 @@ export default function Withdrawals() {
         if (all.account && all.account !== 'all' && w.stripeAccountStatus !== all.account) return false;
         if (all.q) {
           const q = all.q.toLowerCase();
-          if (!`${w.beneficiary.name} ${w.destination ?? ''} ${w.stripePayoutId ?? ''}`.toLowerCase().includes(q))
+          if (!`${w.beneficiary.name} ${w.stripePayoutId ?? ''}`.toLowerCase().includes(q))
             return false;
         }
         return true;
@@ -83,18 +83,6 @@ export default function Withdrawals() {
           <Avatar name={w.beneficiary.name} color={w.beneficiary.avatarColor} size="sm" />
           <span className="truncate">{w.beneficiary.name}</span>
         </Link>
-      ),
-    },
-    {
-      // Not an event: a payout comes out of the wallet, which every event the
-      // beneficiary ran has paid into. Naming one event here attributed old
-      // payouts to whichever event was created most recently.
-      id: 'destination',
-      header: t('withdrawals.table.destination'),
-      sortable: true,
-      sortValue: (w) => w.destination ?? '',
-      cell: (w) => (
-        <span className="truncate text-muted-foreground">{w.destination ?? '—'}</span>
       ),
     },
     {

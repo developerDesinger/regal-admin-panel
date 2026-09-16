@@ -144,17 +144,12 @@ export default function EventDetail() {
   const uniqueContributors = financials?.uniqueContributors ?? 0;
   const platformFees = financials?.platformFees ?? 0;
   const stripeFees = financials?.stripeFees ?? 0;
-  const openpayFees = financials?.openpayFees ?? 0;
   /**
-   * Every processor's cut together.
-   *
-   * What the balance lines below must subtract. `stripeFees` used to be the
-   * whole processor bucket — Openpay's cut included — so subtracting it alone
-   * happened to be right. Now that the two are reported apart, subtracting only
-   * Stripe would overstate an Openpay event's available balance by Openpay's
-   * entire commission.
+   * Every processor's cut together — what the balance lines below must
+   * subtract. Wallet-funded gifts carry a fee no processor took, so this is not
+   * always the same figure as `stripeFees`.
    */
-  const processorFees = financials?.processorFees ?? stripeFees + openpayFees;
+  const processorFees = financials?.processorFees ?? stripeFees;
   const confirmedTotal = financials?.byStatus?.succeeded?.amount ?? 0;
   const medianContribution = financials?.medianContribution ?? 0;
 
@@ -418,17 +413,14 @@ export default function EventDetail() {
                       <MoneyValue amount={medianContribution} currency={event.currency} />
                     </DetailRow>
                     {/* One line per company that earned a commission on this
-                        event. Both processors always show, even at zero, so it
-                        is visible that the other one took nothing rather than
-                        being counted somewhere off-screen. */}
+                        event. Both always show, even at zero, so it is visible
+                        that nothing was taken rather than counted somewhere
+                        off-screen. */}
                     <DetailRow label={t('eventDetail.platformFees')}>
                       <MoneyValue amount={platformFees} currency={event.currency} />
                     </DetailRow>
                     <DetailRow label={t('eventDetail.stripeFees')}>
                       <MoneyValue amount={stripeFees} currency={event.currency} />
-                    </DetailRow>
-                    <DetailRow label={t('eventDetail.openpayFees')}>
-                      <MoneyValue amount={openpayFees} currency={event.currency} />
                     </DetailRow>
                     <DetailRow label={t('eventDetail.netToBeneficiary')}>
                       <MoneyValue

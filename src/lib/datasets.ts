@@ -55,19 +55,14 @@ export const contributionColumns: ExportColumn<Contribution>[] = [
   { key: 'amount', header: 'Amount', value: (c) => moneyCell(c.amount) },
   { key: 'platformFee', header: 'Regalapp fee', value: (c) => moneyCell(c.platformFee) },
   { key: 'provider', header: 'Processor', value: (c) => c.provider },
-  // Three columns rather than one, so a spreadsheet can be totalled per company
-  // without first pivoting on `provider`. Each row fills exactly one of them;
-  // the other is blank, NOT zero, because a blank sums to nothing while a
-  // column of zeroes reads as "this processor worked for free".
+  // Stripe's cut on its own line, so a spreadsheet can be totalled per company
+  // without first pivoting on `provider`. A wallet-funded row leaves it blank,
+  // NOT zero, because a blank sums to nothing while a column of zeroes reads as
+  // "Stripe worked for free".
   {
     key: 'stripeFee',
     header: 'Stripe fee',
     value: (c) => (c.provider === 'stripe' ? moneyCell(c.stripeFee) : ''),
-  },
-  {
-    key: 'openpayFee',
-    header: 'Openpay fee',
-    value: (c) => (c.provider === 'openpay' ? moneyCell(c.stripeFee) : ''),
   },
   {
     key: 'processorFee',
@@ -83,9 +78,8 @@ export const contributionColumns: ExportColumn<Contribution>[] = [
   { key: 'paymentMethod', header: 'Payment method', value: (c) => c.paymentMethod },
   {
     key: 'stripePaymentIntentId',
-    // Holds a Stripe PaymentIntent id or an Openpay charge id depending on the
-    // `provider` column; the key is unchanged so saved export presets keep
-    // working.
+    // Holds the Stripe PaymentIntent id; the header stays generic so saved
+    // export presets keep working.
     header: 'Processor reference',
     value: (c) => c.stripePaymentIntentId,
   },
@@ -159,7 +153,6 @@ export const withdrawalColumns: ExportColumn<Withdrawal>[] = [
   { key: 'beneficiaryId', header: 'Beneficiary ID', value: (w) => w.beneficiary.id },
   { key: 'beneficiaryName', header: 'Beneficiary', value: (w) => w.beneficiary.name },
   // No event column: a payout is drawn from the wallet, not from one event.
-  { key: 'destination', header: 'Destination', value: (w) => w.destination ?? '' },
   { key: 'amount', header: 'Amount', value: (w) => moneyCell(w.amount) },
   { key: 'currency', header: 'Currency', value: (w) => w.currency },
   { key: 'status', header: 'Status', value: (w) => w.status },

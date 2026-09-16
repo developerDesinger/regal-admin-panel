@@ -57,9 +57,9 @@ export default function Contributions() {
         if (all.guest === 'registered' && c.isGuest) return false;
         if (all.feePayer && all.feePayer !== 'all' && c.feePayer !== all.feePayer) return false;
         if (all.method && all.method !== 'all' && !c.paymentMethod.startsWith(all.method)) return false;
-        // `stripe` also matches rows with no provider recorded: every
-        // contribution written before Openpay existed was a Stripe charge, and
-        // excluding them would under-report exactly the history you reconcile.
+        // `stripe` also matches rows with no provider recorded: those are card
+        // charges, and excluding them would under-report exactly the history
+        // you reconcile.
         if (all.provider && all.provider !== 'all') {
           const p = c.provider ?? 'stripe';
           if (p !== all.provider) return false;
@@ -78,8 +78,6 @@ export default function Contributions() {
         }
         if (all.q) {
           const q = all.q.toLowerCase();
-          // `stripePaymentIntentId` carries the Openpay charge id too — the
-          // backend collapses both id spaces into it (see adaptContribution).
           const hay = `${c.id} ${c.stripePaymentIntentId} ${c.eventName} ${c.contributor?.name ?? ''} ${c.guestName ?? ''} ${c.guestEmail ?? ''}`.toLowerCase();
           if (!hay.includes(q)) return false;
         }
@@ -161,9 +159,8 @@ export default function Contributions() {
           onDrillDown={() => navigate('/contributions?status=failed')}
         />
         {/* One tile per company that earns a commission, never a blended
-            "fees" number: Regalapp's cut is revenue, the processor cuts are
-            money that leaves the platform, and Stripe and Openpay price
-            differently enough that summing them attributes one company's
+            "fees" number: Regalapp's cut is revenue, Stripe's is money that
+            leaves the platform, and summing them attributes one company's
             earnings to the other. */}
         <KpiCard
           label={t('contributions.kpi.platformFees')}
@@ -174,11 +171,6 @@ export default function Contributions() {
           label={t('contributions.kpi.stripeFees')}
           {...kpi('stripeFees', (v) => formatMoney(v))}
           definition={t('contributions.kpi.stripeFeesDef')}
-        />
-        <KpiCard
-          label={t('contributions.kpi.openpayFees')}
-          {...kpi('openpayFees', (v) => formatMoney(v))}
-          definition={t('contributions.kpi.openpayFeesDef')}
         />
         <KpiCard
           label={t('contributions.kpi.totalFees')}
@@ -391,7 +383,6 @@ export default function Contributions() {
             id: 'provider',
             label: t('contributions.filters.provider'),
             options: [
-              { value: 'openpay', label: t('contributions.provider.openpay') },
               { value: 'stripe', label: t('contributions.provider.stripe') },
               { value: 'wallet', label: t('contributions.provider.wallet') },
             ],
@@ -403,8 +394,6 @@ export default function Contributions() {
               { value: 'Visa', label: 'Visa' },
               { value: 'Mastercard', label: 'Mastercard' },
               { value: 'Amex', label: 'Amex' },
-              { value: 'OXXO', label: 'OXXO' },
-              { value: 'SPEI', label: 'SPEI' },
             ],
           },
         ]}

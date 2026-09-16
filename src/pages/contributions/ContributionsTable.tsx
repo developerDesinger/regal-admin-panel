@@ -94,17 +94,16 @@ export function ContributionsTable({
       cell: (c) => <MoneyValue amount={c.amount} currency={c.currency} showCurrency={false} />,
     },
     /*
-     * Three fee columns, not one.
+     * Two fee columns, not one.
      *
      * The combined "fee" column below stays (it is what most people scan and
      * what the row total reconciles against), but it can no longer be the only
-     * place a commission appears: it hid whose money each part was, and its
-     * tooltip called every processor cut "Stripe" even when Openpay took it.
+     * place a commission appears: it hid whose money each part was.
      *
      * Regalapp's own commission is on by default because it is the platform's
-     * revenue line. The two processor columns default to hidden — a given row
-     * only ever has one of them — and are one click away in the column picker
-     * for anyone reconciling a processor statement.
+     * revenue line. The Stripe column defaults to hidden — a wallet-funded row
+     * has none — and is one click away in the column picker for anyone
+     * reconciling a Stripe statement.
      */
     {
       id: 'platformFee',
@@ -123,24 +122,10 @@ export function ContributionsTable({
       sortable: true,
       defaultHidden: true,
       sortValue: (c) => (c.provider === 'stripe' ? c.stripeFee : 0),
-      // A dash, not a zero: Openpay never charged a Stripe fee on this row, and
-      // a column of zeroes reads as "Stripe processed it for free".
+      // A dash, not a zero: Stripe never touched a wallet-funded row, and a
+      // column of zeroes reads as "Stripe processed it for free".
       cell: (c) =>
         c.provider === 'stripe' ? (
-          <MoneyValue amount={c.stripeFee} currency={c.currency} showCurrency={false} />
-        ) : (
-          <span className="text-neutral-400">—</span>
-        ),
-    },
-    {
-      id: 'openpayFee',
-      header: t('contributions.table.openpayFee'),
-      numeric: true,
-      sortable: true,
-      defaultHidden: true,
-      sortValue: (c) => (c.provider === 'openpay' ? c.stripeFee : 0),
-      cell: (c) =>
-        c.provider === 'openpay' ? (
           <MoneyValue amount={c.stripeFee} currency={c.currency} showCurrency={false} />
         ) : (
           <span className="text-neutral-400">—</span>
@@ -265,9 +250,8 @@ export function ContributionsTable({
             <div className="flex items-center gap-3">
               <StatusBadge status={detail.status} />
               <Chip>{detail.paymentMethod}</Chip>
-              {/* Which processor took it — the first thing you need when
-                  looking a charge up, since the two have separate dashboards
-                  and separate refund APIs. */}
+              {/* How the money arrived — a Stripe charge, or the contributor's
+                  own wallet balance, which has no charge to look up. */}
               <Chip>
                 {hasProviderLogo(detail.provider) ? (
                   <ProviderLogo provider={detail.provider} />
@@ -300,20 +284,12 @@ export function ContributionsTable({
                 <DetailRow label={t('contributions.table.platformFee')}>
                   <MoneyValue amount={detail.platformFee} currency={detail.currency} />
                 </DetailRow>
-                {/* Both processors get a row on every record, so the reader can
-                    see which one took the money AND that the other took none —
-                    a single row labelled with whichever processor ran the charge
-                    left people unsure whether the other had been counted
-                    somewhere they could not see. */}
+                {/* Stripe's cut gets a row on every record, dashed out on a
+                    wallet-funded gift, so it is visible that no processor took
+                    anything rather than that the figure is hidden somewhere the
+                    reader cannot see. */}
                 <DetailRow label={t('contributions.table.stripeFee')}>
                   {detail.provider === 'stripe' ? (
-                    <MoneyValue amount={detail.stripeFee} currency={detail.currency} />
-                  ) : (
-                    <span className="text-neutral-400">—</span>
-                  )}
-                </DetailRow>
-                <DetailRow label={t('contributions.table.openpayFee')}>
-                  {detail.provider === 'openpay' ? (
                     <MoneyValue amount={detail.stripeFee} currency={detail.currency} />
                   ) : (
                     <span className="text-neutral-400">—</span>

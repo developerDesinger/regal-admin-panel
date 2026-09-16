@@ -47,8 +47,8 @@ function toDraft(s: SettingsApi): Draft {
   const values: Record<string, string> = {};
   for (const [k, v] of Object.entries(s.alertThresholds ?? {})) values[k] = String(v);
   for (const [k, v] of Object.entries(s.cloverRules ?? {})) values[k] = String(v);
-  // Every editable financial field, including the two processor commissions —
-  // one list so a new rate never has to be remembered in three places.
+  // Every editable financial field, including the processor commission — one
+  // list so a new rate never has to be remembered in three places.
   for (const def of FINANCIAL) {
     values[def.id] = String(
       (s.financial as Record<string, unknown> | undefined)?.[def.id] ?? '',
@@ -149,19 +149,19 @@ const CLOVER_RULES: SettingDef[] = [
 ];
 
 /**
- * The financial tab lists three commissions separately, because that is how a
- * contribution is actually charged: Regal's service fee PLUS the cut of
- * whichever processor took the money. They are not a split of one total, so
- * showing them in one undifferentiated list reads as if they were.
+ * The financial tab lists the two commissions separately, because that is how a
+ * contribution is actually charged: Regal's service fee PLUS Stripe's cut. They
+ * are not a split of one total, so showing them in one undifferentiated list
+ * reads as if they were.
  *
- * Each processor block is its own peso schedule — a percentage and a fixed
+ * The processor block is its own peso schedule — a percentage and a fixed
  * amount per charge, both pre-IVA, then the IVA billed on that base.
  */
 const REGAL_FINANCIAL: SettingDef[] = [
   { id: 'platform_fee', group: 'financial', unit: '%' },
 ];
 
-/** Not a commission — kept out of the three blocks above so it isn't read as one. */
+/** Not a commission — kept out of the blocks above so it isn't read as one. */
 const PAYOUT_FINANCIAL: SettingDef[] = [
   { id: 'min_withdrawal', group: 'financial', unit: 'MXN' },
 ];
@@ -172,16 +172,9 @@ const STRIPE_FINANCIAL: SettingDef[] = [
   { id: 'stripe_iva_percent', group: 'financial', unit: '%' },
 ];
 
-const OPENPAY_FINANCIAL: SettingDef[] = [
-  { id: 'openpay_fee_percent', group: 'financial', unit: '%' },
-  { id: 'openpay_fee_fixed', group: 'financial', unit: 'MXN' },
-  { id: 'openpay_iva_percent', group: 'financial', unit: '%' },
-];
-
 const FINANCIAL: SettingDef[] = [
   ...REGAL_FINANCIAL,
   ...STRIPE_FINANCIAL,
-  ...OPENPAY_FINANCIAL,
   ...PAYOUT_FINANCIAL,
 ];
 
@@ -355,17 +348,6 @@ export default function Settings() {
             title={t('settings.stripeCommission')}
             description={t('settings.stripeCommissionHelp')}
             settings={STRIPE_FINANCIAL}
-            values={draft.values}
-            defaults={defaults}
-            onChange={setValue}
-            disabled={readOnly}
-          />
-          <SettingsList
-            className="mt-4"
-            provider="openpay"
-            title={t('settings.openpayCommission')}
-            description={t('settings.openpayCommissionHelp')}
-            settings={OPENPAY_FINANCIAL}
             values={draft.values}
             defaults={defaults}
             onChange={setValue}
@@ -721,9 +703,9 @@ function SettingsList({
   description?: string;
   className?: string;
   /**
-   * Shows the processor's wordmark beside the title. The commission cards are
-   * per-processor and their rates differ, so the brand is the fastest way to
-   * tell which schedule you are editing.
+   * Shows the processor's wordmark beside the title. The financial tab stacks
+   * several commission cards, so the brand is the fastest way to tell whose
+   * schedule you are editing.
    */
   provider?: string;
 }) {

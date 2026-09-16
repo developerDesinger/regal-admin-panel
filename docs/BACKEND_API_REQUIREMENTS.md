@@ -567,7 +567,7 @@ All require `events:write`, a mandatory `reason`, and write an audit entry.
 | `contributorId` | user id |
 | `guest` | `guest` \| `registered` |
 | `feePayer` | `contributor` \| `beneficiary` |
-| `method` | payment method prefix, e.g. `Visa`, `OXXO`, `SPEI` |
+| `method` | card brand prefix, e.g. `Visa`, `Mastercard`, `Amex` |
 | `amount` | `0-50` `50-100` `100-250` `250-500` `500+` — **major units** (MXN), not centavos |
 | `currency` | `MXN` |
 | `q` | contribution id, Stripe PaymentIntent id, event name, contributor name, guest name/email |

@@ -22,6 +22,9 @@ import { DISPLAY_TZ } from '@/lib/format';
 export const API_ORIGIN = import.meta.env.VITE_API_BASE_URL ?? '';
 export const API_BASE_URL = `${API_ORIGIN}/api/v1/admin`;
 
+/** Routes a signed-out visitor may stay on — never bounced to the login screen. */
+const PUBLIC_PATHS = ['/login', '/privacy', '/terms', '/delete-account'];
+
 /* ------------------------------------------------------------------ csrf -- */
 
 let csrfToken = '';
@@ -204,9 +207,11 @@ http.interceptors.response.use(
     // 401 → the cookie expired or was revoked. The server clears it; we only
     // have to send the admin back to the login screen. INVALID_CREDENTIALS is
     // also a 401 but belongs inline on the form, so it must not redirect.
+    // The legal pages are public (store listings link to them), so the
+    // signed-out `/auth/me` probe must leave them where they are.
     if (
       normalized.code === 'UNAUTHENTICATED' &&
-      !window.location.pathname.startsWith('/login')
+      !PUBLIC_PATHS.some((p) => window.location.pathname.startsWith(p))
     ) {
       setCsrfToken(null);
       window.location.href = '/login?reason=session';

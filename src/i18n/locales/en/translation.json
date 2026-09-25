@@ -204,6 +204,7 @@
       "special": "A special character",
       "upper": "An uppercase letter"
     },
+    "privacyPolicy": "Privacy Policy",
     "rememberMe": "Remember me",
     "resendCode": "Resend code",
     "resendIn": "Resend code in {{seconds}}s",
@@ -227,6 +228,7 @@
     "signIn": "Sign in",
     "signInToContinue": "Sign in to continue",
     "signingIn": "Signing in…",
+    "termsAndConditions": "Terms & Conditions",
     "twoFactorSubtitle": "Enter the 6-digit code from your authenticator app.",
     "twoFactorTitle": "Two-factor authentication",
     "verify": "Verify",

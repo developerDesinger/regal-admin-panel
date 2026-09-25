@@ -277,6 +277,14 @@ export default function Login() {
           <p className="mt-6 border-t border-neutral-200 pt-4 text-center text-caption text-neutral-500">
             {t('common.restrictedAccess')}
           </p>
+          <nav className="mt-3 flex justify-center gap-4 text-caption">
+            <Link to="/privacy" className="rounded-sm text-brand-500 transition-colors hover:text-brand-600">
+              {t('auth.privacyPolicy')}
+            </Link>
+            <Link to="/terms" className="rounded-sm text-brand-500 transition-colors hover:text-brand-600">
+              {t('auth.termsAndConditions')}
+            </Link>
+          </nav>
         </div>
       </main>
     </div>

@@ -10,6 +10,7 @@ import Login from '@/pages/Login';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import ChangePassword from '@/pages/ChangePassword';
+import Legal from '@/pages/Legal';
 
 // Every authenticated route is code-split, so the login screen never downloads
 // the charting library and the dashboard's first paint stays small
@@ -57,6 +58,8 @@ export default function App() {
             <Route path="/login/forgot" element={<ForgotPassword />} />
             <Route path="/login/reset" element={<ResetPassword />} />
             <Route path="/change-password" element={<ChangePassword />} />
+            <Route path="/privacy" element={<Legal doc="privacy" />} />
+            <Route path="/terms" element={<Legal doc="terms" />} />
 
             {/* (dashboard) — shell: sidebar + topbar + filter context */}
             <Route element={<AppShell />}>

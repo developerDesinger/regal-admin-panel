@@ -204,6 +204,7 @@
       "special": "Un carácter especial",
       "upper": "Una letra mayúscula"
     },
+    "privacyPolicy": "Política de privacidad",
     "rememberMe": "Recordarme",
     "resendCode": "Reenviar código",
     "resendIn": "Reenviar código en {{seconds}} s",
@@ -227,6 +228,7 @@
     "signIn": "Iniciar sesión",
     "signInToContinue": "Inicie sesión para continuar",
     "signingIn": "Iniciando sesión…",
+    "termsAndConditions": "Términos y condiciones",
     "twoFactorSubtitle": "Introduzca el código de 6 dígitos de su aplicación de autenticación.",
     "twoFactorTitle": "Autenticación en dos pasos",
     "verify": "Verificar",

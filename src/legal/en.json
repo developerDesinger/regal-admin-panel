@@ -1,0 +1,270 @@
+{
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated: June 2026",
+    "intro": {
+      "title": "Introduction",
+      "content": "Regalapp (\"we\", \"us\", \"our\") respects your privacy and is committed to protecting your personal data. This Privacy Policy explains how we collect, use, share, and safeguard your information when you use our application and services."
+    },
+    "section1": {
+      "title": "1. Information We Collect",
+      "content": "We collect the following categories of personal data when you register for and use Regalapp:",
+      "bullets": {
+        "0": "Identity data such as your name, username, and date of birth.",
+        "1": "Contact data such as your email address and phone number.",
+        "2": "Payment data such as card details and transaction history, processed through our payment providers.",
+        "3": "Content you create, including events, collections, messages, and gift details.",
+        "4": "Technical data such as device information, app usage, and approximate location."
+      }
+    },
+    "section2": {
+      "title": "2. How We Use Your Information",
+      "content": "We use your personal data to provide and improve our services, including to:",
+      "bullets": {
+        "0": "Create and manage your account and verify your identity.",
+        "1": "Process contributions, payments, and disbursements.",
+        "2": "Send you service updates, reminders, and notifications.",
+        "3": "Detect, prevent, and address fraud, abuse, and security issues."
+      }
+    },
+    "section3": {
+      "title": "3. How We Share Information",
+      "content": "We do not sell your personal data. We share information only as necessary with:",
+      "bullets": {
+        "0": "Payment providers and financial partners to process transactions.",
+        "1": "Service providers that help us operate the app under confidentiality obligations.",
+        "2": "Authorities when required by law or to protect our rights and users."
+      }
+    },
+    "section4": {
+      "title": "4. Data Retention",
+      "content": "We retain your personal data only for as long as necessary to provide our services and to comply with legal, accounting, and reporting obligations. When data is no longer needed, we securely delete or anonymize it."
+    },
+    "section5": {
+      "title": "5. Your Rights",
+      "content": "Depending on your jurisdiction, you may have the right to:",
+      "bullets": {
+        "0": "Access the personal data we hold about you.",
+        "1": "Request correction of inaccurate or incomplete data.",
+        "2": "Request deletion of your data, subject to legal limits.",
+        "3": "Object to or restrict certain processing of your data.",
+        "4": "Withdraw consent at any time where processing relies on consent."
+      }
+    },
+    "section6": {
+      "title": "6. Data Security",
+      "content": "We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction. However, no method of transmission or storage is completely secure."
+    },
+    "section7": {
+      "title": "7. Children's Privacy",
+      "content": "Minors may only use Regalapp under the supervision and with the consent of a parent or legal guardian, who is responsible for any data provided. We do not knowingly collect data from children without such consent."
+    },
+    "section8": {
+      "title": "8. Changes to This Policy",
+      "content": "We may update this Privacy Policy from time to time. We will notify you of material changes through the app or by other means, and the \"Last updated\" date above will reflect the latest revision."
+    },
+    "contact": {
+      "title": "9. Contact Us",
+      "content": "If you have questions about this Privacy Policy or how we handle your data, you can reach us at:",
+      "email": "Email: privacy@regalapp.com",
+      "address": "Address: Regalapp Support Team"
+    }
+  },
+  "terms": {
+    "title": "Terms & Conditions",
+    "lastUpdated": "Last updated: September 2026",
+    "intro": {
+      "title": "Introduction",
+      "content": [
+        "This document establishes the terms and conditions applicable to access to, and use of the application and/or web platform known as RegalApp, as well as the services offered through it.",
+        "By creating an account, accessing, or using the Platform, you declare that you have read, understood, and accepted these Terms. If you do not agree with them, you must refrain from using the Platform."
+      ]
+    },
+    "section1": {
+      "title": "1. IDENTITY OF THE PLATFORM OPERATOR",
+      "content": "The Platform is operated by Gabriel Aguirre Fuentes, under the trade name Regalapp. Regalapp is a technology platform that facilitates the organization of monetary contributions for collective gifts and similar events. It is not a financial or credit institution, nor does it provide banking, savings, or investment services. The management and custody of funds are carried out through authorized payment service providers, including Stripe.",
+      "details": [
+        "Legal name: Gabriel Aguirre Fuentes",
+        "Trade name: Regalapp",
+        "RFC (Tax ID): AUFG7803228QA",
+        "Address: Diamantes 2906-204, Colonia Santa Cruz los Ángeles, C.P. 72400, Puebla, Pue., Mexico",
+        "Contact email: soporte@regalapp.ai",
+        "Contact phone: +52 222 662 1458"
+      ]
+    },
+    "section2": {
+      "title": "2. DEFINITIONS",
+      "intro": "For purposes of these Terms, the following definitions apply:",
+      "definitions": [
+        "User: An individual who creates an account and uses the Platform, either as a fund organizer or contributor.",
+        "Organizer: A User who creates and manages a fund or event within the Platform.",
+        "Contributor: A User who makes a monetary contribution to a fund created by an Organizer.",
+        "Beneficiary: The person for whom the gift or fund is intended.",
+        "Fund, group fund, or digital pool: A space created to organize and receive contributions for a specific purpose.",
+        "Clovers: Digital elements, points, or virtual units used for entertainment, design, animation, or graphic representation purposes. They are not electronic money and do not represent an actual monetary balance.",
+        "Payment Provider: An independent third party (Stripe) that processes payments by card, bank transfer, or other means and may receive, temporarily hold, and distribute funds.",
+        "Privacy Notice: The document regarding the processing of personal data, available at www.regalapp.net."
+      ]
+    },
+    "section3": {
+      "title": "3. PURPOSE OF THE PLATFORM",
+      "intro": "Regalapp provides a Platform that allows Users to:",
+      "features": [
+        "Create and manage digital funds for gifts or events.",
+        "Invite third parties to make contributions.",
+        "Send and receive amounts through a Payment Provider, accompanied by clovers, messages, and personalized animated cards.",
+        "Monitor the total amount contributed, applicable fees, and the net amount available for withdrawal."
+      ],
+      "outro": "The Platform does not offer investment, savings, credit, professional financial custody, or any other financial service regulated under Mexican law."
+    },
+    "section4": {
+      "title": "4. USER REGISTRATION AND CAPACITY",
+      "content1": "To use the Platform, the User must register with truthful, complete, and up-to-date information, including, where applicable, full name, email address, password, mobile phone number, and banking or account information to receive funds when acting as an Organizer. The User is responsible for maintaining the confidentiality of their credentials and for all activity carried out under their account.",
+      "minorAge": "The Platform is intended for individuals over 18 years of age who have full legal capacity to enter into contracts. Any person acting on behalf of a minor declares that they have parental authority, guardianship, or the necessary authorization and assumes responsibility for the use of the Platform.",
+      "verification": "Regalapp may request additional documentation for verification purposes, fraud prevention, requests from Payment Providers, or requests from the relevant authorities."
+    },
+    "section5": {
+      "title": "5. GENERAL OPERATION OF FUNDS",
+      "content": "The Organizer may create funds for school birthdays, collective gifts, or other purposes, specifying the name, beneficiary, suggested target amount, deadline or contribution period, and description of the purpose. The Organizer may share links or invitations generated by the Platform and is responsible for sharing them only with trusted individuals and in appropriate contexts. The Platform may display contributed amounts according to the privacy settings, the total amount collected, and an estimate of the net amount to be received after fees and taxes."
+    },
+    "section6": {
+      "title": "6. CONTRIBUTIONS, FEES, AND CURRENCY",
+      "intro1": "At this time, the Platform operates exclusively in Mexican pesos (MXN). The availability of other currencies will require an update to these Terms.",
+      "fee": "A Regalapp service fee of 4.9% of the contribution amount applies to each contribution, with no additional VAT.",
+      "feeProcessing": "The fee charged by the Payment Provider, in this case Stripe, will also apply. The User will be informed of the total amount before confirming the contribution.",
+      "feeOption": "The Contributor may choose to cover the fee by paying an additional amount so that the Beneficiary receives the full amount, or may request that the fee be deducted from the gift, paying a rounded amount and resulting in the Beneficiary receiving a lower amount. Before confirmation, the total amount to be paid by the Contributor, the estimated amount to be received by the Beneficiary or Organizer, and the applicable fees and taxes will be clearly displayed."
+    },
+    "section7": {
+      "title": "7. PAYMENT PROVIDERS AND FLOW OF FUNDS",
+      "content": "Payments and contributions are processed through Stripe, an independent third party that receives payments, applies its processing fees, and distributes the corresponding funds to the Organizer, Beneficiary, and Regalapp. Regalapp is not a credit institution, financial technology institution, popular financial company, or similar entity. It does not accept deposits from the public, offer savings or investment services, or provide regulated financial custody services. Regalapp and/or the Payment Provider may request information, delay, block, or cancel transactions and temporarily hold funds in the event of indications of fraud, misuse, chargebacks, or requests from authorities."
+    },
+    "section8": {
+      "title": "8. CLOVERS AND DIGITAL CONTENT",
+      "content": "Clovers, points, animations, stickers, and other digital elements graphically and playfully represent contributions or participation. They are not cash, legal tender, electronic money, or a right to demand payment of any amount of money. Their use is exclusively decorative and functional within the Platform’s digital experience, and they have no economic value outside the Platform."
+    },
+    "section9": {
+      "title": "9. CANCELLATIONS, REFUNDS, AND CHARGEBACKS",
+      "content": "Once a contribution has been made and the payment has been processed, the transaction is considered final. Regalapp is not obligated to issue refunds, except in the event of an error attributable to Regalapp or its systems, or by express agreement between the Organizer and the Contributor. In the event of duplicate charges or incorrect amounts, the User must notify Regalapp as soon as possible. If the error is confirmed, the adjustment or refund will be managed with the Payment Provider. In the event of a chargeback, the Payment Provider may deduct the amount and associated charges from pending funds. Regalapp may hold or deduct such amounts from future funds or contributions of the Organizer or Contributor involved."
+    },
+    "section10": {
+      "title": "10. DELIVERY OF FUNDS",
+      "content": "The Organizer may request delivery of the funds collected in accordance with the group’s rules and the registered payment method or bank account, less Regalapp fees and the fees, charges, and taxes of the Payment Provider. Regalapp and/or Stripe may temporarily hold funds due to suspicions of fraud, chargebacks, or requests from the competent authorities."
+    },
+    "section11": {
+      "title": "11. USER OBLIGATIONS AND RESPONSIBILITIES",
+      "intro": "The User must:",
+      "obligations": [
+        "Use the Platform lawfully and in accordance with these Terms.",
+        "Not use the Platform for illegal, fraudulent, or otherwise unlawful activities.",
+        "Provide truthful and up-to-date information.",
+        "Maintain the confidentiality of their credentials.",
+        "Respect the privacy and image rights of third parties, especially children and adolescents."
+      ]
+    },
+    "section12": {
+      "title": "12. PROHIBITED CONTENT AND PROTECTION OF MINORS",
+      "intro": "It is prohibited to:",
+      "prohibited": [
+        "Publish or share defamatory, violent, discriminatory, obscene, sexual, or illegal content, or content that encourages criminal activity.",
+        "Share sensitive personal data of third parties without their consent.",
+        "Make threats, or engage in harassment or bullying.",
+        "Upload or share photographs or videos of minors. Only graphic elements, avatars, cards, and animations provided by the Platform may be used."
+      ],
+      "moderation": "Regalapp may review, remove, or block content that violates these Terms or the law, as well as suspend or terminate accounts that repeatedly fail to comply."
+    },
+    "section13": {
+      "title": "13. INTELLECTUAL PROPERTY",
+      "content": "The Platform, its design, code, logos, trademarks, graphics, texts, animations, cards, Clovers, and other elements are owned by Regalapp or are used under the corresponding licenses. Use of the Platform does not grant the User any intellectual property rights. Regalapp grants a limited, non-exclusive, revocable, and non-transferable license to use the Platform solely for the purposes described herein. The User declares that they have the necessary rights over any texts, messages, and other content they submit and grants Regalapp a non-exclusive, worldwide, royalty-free license, for the maximum period permitted by law, to use such content solely for the operation and promotion of the Platform."
+    },
+    "section14": {
+      "title": "14. PERSONAL DATA AND PRIVACY NOTICE",
+      "content": "Regalapp may collect and process personal data such as name, email address, telephone number, digital identifiers, and payment information, which will be processed primarily by the Payment Provider. The processing of personal data will be governed by the Privacy Notice available at www.regalapp.net. By using the Platform, the User declares that they have read and accepted it. Regalapp will limit the collection of personal data from minors to the maximum extent possible. Accounts created on behalf of minors must be managed by parents or legal guardians."
+    },
+    "section15": {
+      "title": "15. LIMITATION OF LIABILITY",
+      "intro": "To the maximum extent permitted by applicable law:",
+      "limitations": [
+        "Regalapp does not guarantee the continuous and uninterrupted availability of the Platform.",
+        "Regalapp shall not be liable for failures by the Payment Providers.",
+        "Regalapp shall not be liable for technical problems involving the User’s devices or connections.",
+        "Regalapp shall not be liable for indirect, incidental, special, or consequential damages, nor for Users’ decisions regarding the money received, nor for the relationship between Organizers, Contributors, and Beneficiaries."
+      ]
+    },
+    "section16": {
+      "title": "16. MODIFICATIONS TO THE PLATFORM AND TERMS",
+      "content": "Regalapp may update the Platform or modify these Terms at any time. The updated version will be published on the Platform and may be notified through reasonable electronic means. Continued use of the Platform constitutes acceptance of the changes."
+    },
+    "section17": {
+      "title": "17. TERM, TERMINATION, AND ACCOUNT CLOSURE",
+      "content": "These Terms will remain in effect while the User maintains an active account or uses the Platform. The User may request closure of their account provided that there are no pending funds, disputes, chargebacks, claims, or fraud investigations. Regalapp may suspend or terminate accounts due to violations of these Terms, suspected fraud or illegal activities, or a request from a competent authority."
+    },
+    "section18": {
+      "title": "18. GOVERNING LAW AND JURISDICTION",
+      "content": "These Terms are governed by the federal laws of the United Mexican States and, where applicable, the laws of the State of Puebla. The parties submit to the jurisdiction of the competent courts of the city of Puebla, Puebla, waiving any other jurisdiction that may correspond to them."
+    },
+    "section19": {
+      "title": "19. CONTACT",
+      "intro": "For questions, comments, or clarifications:",
+      "contact": [
+        "Email: soporte@regalapp.ai",
+        "Phone: +52 222 662 1458",
+        "Website: www.regalapp.net"
+      ]
+    },
+    "fees": {
+      "title": "REGALAPP FEES",
+      "q1": "1. Who pays the fee?",
+      "a1Intro": "At Regalapp, you decide. When making your contribution, you can choose between:",
+      "a1Option1Title": "1. I cover the fee",
+      "a1Option1": [
+        "You pay an additional amount.",
+        "The beneficiary receives the full amount you chose, for example, $200.00 MXN."
+      ],
+      "a1Option2Title": "2. Deduct it from the gift",
+      "a1Option2": [
+        "You pay a round amount, for example, $200.00 MXN.",
+        "Regalapp's fee and the payment processing fee are deducted from the amount intended for the gift, so the beneficiary receives a smaller amount."
+      ],
+      "a1Closing": "Before confirmation, the amount you will pay, the applicable fees, and the final amount the Beneficiary will receive will be displayed.",
+      "q2": "2. Practical example: if I want to gift $200.00 MXN, how does it work?",
+      "a2Intro": "The calculation depends on the option you choose. The applicable rates are:",
+      "a2Rates": [
+        "Regalapp service fee: 4.9% of the contribution amount, with no additional VAT.",
+        "Stripe fee: 3.6% + $3.00 MXN per transaction + 16% VAT on this fee."
+      ],
+      "a2CoverTitle": "If you decide to cover the fee yourself:",
+      "a2Cover": [
+        "You pay approximately: $223.79 MXN.",
+        "The beneficiary receives: $200.00 MXN.",
+        "Regalapp fee: approximately $10.97 MXN.",
+        "Stripe fee plus VAT: approximately $12.83 MXN."
+      ],
+      "a2DeductTitle": "If you decide to have it deducted from the gift:",
+      "a2Deduct": [
+        "You pay: $200.00 MXN.",
+        "Regalapp fee: $9.80 MXN.",
+        "Stripe fee plus VAT: $11.83 MXN.",
+        "Total fees deducted: $21.63 MXN.",
+        "The beneficiary receives approximately: $178.37 MXN."
+      ],
+      "a2Disclaimer": "The figures above are illustrative examples and may vary if Regalapp's or Stripe's rates change. The final breakdown will be shown before confirming each payment.",
+      "q3": "3. Why does Regalapp charge a fee?",
+      "a3Intro": "The fee helps Regalapp to:",
+      "a3List": [
+        "Maintain and update the application.",
+        "Process and manage contributions.",
+        "Provide security and support.",
+        "Offer new features such as designs, cards, and videos."
+      ],
+      "a3Gateways": "Separately, the payment gateway may charge its own fees for processing transactions.",
+      "a3DetailIntro": "A breakdown will be displayed before confirmation, showing:",
+      "a3Details": [
+        "The amount paid.",
+        "The Regalapp fee.",
+        "The Stripe fee.",
+        "The applicable VAT.",
+        "The final amount the Beneficiary or Organizer receives."
+      ]
+    }
+  }
+}

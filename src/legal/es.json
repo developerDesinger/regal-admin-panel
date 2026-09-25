@@ -1,0 +1,270 @@
+{
+  "privacy": {
+    "title": "Política de privacidad",
+    "lastUpdated": "Última actualización: junio de 2026",
+    "intro": {
+      "title": "Introducción",
+      "content": "Regalapp (\"nosotros\", \"nuestro\") respeta tu privacidad y se compromete a proteger tus datos personales. Esta Política de privacidad explica cómo recopilamos, usamos, compartimos y protegemos tu información cuando utilizas nuestra aplicación y servicios."
+    },
+    "section1": {
+      "title": "1. Información que recopilamos",
+      "content": "Recopilamos las siguientes categorías de datos personales cuando te registras y usas Regalapp:",
+      "bullets": {
+        "0": "Datos de identidad como tu nombre, nombre de usuario y fecha de nacimiento.",
+        "1": "Datos de contacto como tu correo electrónico y número de teléfono.",
+        "2": "Datos de pago como detalles de tarjeta e historial de transacciones, procesados a través de nuestros proveedores de pago.",
+        "3": "Contenido que creas, incluidos eventos, colecciones, mensajes y detalles de regalos.",
+        "4": "Datos técnicos como información del dispositivo, uso de la app y ubicación aproximada."
+      }
+    },
+    "section2": {
+      "title": "2. Cómo usamos tu información",
+      "content": "Usamos tus datos personales para brindar y mejorar nuestros servicios, incluyendo:",
+      "bullets": {
+        "0": "Crear y gestionar tu cuenta y verificar tu identidad.",
+        "1": "Procesar contribuciones, pagos y desembolsos.",
+        "2": "Enviarte actualizaciones del servicio, recordatorios y notificaciones.",
+        "3": "Detectar, prevenir y abordar fraudes, abusos y problemas de seguridad."
+      }
+    },
+    "section3": {
+      "title": "3. Cómo compartimos la información",
+      "content": "No vendemos tus datos personales. Solo compartimos información cuando es necesario con:",
+      "bullets": {
+        "0": "Proveedores de pago y socios financieros para procesar transacciones.",
+        "1": "Proveedores de servicios que nos ayudan a operar la app bajo obligaciones de confidencialidad.",
+        "2": "Autoridades cuando lo exija la ley o para proteger nuestros derechos y a los usuarios."
+      }
+    },
+    "section4": {
+      "title": "4. Conservación de datos",
+      "content": "Conservamos tus datos personales solo durante el tiempo necesario para prestar nuestros servicios y cumplir con obligaciones legales, contables y de información. Cuando los datos ya no son necesarios, los eliminamos o anonimizamos de forma segura."
+    },
+    "section5": {
+      "title": "5. Tus derechos",
+      "content": "Según tu jurisdicción, puedes tener derecho a:",
+      "bullets": {
+        "0": "Acceder a los datos personales que tenemos sobre ti.",
+        "1": "Solicitar la corrección de datos inexactos o incompletos.",
+        "2": "Solicitar la eliminación de tus datos, sujeto a límites legales.",
+        "3": "Oponerte o restringir cierto tratamiento de tus datos.",
+        "4": "Retirar tu consentimiento en cualquier momento cuando el tratamiento se base en él."
+      }
+    },
+    "section6": {
+      "title": "6. Seguridad de los datos",
+      "content": "Implementamos medidas técnicas y organizativas adecuadas para proteger tus datos personales contra el acceso, la alteración, la divulgación o la destrucción no autorizados. Sin embargo, ningún método de transmisión o almacenamiento es completamente seguro."
+    },
+    "section7": {
+      "title": "7. Privacidad de los menores",
+      "content": "Los menores solo pueden usar Regalapp bajo la supervisión y con el consentimiento de un padre, madre o tutor legal, quien es responsable de los datos proporcionados. No recopilamos conscientemente datos de menores sin dicho consentimiento."
+    },
+    "section8": {
+      "title": "8. Cambios en esta política",
+      "content": "Podemos actualizar esta Política de privacidad periódicamente. Te notificaremos los cambios importantes a través de la app o por otros medios, y la fecha de \"Última actualización\" anterior reflejará la revisión más reciente."
+    },
+    "contact": {
+      "title": "9. Contáctanos",
+      "content": "Si tienes preguntas sobre esta Política de privacidad o sobre cómo manejamos tus datos, puedes contactarnos en:",
+      "email": "Correo: privacy@regalapp.com",
+      "address": "Dirección: Equipo de soporte de Regalapp"
+    }
+  },
+  "terms": {
+    "title": "Términos y Condiciones",
+    "lastUpdated": "Última actualización: septiembre de 2026",
+    "intro": {
+      "title": "Introducción",
+      "content": [
+        "El presente documento establece los términos y condiciones de uso aplicables al acceso y utilización de la aplicación y/o plataforma web denominada RegalApp, así como a los servicios ofrecidos a través de esta.",
+        "Al crear una cuenta, acceder o utilizar la Plataforma, usted declara que ha leído, entendido y aceptado estos Términos. Si no está de acuerdo con ellos, deberá abstenerse de utilizar la Plataforma."
+      ]
+    },
+    "section1": {
+      "title": "1. IDENTIDAD DEL RESPONSABLE DE LA PLATAFORMA",
+      "content": "La Plataforma es operada por Gabriel Aguirre Fuentes, bajo el nombre comercial Regalapp. Regalapp es una plataforma tecnológica que facilita la organización de aportaciones económicas para regalos colectivos y eventos similares. No es una institución financiera ni de crédito, ni presta servicios de banca, ahorro o inversión. El manejo y custodia de los recursos se realiza mediante proveedores de servicios de pago autorizados, incluyendo Stripe.",
+      "details": [
+        "Nombre legal: Gabriel Aguirre Fuentes",
+        "Nombre comercial: Regalapp",
+        "RFC: AUFG7803228QA",
+        "Domicilio: Diamantes 2906-204, Colonia Santa Cruz los Ángeles, C.P. 72400, Puebla, Pue., México",
+        "Correo de contacto: soporte@regalapp.ai",
+        "Teléfono de contacto: +52 222 662 1458"
+      ]
+    },
+    "section2": {
+      "title": "2. DEFINICIONES",
+      "intro": "Para efectos de estos Términos, aplican las siguientes definiciones:",
+      "definitions": [
+        "Usuario: Persona física que crea una cuenta y utiliza la Plataforma, como organizador de un fondo o aportante.",
+        "Organizador: Usuario que crea y administra un fondo o evento dentro de la Plataforma.",
+        "Aportante: Usuario que realiza una aportación de dinero a un fondo creado por un Organizador.",
+        "Beneficiario: Persona a quien va destinado el regalo o fondo.",
+        "Fondo, vaquita o tanda digital: Espacio creado para organizar y recibir aportaciones con un fin específico.",
+        "Tréboles: Elementos digitales, puntos o unidades virtuales utilizados con fines lúdicos, de diseño, animación o representación gráfica. No son dinero electrónico ni representan saldo monetario real.",
+        "Proveedor de Pago: Tercero independiente (Stripe) que procesa pagos con tarjeta, transferencias u otros medios y puede recibir, retener temporalmente y dispersar fondos.",
+        "Aviso de Privacidad: Documento sobre el tratamiento de datos personales disponible en www.regalapp.net."
+      ]
+    },
+    "section3": {
+      "title": "3. OBJETO DE LA PLATAFORMA",
+      "intro": "Regalapp pone a disposición una Plataforma que permite a los Usuarios:",
+      "features": [
+        "Crear y administrar fondos digitales para regalos o eventos.",
+        "Invitar a terceros a realizar aportaciones.",
+        "Enviar y recibir montos por medio de un Proveedor de Pago, acompañados de tréboles, mensajes y tarjetas animadas personalizadas.",
+        "Llevar un control del total aportado, las comisiones aplicables y el monto neto disponible para retiro."
+      ],
+      "outro": "La Plataforma no ofrece servicios de inversión, ahorro, crédito, custodia financiera profesional ni otro servicio financiero regulado por la legislación mexicana."
+    },
+    "section4": {
+      "title": "4. REGISTRO DE USUARIOS Y CAPACIDAD",
+      "content1": "Para utilizar la Plataforma, el Usuario deberá registrarse con información veraz, completa y actualizada, incluyendo, en su caso, nombre completo, correo electrónico, contraseña, teléfono móvil y datos bancarios o de cuenta para recibir fondos cuando sea Organizador. El Usuario es responsable de mantener confidenciales sus credenciales y de toda actividad realizada bajo su cuenta.",
+      "minorAge": "La Plataforma está dirigida a mayores de 18 años con plena capacidad legal para contratar. Quien actúe en representación de un menor declara contar con patria potestad, tutela o autorización necesaria y asume la responsabilidad por el uso de la Plataforma.",
+      "verification": "Regalapp podrá solicitar documentación adicional para verificaciones, prevención de fraude, solicitudes de los Proveedores de Pago o de autoridades correspondientes."
+    },
+    "section5": {
+      "title": "5. FUNCIONAMIENTO GENERAL DE LOS FONDOS",
+      "content": "El Organizador podrá crear fondos para cumpleaños escolares, regalos colectivos u otros fines, indicando nombre, beneficiario, monto objetivo sugerido, fecha límite o periodo de aportaciones y descripción del propósito. El Organizador podrá compartir enlaces o invitaciones generados por la Plataforma y es responsable de compartirlos únicamente con personas de confianza y en contextos adecuados. La Plataforma podrá mostrar importes aportados según la configuración de privacidad, el total reunido y una estimación del monto neto a recibir después de comisiones e impuestos."
+    },
+    "section6": {
+      "title": "6. APORTACIONES, COMISIONES Y MONEDA",
+      "intro1": "Por el momento, la Plataforma opera únicamente en pesos mexicanos (MXN). La habilitación de otras monedas requerirá la actualización de estos Términos.",
+      "fee": "Por cada aportación se aplica una comisión de servicio Regalapp de 4.9% sobre el monto de la aportación, sin IVA adicional.",
+      "feeProcessing": "Adicionalmente se aplica la comisión cobrada por el Proveedor de Pago, en este caso Stripe. El Usuario conocerá el monto total antes de confirmar su aportación.",
+      "feeOption": "El Aportante puede elegir cubrir la comisión, pagando un monto adicional para que el Beneficiario reciba la cantidad completa, o solicitar que se descuente del regalo, pagando una cantidad redonda y recibiendo el Beneficiario una cantidad menor. Antes de confirmar, se mostrará de forma clara el monto total que pagará el Aportante, el monto estimado que recibirá el Beneficiario u Organizador y las comisiones e impuestos aplicables."
+    },
+    "section7": {
+      "title": "7. PROVEEDORES DE PAGO Y FLUJO DE RECURSOS",
+      "content": "Los pagos y aportaciones se procesan mediante Stripe, un tercero independiente que recibe pagos, aplica sus comisiones de procesamiento y dispersa los fondos correspondientes al Organizador, Beneficiario y Regalapp. Regalapp no es institución de crédito, institución de tecnología financiera, sociedad financiera popular ni similar. No toma depósitos del público, no ofrece ahorro o inversión y no presta servicios de custodia financiera regulada. Regalapp y/o el Proveedor de Pago podrá solicitar información, retrasar, bloquear o cancelar transacciones y retener temporalmente recursos ante indicios de fraude, uso indebido, contracargos o requerimientos de autoridad."
+    },
+    "section8": {
+      "title": "8. TRÉBOLES Y CONTENIDOS DIGITALES",
+      "content": "Los tréboles, puntos, animaciones, stickers y otros elementos digitales representan de manera gráfica y lúdica las aportaciones o participación. No son efectivo, moneda de curso legal, dinero electrónico ni un derecho a exigir una cantidad de dinero. Su uso es exclusivamente decorativo y funcional dentro de la experiencia digital de la Plataforma y no tienen valor económico fuera de ella."
+    },
+    "section9": {
+      "title": "9. CANCELACIONES, REEMBOLSOS Y CONTRACARGOS",
+      "content": "Una vez realizada una aportación y procesado el pago, la operación se considera definitiva. Regalapp no está obligada a realizar reembolsos, excepto por un error atribuible a Regalapp o sus sistemas, o por acuerdo expreso entre Organizador y Aportante. Ante cargos duplicados o montos incorrectos, el Usuario deberá notificarlo a Regalapp a la brevedad. Si se confirma el error, se gestionará el ajuste o reembolso con el Proveedor de Pago. En caso de contracargo, el Proveedor de Pago podrá descontar el importe y cargos asociados de fondos pendientes. Regalapp podrá retener o descontar tales montos de futuros fondos o aportaciones del Organizador o Aportante involucrado."
+    },
+    "section10": {
+      "title": "10. ENTREGA DE FONDOS",
+      "content": "El Organizador podrá solicitar la entrega del dinero recaudado conforme a las reglas del grupo y al método de pago o cuenta bancaria registrada, menos comisiones Regalapp, comisiones, cargos e impuestos del Proveedor de Pago. Regalapp y/o Stripe podrán retener temporalmente fondos por sospechas de fraude, contracargos o requerimientos de autoridades competentes."
+    },
+    "section11": {
+      "title": "11. OBLIGACIONES Y RESPONSABILIDADES DEL USUARIO",
+      "intro": "El Usuario se obliga a:",
+      "obligations": [
+        "Utilizar la Plataforma de forma lícita y conforme a estos Términos.",
+        "No utilizar la Plataforma para actividades ilícitas, fraudulentas o contrarias a la normativa aplicable.",
+        "Proporcionar información veraz y actualizada.",
+        "Mantener la confidencialidad de sus credenciales.",
+        "Respetar la privacidad y la imagen de terceros, especialmente de niños, niñas y adolescentes."
+      ]
+    },
+    "section12": {
+      "title": "12. CONTENIDO PROHIBIDO Y PROTECCIÓN DE MENORES",
+      "intro": "Está prohibido:",
+      "prohibited": [
+        "Publicar o compartir contenido difamatorio, violento, discriminatorio, obsceno, sexual, ilegal o que fomente delitos.",
+        "Compartir datos personales sensibles de terceros sin su consentimiento.",
+        "Realizar amenazas, acoso o bullying.",
+        "Cargar o compartir fotos o videos de menores de edad. Solo podrán utilizarse elementos gráficos, avatares, tarjetas y animaciones proporcionados por la Plataforma."
+      ],
+      "moderation": "Regalapp podrá revisar, eliminar o bloquear contenido que infrinja estos Términos o la ley, así como suspender o cancelar cuentas que incumplan reiteradamente."
+    },
+    "section13": {
+      "title": "13. PROPIEDAD INTELECTUAL",
+      "content": "La Plataforma, diseño, código, logotipos, marcas, gráficos, textos, animaciones, tarjetas, tréboles y demás elementos son propiedad de Regalapp o se utilizan con las licencias correspondientes. El uso de la Plataforma no otorga derechos de propiedad intelectual al Usuario. Regalapp otorga una licencia limitada, no exclusiva, revocable y no transferible para utilizar la Plataforma únicamente para los fines descritos. El Usuario declara tener los derechos necesarios sobre textos, mensajes y demás contenido que introduzca y concede a Regalapp una licencia no exclusiva, mundial, gratuita y por el plazo máximo permitido para usarlo únicamente en la operación y promoción de la Plataforma."
+    },
+    "section14": {
+      "title": "14. DATOS PERSONALES Y AVISO DE PRIVACIDAD",
+      "content": "Regalapp podrá recopilar y tratar datos personales como nombre, correo electrónico, teléfono, identificadores digitales y datos de pago, tratados principalmente por el Proveedor de Pago. El tratamiento se regirá por el Aviso de Privacidad disponible en www.regalapp.net. Al utilizar la Plataforma, el Usuario declara haberlo leído y aceptado. Regalapp limitará al máximo la recolección de datos personales de menores. Las cuentas en nombre de menores deberán ser administradas por padres, madres o tutores."
+    },
+    "section15": {
+      "title": "15. LIMITACIÓN DE RESPONSABILIDAD",
+      "intro": "En la medida máxima permitida por la legislación aplicable:",
+      "limitations": [
+        "Regalapp no garantiza la disponibilidad continua e ininterrumpida de la Plataforma.",
+        "Regalapp no será responsable por fallas de los Proveedores de Pago.",
+        "Regalapp no será responsable por problemas técnicos de dispositivos o conexiones del Usuario.",
+        "Regalapp no será responsable por daños indirectos, incidentales, especiales o consecuenciales, ni por decisiones de los Usuarios sobre el dinero recibido, ni por la relación entre Organizadores, Aportantes y Beneficiarios."
+      ]
+    },
+    "section16": {
+      "title": "16. MODIFICACIONES A LA PLATAFORMA Y A LOS TÉRMINOS",
+      "content": "Regalapp podrá actualizar la Plataforma o modificar estos Términos en cualquier momento. La versión actualizada se publicará en la Plataforma y podrá notificarse por medios electrónicos razonables. El uso continuado implica aceptación de los cambios."
+    },
+    "section17": {
+      "title": "17. VIGENCIA, TERMINACIÓN Y CIERRE DE CUENTA",
+      "content": "Los Términos estarán vigentes mientras el Usuario mantenga una cuenta activa o utilice la Plataforma. El Usuario podrá solicitar el cierre de su cuenta siempre que no existan fondos pendientes, aclaraciones, contracargos, reclamaciones o investigaciones de fraude. Regalapp podrá suspender o cancelar cuentas por incumplimiento de estos Términos, sospecha de fraude o actividades ilícitas, o requerimiento de autoridad competente."
+    },
+    "section18": {
+      "title": "18. LEGISLACIÓN APLICABLE Y JURISDICCIÓN",
+      "content": "Estos Términos se rigen por las leyes federales de los Estados Unidos Mexicanos y, en lo aplicable, las leyes del estado de Puebla. Las partes se someten a los tribunales competentes de la ciudad de Puebla, Puebla, renunciando a cualquier otro fuero que pudiera corresponderles."
+    },
+    "section19": {
+      "title": "19. CONTACTO",
+      "intro": "Para dudas, comentarios o aclaraciones:",
+      "contact": [
+        "Correo: soporte@regalapp.ai",
+        "Teléfono: +52 222 662 1458",
+        "Sitio web: www.regalapp.net"
+      ]
+    },
+    "fees": {
+      "title": "COMISIONES REGALAPP",
+      "q1": "1. ¿Quién paga la comisión?",
+      "a1Intro": "En Regalapp tú decides. Al realizar tu aportación puedes elegir entre:",
+      "a1Option1Title": "1. Yo cubro la comisión",
+      "a1Option1": [
+        "Pagas un monto adicional.",
+        "El beneficiario recibe el monto completo que elegiste, por ejemplo, $200.00 MXN."
+      ],
+      "a1Option2Title": "2. Que se descuente del regalo",
+      "a1Option2": [
+        "Pagas una cantidad redonda, por ejemplo, $200.00 MXN.",
+        "La comisión de Regalapp y la comisión de procesamiento del pago se descuentan del monto destinado al regalo, por lo que el beneficiario recibirá una cantidad menor."
+      ],
+      "a1Closing": "Antes de confirmar se mostrará cuánto pagas, las comisiones aplicables y el monto final que recibirá el beneficiario.",
+      "q2": "2. Ejemplo práctico: si quiero regalar $200.00 MXN, ¿cómo funciona?",
+      "a2Intro": "El cálculo depende de la opción que elijas. Las tarifas aplicables son:",
+      "a2Rates": [
+        "Comisión de servicio Regalapp: 4.9% sobre el monto de la aportación, sin IVA adicional.",
+        "Comisión de Stripe: 3.6% + $3.00 MXN por transacción + IVA del 16% sobre esta comisión."
+      ],
+      "a2CoverTitle": "Si decides cubrir tú la comisión:",
+      "a2Cover": [
+        "Tú pagas aproximadamente: $223.79 MXN.",
+        "El beneficiario recibe: $200.00 MXN.",
+        "Comisión Regalapp: aproximadamente $10.97 MXN.",
+        "Comisión Stripe más IVA: aproximadamente $12.83 MXN."
+      ],
+      "a2DeductTitle": "Si decides que se descuente del regalo:",
+      "a2Deduct": [
+        "Tú pagas: $200.00 MXN.",
+        "Comisión Regalapp: $9.80 MXN.",
+        "Comisión Stripe más IVA: $11.83 MXN.",
+        "Total de comisiones descontadas: $21.63 MXN.",
+        "El beneficiario recibe aproximadamente: $178.37 MXN."
+      ],
+      "a2Disclaimer": "Los importes anteriores son ejemplos ilustrativos y pueden variar si las tarifas de Regalapp o Stripe se modifican. El desglose final se mostrará antes de confirmar cada pago.",
+      "q3": "3. ¿Por qué Regalapp cobra una comisión?",
+      "a3Intro": "La comisión ayuda a Regalapp a:",
+      "a3List": [
+        "Mantener y actualizar la aplicación.",
+        "Procesar y administrar las aportaciones.",
+        "Ofrecer seguridad y soporte.",
+        "Ofrecer nuevas funciones como diseños, tarjetas y videos."
+      ],
+      "a3Gateways": "De forma separada, la pasarela de pago puede cobrar sus propias comisiones por procesar las transacciones.",
+      "a3DetailIntro": "Antes de confirmar se mostrará el detalle de:",
+      "a3Details": [
+        "Lo que pagas.",
+        "La comisión de Regalapp.",
+        "La comisión de Stripe.",
+        "El IVA aplicable.",
+        "El monto final que recibe el beneficiario u organizador."
+      ]
+    }
+  }
+}

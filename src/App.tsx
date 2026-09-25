@@ -60,6 +60,7 @@ export default function App() {
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/privacy" element={<Legal doc="privacy" />} />
             <Route path="/terms" element={<Legal doc="terms" />} />
+            <Route path="/delete-account" element={<Legal doc="deleteAccount" />} />
 
             {/* (dashboard) — shell: sidebar + topbar + filter context */}
             <Route element={<AppShell />}>

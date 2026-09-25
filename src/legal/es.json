@@ -266,5 +266,39 @@
         "El monto final que recibe el beneficiario u organizador."
       ]
     }
+  },
+  "deleteAccount": {
+    "title": "Eliminar tu cuenta de Regalapp",
+    "lastUpdated": "Cómo eliminar tu cuenta y los datos asociados a ella.",
+    "inApp": {
+      "title": "1. Elimina tu cuenta desde la app",
+      "content": "La forma más rápida es desde la propia app de Regalapp:",
+      "bullets": {
+        "0": "Abre Regalapp e inicia sesión.",
+        "1": "Ve a Perfil y toca «Eliminar cuenta».",
+        "2": "Revisa el resumen, escribe ELIMINAR para confirmar y toca «Eliminar mi cuenta»."
+      },
+      "note": "La eliminación es inmediata y no se puede deshacer."
+    },
+    "byEmail": {
+      "title": "2. Solicita la eliminación por correo",
+      "content": "Si ya no puedes acceder a la app, escribe a soporte@regalapp.ai desde el correo registrado en tu cuenta, con el asunto «Eliminar mi cuenta». Verificaremos la solicitud y eliminaremos tu cuenta en un plazo de 30 días."
+    },
+    "deleted": {
+      "title": "3. Qué se elimina",
+      "content": "Tu perfil, cartera, datos bancarios, contactos, tréboles y notificaciones se eliminarán, y los eventos que creaste se cerrarán. Tu correo, nombre, teléfono, foto, contraseña y el inicio de sesión vinculado con Google/Apple se borran de forma permanente."
+    },
+    "kept": {
+      "title": "4. Qué se conserva",
+      "content": "Los regalos que ya enviaste permanecen en el historial de quien los recibió, mostrados como «Usuario eliminado», para que sus registros y el historial de pagos sigan siendo correctos. Los registros de transacciones también pueden conservarse cuando la ley nos obliga a guardarlos con fines contables, fiscales o de prevención de fraude."
+    },
+    "before": {
+      "title": "5. Antes de eliminar",
+      "content": "No se puede eliminar una cuenta mientras:",
+      "bullets": {
+        "0": "Todavía tienes dinero en tu cartera. Retira tu saldo antes de eliminar tu cuenta.",
+        "1": "Tienes un pago en proceso. Por favor espera a que termine antes de eliminar tu cuenta."
+      }
+    }
   }
 }

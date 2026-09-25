@@ -171,6 +171,7 @@
     },
     "codeGroup": "Código de verificación de 6 dígitos",
     "codeRejected": "No se aceptó ese código.",
+    "deleteAccount": "Eliminar cuenta",
     "devCode": "Código de desarrollo: <0>{{code}}</0>: solo se muestra fuera de producción.",
     "digit": "Dígito {{n}}",
     "email": "Correo electrónico",

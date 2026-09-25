@@ -7,17 +7,19 @@ import en from '@/legal/en.json';
 import es from '@/legal/es.json';
 
 /**
- * Public Privacy Policy and Terms & Conditions.
+ * Public Privacy Policy, Terms & Conditions and account-deletion instructions.
  *
  * The text is the mobile app's own (`privacyPolicy` / `termsAndConditions` in
  * RegalMobileApp/src/locales), copied into `src/legal` so the store listings
  * can link to a public URL that says exactly what the app says. Update both
- * together.
+ * together. `deleteAccount` is written here, from the app's `deleteAccount`
+ * strings and the backend's account-deletion.service — it is the web page
+ * Google Play requires for deletion requests.
  *
  * Unauthenticated and outside the shell, like the login screens.
  */
 
-type Doc = 'privacy' | 'terms';
+type Doc = 'privacy' | 'terms' | 'deleteAccount';
 type Lang = 'en' | 'es';
 type Node = string | string[] | { [key: string]: Node };
 
@@ -159,6 +161,9 @@ export default function Legal({ doc }: { doc: Doc }) {
           </Link>
           <Link to="/terms" className="text-brand-500 hover:text-brand-600">
             {t('auth.termsAndConditions')}
+          </Link>
+          <Link to="/delete-account" className="text-brand-500 hover:text-brand-600">
+            {t('auth.deleteAccount')}
           </Link>
         </nav>
       </main>

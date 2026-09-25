@@ -266,5 +266,39 @@
         "The final amount the Beneficiary or Organizer receives."
       ]
     }
+  },
+  "deleteAccount": {
+    "title": "Delete your Regalapp account",
+    "lastUpdated": "How to delete your account and the data associated with it.",
+    "inApp": {
+      "title": "1. Delete your account in the app",
+      "content": "The fastest way is from the Regalapp app itself:",
+      "bullets": {
+        "0": "Open Regalapp and sign in.",
+        "1": "Go to Profile and tap “Delete account”.",
+        "2": "Review the summary, type DELETE to confirm, and tap “Delete my account”."
+      },
+      "note": "Deletion happens immediately and cannot be undone."
+    },
+    "byEmail": {
+      "title": "2. Request deletion by email",
+      "content": "If you can no longer access the app, email soporte@regalapp.ai from the email address registered to your account, with the subject “Delete my account”. We will verify the request and delete your account within 30 days."
+    },
+    "deleted": {
+      "title": "3. What is deleted",
+      "content": "Your profile, wallet, bank details, contacts, clovers and notifications will be deleted, and the events you created will be closed. Your email, name, phone number, photo, password and linked Google/Apple sign-in are permanently erased."
+    },
+    "kept": {
+      "title": "4. What is kept",
+      "content": "Gifts you already sent stay in the recipient’s history, shown as “Deleted user”, so their records and the payment trail remain correct. Transaction records may also be retained where the law requires us to keep them for accounting, tax or anti-fraud purposes."
+    },
+    "before": {
+      "title": "5. Before you delete",
+      "content": "An account cannot be deleted while:",
+      "bullets": {
+        "0": "You still have money in your wallet. Withdraw your balance before deleting your account.",
+        "1": "You have a payment still being processed. Please wait for it to finish before deleting your account."
+      }
+    }
   }
 }

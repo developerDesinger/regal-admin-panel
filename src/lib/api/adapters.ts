@@ -54,8 +54,19 @@ export function avatarColorFor(id: string): string {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
 
+function countryName(code: string): string {
+  try {
+    return new Intl.DisplayNames(undefined, { type: 'region' }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
+
 export function toUserRef(u: UserBrief, email = ''): UserRef {
-  return { id: u.id, name: u.name, email, avatarColor: avatarColorFor(u.id) };
+  const location = [u.city, u.country ? countryName(u.country) : null]
+    .filter(Boolean)
+    .join(', ');
+  return { id: u.id, name: u.name, email, avatarColor: avatarColorFor(u.id), location };
 }
 
 /**

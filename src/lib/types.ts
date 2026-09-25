@@ -50,6 +50,8 @@ export interface UserRef {
   name: string;
   email: string;
   avatarColor: string;
+  /** "City, Country" — empty when the user never set a location. */
+  location?: string;
 }
 
 /** `Collection` → Event */

@@ -22,6 +22,9 @@ export interface UserBrief {
   id: string;
   name: string;
   avatarUrl: string | null;
+  /** Self-declared; null when the user never set it. `country` is ISO alpha-2. */
+  city?: string | null;
+  country?: string | null;
 }
 
 /** KPI cards. `delta` is null when `previous` is 0 — render "—", never Infinity%. */

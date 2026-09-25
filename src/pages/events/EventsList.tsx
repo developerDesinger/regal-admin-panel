@@ -106,7 +106,14 @@ export default function EventsList() {
           className="flex items-center gap-2 rounded-sm transition-colors hover:text-brand-500"
         >
           <Avatar name={e.organizer.name} color={e.organizer.avatarColor} size="sm" />
-          <span className="truncate">{e.organizer.name}</span>
+          <span className="min-w-0">
+            <span className="block truncate">{e.organizer.name}</span>
+            {e.organizer.location && (
+              <span className="block truncate text-caption text-neutral-500">
+                {e.organizer.location}
+              </span>
+            )}
+          </span>
         </Link>
       ),
     },

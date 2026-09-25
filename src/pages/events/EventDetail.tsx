@@ -192,6 +192,9 @@ export default function EventDetail() {
             >
               <Avatar name={event.organizer.name} color={event.organizer.avatarColor} size="xs" />
               {event.organizer.name}
+              {event.organizer.location && (
+                <span className="text-neutral-400">· {event.organizer.location}</span>
+              )}
             </Link>
             <span className="text-neutral-400">
               {formatDate(event.createdAt)} → {formatDate(event.endDate)}
@@ -858,7 +861,14 @@ function ParticipantsTable({ participants }: { participants: Participant[] }) {
           className="flex items-center gap-2 rounded-sm transition-colors hover:text-brand-500"
         >
           <Avatar name={p.user.name} color={p.user.avatarColor} size="sm" />
-          <span className="truncate">{p.user.name}</span>
+          <span className="min-w-0">
+            <span className="block truncate">{p.user.name}</span>
+            {p.user.location && (
+              <span className="block truncate text-caption text-neutral-500">
+                {p.user.location}
+              </span>
+            )}
+          </span>
         </Link>
       ),
     },

@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 
 import { useUsers, useUserKpis, useUserLocations } from '@/hooks/data';
-import { countryName } from '@/lib/api/adapters';
+import { canonicalCountry, countryFlag as flag, countryName } from '@/lib/api/adapters';
 import type { UserLocations } from '@/lib/api/types';
 import { useAdminMutations } from '@/hooks/data/mutations';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -30,11 +30,40 @@ import { formatDate, formatMoney, formatNumber, formatPercent, formatRelative, m
 import type { RegalUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-/** 🇲🇽 from "MX" — regional-indicator letters; falls back to nothing for bad codes. */
-function flag(code: string) {
-  return /^[A-Z]{2}$/.test(code)
-    ? String.fromCodePoint(...[...code].map((c) => 0x1f1a5 + c.charCodeAt(0)))
-    : '';
+/**
+ * The breakdown as people read it: a retired code folded into its current
+ * country (DD into DE), and cities merged regardless of case, since "Puebla"
+ * and "puebla" are free text for the same place. A merged city is shown in its
+ * most common spelling.
+ */
+function normalizeLocations(data: UserLocations): UserLocations {
+  const byCountry = new Map<string, { users: number; cities: Map<string, Map<string, number>> }>();
+  for (const c of data.countries) {
+    const code = canonicalCountry(c.country);
+    const entry = byCountry.get(code) ?? { users: 0, cities: new Map() };
+    entry.users += c.users;
+    for (const { city, users } of c.cities) {
+      const key = city.trim().toLocaleLowerCase();
+      const spellings = entry.cities.get(key) ?? new Map<string, number>();
+      spellings.set(city.trim(), (spellings.get(city.trim()) ?? 0) + users);
+      entry.cities.set(key, spellings);
+    }
+    byCountry.set(code, entry);
+  }
+  const countries = [...byCountry.entries()]
+    .map(([country, e]) => ({
+      country,
+      users: e.users,
+      percent: data.located > 0 ? Math.round((e.users / data.located) * 1000) / 10 : 0,
+      cities: [...e.cities.values()]
+        .map((spellings) => {
+          const ranked = [...spellings.entries()].sort((a, b) => b[1] - a[1]);
+          return { city: ranked[0][0], users: ranked.reduce((n, [, u]) => n + u, 0) };
+        })
+        .sort((a, b) => b.users - a.users),
+    }))
+    .sort((a, b) => b.users - a.users);
+  return { ...data, countries };
 }
 
 const PROVIDER_ICON: Record<string, string> = { local: '✉️', google: 'G', apple: '' };
@@ -52,7 +81,11 @@ export default function UsersList() {
   const [pending, setPending] = React.useState<RegalUser | null>(null);
   const { data: kpis } = useUserKpis({ range: all.range ?? '30d', compare: all.compare === '1' });
   // Same filters as the table, so the breakdown and the list always agree.
-  const { data: locations, isLoading: locationsLoading } = useUserLocations({ ...all, cities: 5 });
+  const { data: rawLocations, isLoading: locationsLoading } = useUserLocations({ ...all, cities: 10 });
+  const locations = React.useMemo(
+    () => (rawLocations ? normalizeLocations(rawLocations) : undefined),
+    [rawLocations],
+  );
   const kpi = (key: keyof NonNullable<typeof kpis>, fmt: (v: number) => string) => {
     const v = kpis?.[key];
     return {
@@ -76,7 +109,9 @@ export default function UsersList() {
         if (all.clovers === 'has' && u.cloverBalance === 0) return false;
         if (all.clovers === 'none' && u.cloverBalance > 0) return false;
         if (all.country === 'none' && u.country) return false;
-        if (all.country && all.country !== 'none' && u.country !== all.country) return false;
+        if (all.country && all.country !== 'none' && canonicalCountry(u.country ?? '') !== canonicalCountry(all.country)) {
+          return false;
+        }
         if (all.city && !(u.city ?? '').toLowerCase().includes(all.city.toLowerCase())) return false;
         if (all.q) {
           const q = all.q.toLowerCase();
@@ -620,7 +655,7 @@ function LocationBreakdown({
                   </div>
                   {c.cities.length > 0 && (
                     <p className="mt-1 truncate pl-[11.75rem] text-caption text-neutral-500">
-                      {c.cities.map((city) => `${city.city} (${formatNumber(city.users)})`).join(' · ')}
+                      {c.cities.slice(0, 5).map((city) => `${city.city} (${formatNumber(city.users)})`).join(' · ')}
                     </p>
                   )}
                 </button>

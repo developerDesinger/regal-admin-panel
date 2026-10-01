@@ -54,9 +54,33 @@ export function avatarColorFor(id: string): string {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
 
+/**
+ * Retired ISO codes the mobile app's country picker used to offer alongside the
+ * current one (DD East Germany next to DE, SU next to RU, …). Accounts that
+ * picked them still carry the old code, so it is mapped here for display.
+ */
+const LEGACY_COUNTRY: Record<string, string> = {
+  AN: 'CW', BU: 'MM', CS: 'RS', DD: 'DE', DY: 'BJ', FX: 'FR', HV: 'BF', NH: 'VU',
+  RH: 'ZW', SU: 'RU', TP: 'TL', UK: 'GB', VD: 'VN', YD: 'YE', YU: 'RS', ZR: 'CD',
+};
+
+/** Upper-cased, with a retired code replaced by the country's current one. */
+export function canonicalCountry(code: string): string {
+  const upper = code.trim().toUpperCase();
+  return LEGACY_COUNTRY[upper] ?? upper;
+}
+
+/** 🇲🇽 from "MX" — regional-indicator letters; empty for anything that isn't a code. */
+export function countryFlag(code: string): string {
+  const c = canonicalCountry(code);
+  return /^[A-Z]{2}$/.test(c)
+    ? String.fromCodePoint(...[...c].map((ch) => 0x1f1a5 + ch.charCodeAt(0)))
+    : '';
+}
+
 export function countryName(code: string): string {
   try {
-    return new Intl.DisplayNames(undefined, { type: 'region' }).of(code) ?? code;
+    return new Intl.DisplayNames(undefined, { type: 'region' }).of(canonicalCountry(code)) ?? code;
   } catch {
     return code;
   }

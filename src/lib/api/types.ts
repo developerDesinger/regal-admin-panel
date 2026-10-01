@@ -412,6 +412,23 @@ export interface UserRow {
   invitationConversionPercent: number;
   totalContributed: number;
   currency: Currency;
+  /** Self-declared on the app's profile; null when never set. `country` is ISO alpha-2. */
+  country?: string | null;
+  city?: string | null;
+}
+
+/** GET /users/locations — users per self-declared country, top cities nested. */
+export interface UserLocations {
+  countries: {
+    country: string;
+    users: number;
+    /** Share of the users who declared a country, not of all users. */
+    percent: number;
+    cities: { city: string; users: number }[];
+  }[];
+  located: number;
+  unset: number;
+  totalUsers: number;
 }
 
 export interface UserDetailApi extends UserRow {

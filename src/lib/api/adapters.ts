@@ -54,7 +54,7 @@ export function avatarColorFor(id: string): string {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
 
-function countryName(code: string): string {
+export function countryName(code: string): string {
   try {
     return new Intl.DisplayNames(undefined, { type: 'region' }).of(code) ?? code;
   } catch {
@@ -168,6 +168,8 @@ export function adaptUser(u: UserRow): RegalUser {
     invitationsReceived: u.invitationsReceived,
     totalContributed: u.totalContributed,
     medianDecisionTimeHours: 0,
+    country: u.country ? u.country.toUpperCase() : null,
+    city: u.city?.trim() || null,
   };
 }
 

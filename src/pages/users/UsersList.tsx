@@ -1,7 +1,7 @@
 import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Eye, EyeOff, Lock, UserMinus, UserPlus } from 'lucide-react';
+import { Download, Eye, EyeOff, Lock, MapPin, UserMinus, UserPlus } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { KpiCard, KpiGrid } from '@/components/common/KpiCard';
 import { DataTable, type Column } from '@/components/common/DataTable';
@@ -15,7 +15,9 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 
-import { useUsers, useUserKpis } from '@/hooks/data';
+import { useUsers, useUserKpis, useUserLocations } from '@/hooks/data';
+import { countryName } from '@/lib/api/adapters';
+import type { UserLocations } from '@/lib/api/types';
 import { useAdminMutations } from '@/hooks/data/mutations';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { ApiError } from '@/lib/api/client';
@@ -26,13 +28,21 @@ import { downloadDataset } from '@/lib/export';
 import { useUrlState } from '@/hooks/useUrlState';
 import { formatDate, formatMoney, formatNumber, formatPercent, formatRelative, maskEmail } from '@/lib/format';
 import type { RegalUser } from '@/lib/types';
+import { cn } from '@/lib/utils';
+
+/** 🇲🇽 from "MX" — regional-indicator letters; falls back to nothing for bad codes. */
+function flag(code: string) {
+  return /^[A-Z]{2}$/.test(code)
+    ? String.fromCodePoint(...[...code].map((c) => 0x1f1a5 + c.charCodeAt(0)))
+    : '';
+}
 
 const PROVIDER_ICON: Record<string, string> = { local: '✉️', google: 'G', apple: '' };
 
 /** Screen 06 — Users (§06). */
 export default function UsersList() {
   const { t } = useTranslation();
-  const { all } = useUrlState();
+  const { all, set } = useUrlState();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { can, piiUnmasked, togglePii } = useAuth();
@@ -41,6 +51,8 @@ export default function UsersList() {
   /** The row whose suspend/reactivate is awaiting confirmation. */
   const [pending, setPending] = React.useState<RegalUser | null>(null);
   const { data: kpis } = useUserKpis({ range: all.range ?? '30d', compare: all.compare === '1' });
+  // Same filters as the table, so the breakdown and the list always agree.
+  const { data: locations, isLoading: locationsLoading } = useUserLocations({ ...all, cities: 5 });
   const kpi = (key: keyof NonNullable<typeof kpis>, fmt: (v: number) => string) => {
     const v = kpis?.[key];
     return {
@@ -63,6 +75,9 @@ export default function UsersList() {
         if (all.activity === 'organized' && u.eventsOrganized === 0) return false;
         if (all.clovers === 'has' && u.cloverBalance === 0) return false;
         if (all.clovers === 'none' && u.cloverBalance > 0) return false;
+        if (all.country === 'none' && u.country) return false;
+        if (all.country && all.country !== 'none' && u.country !== all.country) return false;
+        if (all.city && !(u.city ?? '').toLowerCase().includes(all.city.toLowerCase())) return false;
         if (all.q) {
           const q = all.q.toLowerCase();
           if (!`${u.firstName} ${u.lastName} ${u.email} ${u.id}`.toLowerCase().includes(q)) return false;
@@ -92,6 +107,24 @@ export default function UsersList() {
           </div>
         </div>
       ),
+    },
+    {
+      id: 'location',
+      header: t('users.table.location'),
+      sortable: true,
+      sortValue: (u) => `${u.country ?? '~'} ${u.city ?? ''}`,
+      cell: (u) =>
+        u.country ? (
+          <div className="min-w-0">
+            <p className="truncate text-neutral-900">
+              <span aria-hidden className="mr-1">{flag(u.country)}</span>
+              {countryName(u.country)}
+            </p>
+            {u.city && <p className="truncate text-caption text-neutral-500">{u.city}</p>}
+          </div>
+        ) : (
+          <span className="text-neutral-400">{t('users.location.notSet')}</span>
+        ),
     },
     {
       id: 'registered',
@@ -333,10 +366,33 @@ export default function UsersList() {
         </p>
       )}
 
+      <LocationBreakdown
+        data={locations}
+        loading={locationsLoading}
+        active={all.country}
+        onSelect={(country) => set({ country: all.country === country ? null : country, city: null })}
+      />
+
       <FilterBar
         className="mb-4"
         searchPlaceholder={t('users.searchPlaceholder')}
         filters={[
+          {
+            id: 'country',
+            label: t('users.filters.country'),
+            options: [
+              ...(locations?.countries ?? []).map((c) => ({
+                value: c.country,
+                label: `${flag(c.country)} ${countryName(c.country)}`,
+              })),
+              // Keep a country picked from the URL selectable even when it has
+              // fallen out of the breakdown's top list.
+              ...(all.country && all.country !== 'none' && !locations?.countries.some((c) => c.country === all.country)
+                ? [{ value: all.country, label: `${flag(all.country)} ${countryName(all.country)}` }]
+                : []),
+              { value: 'none', label: t('users.location.notSet') },
+            ],
+          },
           {
             id: 'verified',
             label: t('users.filters.verified'),
@@ -467,5 +523,112 @@ export default function UsersList() {
         />
       )}
     </>
+  );
+}
+
+/**
+ * Users per self-declared country, with each country's top cities (§06).
+ *
+ * Shares are of the users who set a country; the ones who never did are shown
+ * as their own line rather than folded in, so a split covering 12 of 400
+ * accounts doesn't read like one covering all 400. Clicking a country filters
+ * the table below to it.
+ */
+function LocationBreakdown({
+  data,
+  loading,
+  active,
+  onSelect,
+}: {
+  data: UserLocations | undefined;
+  loading: boolean;
+  active: string | undefined;
+  onSelect: (country: string) => void;
+}) {
+  const { t } = useTranslation();
+  const max = Math.max(1, ...(data?.countries ?? []).map((c) => c.users));
+
+  return (
+    <section className="mb-6 rounded-lg border border-neutral-200 bg-neutral-0 p-5 shadow-e1">
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+        <div>
+          <h2 className="flex items-center gap-2 text-card-title text-neutral-900">
+            <MapPin className="h-4 w-4 text-brand-500" aria-hidden />
+            {t('users.location.title')}
+          </h2>
+          <p className="mt-0.5 text-caption text-neutral-500">
+            {data
+              ? t('users.location.subtitle', {
+                  located: formatNumber(data.located),
+                  total: formatNumber(data.totalUsers),
+                })
+              : t('users.location.subtitleLoading')}
+          </p>
+        </div>
+        {data && data.unset > 0 && (
+          <button
+            type="button"
+            onClick={() => onSelect('none')}
+            className={cn(
+              'rounded-sm text-caption font-medium transition-colors',
+              active === 'none' ? 'text-brand-600' : 'text-neutral-500 hover:text-brand-600',
+            )}
+          >
+            {t('users.location.unset', { count: data.unset })}
+          </button>
+        )}
+      </div>
+
+      {loading && !data ? (
+        <div className="space-y-3" aria-busy>
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-10 animate-pulse rounded-md bg-neutral-100" />
+          ))}
+        </div>
+      ) : !data || data.countries.length === 0 ? (
+        <p className="py-6 text-center text-body text-neutral-500">{t('users.location.empty')}</p>
+      ) : (
+        <ul className="space-y-1">
+          {data.countries.map((c) => {
+            const selected = active === c.country;
+            return (
+              <li key={c.country}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(c.country)}
+                  aria-pressed={selected}
+                  className={cn(
+                    'w-full rounded-md px-3 py-2 text-left transition-colors',
+                    selected ? 'bg-brand-500/10' : 'hover:bg-neutral-50',
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-44 shrink-0 truncate font-medium text-neutral-900">
+                      <span aria-hidden className="mr-1.5">{flag(c.country)}</span>
+                      {countryName(c.country)}
+                    </span>
+                    <span className="h-2 flex-1 overflow-hidden rounded-full bg-neutral-100">
+                      <span
+                        className="block h-full rounded-full bg-brand-500"
+                        style={{ width: `${(c.users / max) * 100}%` }}
+                      />
+                    </span>
+                    <span className="tnum w-24 shrink-0 text-right text-body text-neutral-900">
+                      {formatNumber(c.users)}
+                      <span className="ml-1.5 text-caption text-neutral-500">{formatPercent(c.percent, 1)}</span>
+                    </span>
+                  </div>
+                  {c.cities.length > 0 && (
+                    <p className="mt-1 truncate pl-[11.75rem] text-caption text-neutral-500">
+                      {c.cities.map((city) => `${city.city} (${formatNumber(city.users)})`).join(' · ')}
+                    </p>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

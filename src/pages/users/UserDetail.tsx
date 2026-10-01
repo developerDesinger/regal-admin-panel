@@ -1,7 +1,8 @@
 import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { KeyRound, ShieldAlert, UserMinus, UserPlus } from 'lucide-react';
+import { KeyRound, MapPin, ShieldAlert, UserMinus, UserPlus } from 'lucide-react';
+import { countryName } from '@/lib/api/adapters';
 import { PageHeader, SectionHeading } from '@/components/common/PageHeader';
 import { DataTable, type Column } from '@/components/common/DataTable';
 import { StatusBadge, Chip } from '@/components/common/StatusBadge';
@@ -105,6 +106,12 @@ export default function UserDetail() {
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <span>{piiUnmasked ? user.email : maskEmail(user.email)}</span>
             <span className="text-neutral-400">{piiUnmasked ? user.phoneNumber : maskPhone(user.phoneNumber)}</span>
+            <span className="flex items-center gap-1 text-neutral-500" title={t('userDetail.location')}>
+              <MapPin className="h-3.5 w-3.5 text-neutral-400" aria-hidden />
+              {user.country
+                ? [user.city, countryName(user.country)].filter(Boolean).join(', ')
+                : t('users.location.notSet')}
+            </span>
             <CopyableId value={user.id} label={t('userDetail.userId')} />
             <StatusBadge
               status={user.isDeleted ? 'deleted' : !user.isActive ? 'inactive' : user.isVerified ? 'active' : 'unverified'}

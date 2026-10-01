@@ -58,6 +58,7 @@ import type {
   UserCardRow,
   UserDetailApi,
   UserKpis,
+  UserLocations,
   UserRow,
   WithdrawalKpis,
   WithdrawalRow,
@@ -178,6 +179,7 @@ export const contributionsService = {
 export const usersService = {
   list: (p: Params) => apiGet<UserRow[], PageMeta>('/users', cleanParams(p)),
   kpis: (p: Params) => apiGet<UserKpis, AggregateMeta>('/users/kpis', cleanParams(p)),
+  locations: (p: Params) => apiGet<UserLocations>('/users/locations', cleanParams(p)).then((r) => r.data),
   detail: (id: string, unmask = false) =>
     apiGet<UserDetailApi>(`/users/${id}`, unmask ? { unmask: true } : undefined).then((r) => r.data),
   events: (id: string, p: Params = {}) =>

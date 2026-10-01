@@ -1447,6 +1447,7 @@
     "earned": "Earned",
     "free": "Free",
     "joined": "Joined {{date}} · last login {{lastLogin}}",
+    "location": "Location",
     "metrics": {
       "avgContribution": "Average Contribution",
       "avgContributionDef": "Mean per confirmed contribution.",
@@ -1509,6 +1510,7 @@
     "filters": {
       "activity": "Activity",
       "clovers": "Clovers",
+      "country": "Country",
       "deleted": "Deleted",
       "emailPassword": "Email / password",
       "hasBalance": "Has balance",
@@ -1533,6 +1535,14 @@
       "totalDef": "All registered accounts, excluding hard-deleted records.",
       "withClovers": "Users with Clover Balance",
       "withCloversDef": "Users whose current clover balance is greater than zero."
+    },
+    "location": {
+      "title": "Users by location",
+      "subtitle": "{{located}} of {{total}} users have set their country and city in the app. Click a country to filter the list.",
+      "subtitleLoading": "Self-declared country and city",
+      "unset": "{{count}} without a location",
+      "empty": "No user has set a country yet.",
+      "notSet": "Not set"
     },
     "maskPii": "Mask PII",
     "piiMasked": "PII masked",
@@ -1565,6 +1575,7 @@
       "emptyBody": "Clear a filter or search by email to widen the result set.",
       "invitations": "Invitations",
       "lastLogin": "Last login",
+      "location": "Location",
       "organized": "Organized",
       "registered": "Registered",
       "suspended": "Suspended",

@@ -1447,6 +1447,7 @@
     "earned": "Ganados",
     "free": "Gratis",
     "joined": "Se unió el {{date}} · último acceso {{lastLogin}}",
+    "location": "Ubicación",
     "metrics": {
       "avgContribution": "Aportación media",
       "avgContributionDef": "Media por aportación confirmada.",
@@ -1509,6 +1510,7 @@
     "filters": {
       "activity": "Actividad",
       "clovers": "Tréboles",
+      "country": "País",
       "deleted": "Eliminado",
       "emailPassword": "Correo y contraseña",
       "hasBalance": "Con saldo",
@@ -1533,6 +1535,14 @@
       "totalDef": "Todas las cuentas registradas, sin contar los registros eliminados definitivamente.",
       "withClovers": "Usuarios con tréboles",
       "withCloversDef": "Usuarios cuyo saldo actual de tréboles es mayor que cero."
+    },
+    "location": {
+      "title": "Usuarios por ubicación",
+      "subtitle": "{{located}} de {{total}} usuarios registraron su país y ciudad en la app. Haz clic en un país para filtrar la lista.",
+      "subtitleLoading": "País y ciudad declarados por el usuario",
+      "unset": "{{count}} sin ubicación",
+      "empty": "Ningún usuario ha registrado un país todavía.",
+      "notSet": "Sin definir"
     },
     "maskPii": "Ocultar datos personales",
     "piiMasked": "Datos personales ocultos",
@@ -1565,6 +1575,7 @@
       "emptyBody": "Quite un filtro o busque por correo electrónico para ampliar los resultados.",
       "invitations": "Invitaciones",
       "lastLogin": "Último acceso",
+      "location": "Ubicación",
       "organized": "Organizados",
       "registered": "Registrado",
       "suspended": "Suspendido",

@@ -406,6 +406,8 @@ export const useContributionKpis = (p: Params) =>
 export const useContributionCharts = (p: Params) =>
   useAggregate(['contribution-charts', p], () => contributionsService.charts(p));
 export const useUserKpis = (p: Params) => useAggregate(['user-kpis', p], () => usersService.kpis(p));
+export const useUserLocations = (p: Params) =>
+  useQuery({ queryKey: ['user-locations', p], queryFn: () => usersService.locations(p) });
 export const useCardKpis = (p: Params) =>
   useAggregate(['card-kpis', p], () => cardAnalyticsService.kpis(p));
 export const useCardTimeseries = (p: Params) =>

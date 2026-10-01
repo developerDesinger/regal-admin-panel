@@ -149,6 +149,9 @@ export interface RegalUser {
   invitationsReceived: number;
   totalContributed: number; // minor units
   medianDecisionTimeHours: number;
+  /** Self-declared, ISO alpha-2; null when never set. */
+  country: string | null;
+  city: string | null;
 }
 
 export interface GiftCardDesign {

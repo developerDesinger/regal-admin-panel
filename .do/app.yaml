@@ -6,6 +6,14 @@
 # and proxies /api, which is what `vercel.json` does on Vercel.
 name: regal-admin-panel
 region: nyc
+# The custom domain, and NOT optional here: `doctl apps update --spec` replaces
+# the whole live spec, so a file without this block silently detaches
+# admin.regalapp.net on the next apply. That domain serves the universal-link
+# association files Apple and Google fetch, so losing it breaks every
+# invitation link in the app, not just the panel's address.
+domains:
+  - domain: admin.regalapp.net
+    type: PRIMARY
 features:
   - buildpack-stack=ubuntu-22
 ingress:
@@ -50,3 +58,11 @@ services:
       - key: VITE_ENV
         scope: BUILD_TIME
         value: production
+      # Where the iPhone button on /download sends people. A TestFlight beta
+      # link for now; swap it for the App Store URL once the app is published
+      # and the page relabels itself (`server.js` reads the host to decide).
+      # Left unset the button hides itself and the page says "coming soon", so
+      # an empty value is safe rather than a dead link.
+      - key: IOS_STORE_URL
+        scope: RUN_TIME
+        value: https://testflight.apple.com/join/StsVaRWQ

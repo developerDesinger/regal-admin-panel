@@ -214,6 +214,9 @@ function invitePage(code) {
   <a id="store" class="btn primary" href="#" data-es="Descargar Regal" data-en="Get Regal"></a>
   <a id="open" class="btn secondary" href="${appUrl}" data-es="Ya tengo la app" data-en="I already have the app"></a>
   <div id="soon" class="note" hidden data-es="Regal estará disponible pronto en App Store." data-en="Regal is coming soon to the App Store."></div>
+  <div id="beta" class="note" hidden
+       data-es="Necesitas la app TestFlight de Apple para instalar la beta; el enlace te guía paso a paso."
+       data-en="You'll need Apple's TestFlight app to install the beta — the link walks you through it."></div>
 </main>
 <script>
   var lang = (navigator.language || 'es').toLowerCase().indexOf('en') === 0 ? 'en' : 'es';
@@ -225,7 +228,21 @@ function invitePage(code) {
   var iosUrl = ${JSON.stringify(IOS_STORE_URL)};
   var store = document.getElementById('store');
   if (ios) {
-    if (iosUrl) store.href = iosUrl; else { store.hidden = true; document.getElementById('soon').hidden = false; }
+    if (iosUrl) {
+      store.href = iosUrl;
+      // A TestFlight link is not the App Store: it installs a beta through
+      // Apple's own TestFlight app, which the person may not have. A button
+      // reading "Get Regal" drops them on a screen they did not expect, so the
+      // beta says it is a beta. Detected from the URL rather than a second
+      // flag, so swapping in the App Store link later restores the original
+      // wording on its own.
+      if (iosUrl.indexOf('testflight.apple.com') !== -1) {
+        store.textContent = lang === 'en'
+          ? 'Get the beta (TestFlight)'
+          : 'Descargar la beta (TestFlight)';
+        document.getElementById('beta').hidden = false;
+      }
+    } else { store.hidden = true; document.getElementById('soon').hidden = false; }
   } else if (android) {
     store.href = ${JSON.stringify(playUrl)};
   } else {

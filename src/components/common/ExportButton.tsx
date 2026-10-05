@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import * as React from 'react';
-import { Download, FileJson, FileSpreadsheet } from 'lucide-react';
+import { Download, FileJson, FileSpreadsheet, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { downloadDataset, type ExportColumn } from '@/lib/export';
+import { downloadDataset, type ExportColumn, type ExportFormat } from '@/lib/export';
 import { exportsService } from '@/lib/api/services';
 
 /**
@@ -42,10 +42,10 @@ export function ExportButton<T>({
 }) {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { can } = useAuth();
+  const { can, admin } = useAuth();
   const [busy, setBusy] = React.useState(false);
 
-  const run = (format: 'csv' | 'json') => {
+  const run = async (format: ExportFormat) => {
     if (rows.length === 0) {
       toast({
         title: t('common.nothingToExport'),
@@ -55,7 +55,25 @@ export function ExportButton<T>({
       return;
     }
     setBusy(true);
-    const filename = downloadDataset(name, columns, rows, format);
+    let filename: string;
+    try {
+      // The PDF path is async (jsPDF is code-split), so this await also keeps
+      // the spinner honest instead of guessing with a fixed timeout.
+      filename = await downloadDataset(name, columns, rows, format, {
+        title: label,
+        filterSummary,
+        requestedBy: admin?.name,
+        containsPii,
+      });
+    } catch (err) {
+      setBusy(false);
+      toast({
+        title: t('common.downloadFailed'),
+        description: (err as Error).message,
+        tone: 'danger',
+      });
+      return;
+    }
     // Record it server-side so the Exports screen and the audit trail see it.
     void exportsService
       .create({
@@ -72,7 +90,7 @@ export function ExportButton<T>({
       description: t('common.rowsWithCount', { filename, count: rows.length }),
       tone: 'success',
     });
-    setTimeout(() => setBusy(false), 500);
+    setBusy(false);
   };
 
   if (!can('exports:run')) return null;
@@ -88,13 +106,17 @@ export function ExportButton<T>({
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>{t('common.rowsInView', { count: rows.length })}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => run('csv')}>
+        <DropdownMenuItem onSelect={() => void run('csv')}>
           <FileSpreadsheet className="h-4 w-4 text-neutral-400" />
           {t('common.downloadCsv')}
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => run('json')}>
+        <DropdownMenuItem onSelect={() => void run('json')}>
           <FileJson className="h-4 w-4 text-neutral-400" />
           {t('common.downloadJson')}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => void run('pdf')}>
+          <FileText className="h-4 w-4 text-neutral-400" />
+          {t('common.downloadPdf')}
         </DropdownMenuItem>
         {containsPii && (
           <>

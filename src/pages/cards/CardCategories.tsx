@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable, type Column } from '@/components/common/DataTable';
+import { ExportButton } from '@/components/common/ExportButton';
+import { cardCategoryColumns } from '@/lib/datasets';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { CategoryDialog } from './CategoryDialog';
@@ -356,7 +358,15 @@ export default function CardCategories() {
         title={t('cards.categories.title')}
         subtitle={t('cards.categories.subtitle')}
         actions={
-          writable && (
+          <>
+            <ExportButton
+              name="card-categories"
+              label={t('cards.categories.title')}
+              columns={cardCategoryColumns}
+              rows={ordered}
+              filterSummary={t('cards.categories.filterSummary', { count: ordered.length })}
+            />
+            {writable && (
             <>
               {reordering && dirty && (
                 <Button variant="secondary" disabled={savingOrder} onClick={() => void saveOrder()}>
@@ -385,7 +395,8 @@ export default function CardCategories() {
                 {t('cards.categories.newCategory')}
               </Button>
             </>
-          )
+            )}
+          </>
         }
       />
 

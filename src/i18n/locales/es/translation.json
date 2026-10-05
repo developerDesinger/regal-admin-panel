@@ -49,7 +49,8 @@
       "role": "Rol",
       "twoFactor": "2FA"
     },
-    "title": "Administradores y roles"
+    "title": "Administradores y roles",
+    "filterSummary": "{{count}} cuentas de administrador"
   },
   "alertType": {
     "at_risk_event": "Evento en riesgo",
@@ -119,7 +120,9 @@
     "tuneThresholds": "Ajustar umbrales",
     "typesNav": "Tipos de alerta",
     "unassigned": "Sin asignar",
-    "warning": "Advertencia"
+    "warning": "Advertencia",
+    "filterSummary": "Todos los tipos · {{count}} alertas",
+    "filterSummaryType": "{{type}} · {{count}} alertas"
   },
   "apiError": {
     "conflict": "Ese cambio entra en conflicto con el estado actual.",
@@ -398,7 +401,8 @@
       "cowArtwork": "Ilustración de la vaquita",
       "cowConstraints": "PNG · JPG · WEBP · SVG — máx. 3 MB, mín. 128 × 128 px. Se muestra en el mosaico grande del selector de categorías de la app.",
       "removeCow": "Quitar la ilustración de la vaquita actual",
-      "noCow": "Sin ilustración de vaquita: la app usa la que trae para esta categoría"
+      "noCow": "Sin ilustración de vaquita: la app usa la que trae para esta categoría",
+      "filterSummary": "{{count}} categorías"
     },
     "catalog": {
       "actionsFor": "Acciones para {{name}}",
@@ -581,7 +585,10 @@
     "pngDownloaded": "PNG del gráfico descargado",
     "pngFailed": "No se pudo generar el PNG de este gráfico",
     "pngFailedBody": "Descargue el CSV en su lugar.",
-    "switchBackForPng": "Vuelva a la vista de gráfico para exportar un PNG"
+    "switchBackForPng": "Vuelva a la vista de gráfico para exportar un PNG",
+    "pdfDownloaded": "PDF descargado",
+    "pdfFailed": "No se pudo generar el PDF",
+    "pdfFailedBody": "No se pudo renderizar la gráfica. Inténtalo de nuevo con la gráfica visible."
   },
   "cloverLedger": {
     "action": "Acción",
@@ -680,8 +687,10 @@
     "download": "Descargar",
     "downloadCsv": "Descargar CSV",
     "downloadJson": "Descargar JSON",
+    "downloadPdf": "Descargar PDF",
     "downloadPng": "Descargar PNG",
     "downloadStarted": "Descarga iniciada",
+    "downloadFailed": "La descarga falló",
     "export": "Exportar",
     "hidePassword": "Ocultar contraseña",
     "loading": "Cargando…",

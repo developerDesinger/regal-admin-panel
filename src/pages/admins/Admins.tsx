@@ -3,6 +3,8 @@ import * as React from 'react';
 import { Check, Minus, ShieldCheck, UserPlus } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/common/PageHeader';
 import { DataTable, type Column } from '@/components/common/DataTable';
+import { ExportButton } from '@/components/common/ExportButton';
+import { adminColumns } from '@/lib/datasets';
 import { StatusBadge, Chip } from '@/components/common/StatusBadge';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { Button } from '@/components/ui/button';
@@ -183,10 +185,20 @@ export default function Admins() {
         title={t('admins.title')}
         subtitle={t('admins.subtitle')}
         actions={
-          <Button variant="primary" onClick={() => setInviting(true)}>
-            <UserPlus className="h-4 w-4" />
-            {t('admins.invite')}
-          </Button>
+          <>
+            <ExportButton
+              name="admins"
+              label={t('admins.title')}
+              columns={adminColumns}
+              rows={adminUsers}
+              containsPii
+              filterSummary={t('admins.filterSummary', { count: adminUsers.length })}
+            />
+            <Button variant="primary" onClick={() => setInviting(true)}>
+              <UserPlus className="h-4 w-4" />
+              {t('admins.invite')}
+            </Button>
+          </>
         }
       />
 

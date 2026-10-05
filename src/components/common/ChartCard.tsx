@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import * as React from 'react';
-import { Download, FileDown, MoreHorizontal, Table2 } from 'lucide-react';
+import { Download, FileDown, FileText, MoreHorizontal, Table2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 import { chartCsv, downloadText, timestampSlug } from '@/lib/export';
 import { cn } from '@/lib/utils';
 
@@ -50,6 +51,7 @@ export function ChartCard({
   const { t } = useTranslation();
   const [asTable, setAsTable] = React.useState(false);
   const { toast } = useToast();
+  const { admin } = useAuth();
   const bodyRef = React.useRef<HTMLDivElement>(null);
 
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -66,7 +68,82 @@ export function ChartCard({
     toast({ title: t('chart.csvDownloaded'), description: title, tone: 'success' });
   };
 
-  /** Rasterises the chart's SVG to PNG entirely client-side. */
+  /**
+   * Rasterises the chart's SVG to a PNG data URL entirely client-side.
+   *
+   * Shared by the PNG download and the PDF report, so both get the same
+   * picture — including the inlined colours, which CSS variables lose on
+   * serialization.
+   */
+  const rasterize = async (): Promise<{
+    dataUrl: string;
+    width: number;
+    height: number;
+  } | null> => {
+    const svg = bodyRef.current?.querySelector('svg');
+    if (!svg) return null;
+    const clone = svg.cloneNode(true) as SVGSVGElement;
+    const { width, height } = svg.getBoundingClientRect();
+    clone.setAttribute('width', String(width));
+    clone.setAttribute('height', String(height));
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    style.textContent = `text{font-family:Inter,sans-serif;font-size:12px;fill:${getComputedStyle(
+      document.body,
+    ).getPropertyValue('color')}}`;
+    clone.prepend(style);
+
+    const svgText = new XMLSerializer().serializeToString(clone);
+    const img = new Image();
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('render failed'));
+      img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgText)}`;
+    });
+
+    const scale = 2; // retina
+    const canvas = document.createElement('canvas');
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('no 2d context');
+    ctx.fillStyle = getComputedStyle(document.body).backgroundColor || '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0);
+
+    return { dataUrl: canvas.toDataURL('image/png'), width, height };
+  };
+
+  /**
+   * The chart as a PDF: the picture plus the numbers under it. Usable while the
+   * card is flipped to its table view — the image is simply omitted then.
+   */
+  const downloadPdfReport = async () => {
+    if (!tableData && asTable) {
+      toast({ title: t('chart.noTabularData'), tone: 'warning' });
+      return;
+    }
+    try {
+      const { downloadChartPdf } = await import('@/lib/pdf');
+      const image = (await rasterize()) ?? undefined;
+      if (!image && !tableData) {
+        toast({ title: t('chart.pdfFailed'), description: t('chart.pdfFailedBody'), tone: 'danger' });
+        return;
+      }
+      downloadChartPdf(slug, {
+        title,
+        subtitle,
+        requestedBy: admin?.name,
+        image,
+        table: tableData,
+      });
+      toast({ title: t('chart.pdfDownloaded'), description: title, tone: 'success' });
+    } catch {
+      toast({ title: t('chart.pdfFailed'), description: t('chart.pdfFailedBody'), tone: 'danger' });
+    }
+  };
+
   const downloadPng = async () => {
     const svg = bodyRef.current?.querySelector('svg');
     if (!svg) {
@@ -166,6 +243,10 @@ export function ChartCard({
               <DropdownMenuItem onSelect={() => void downloadPng()}>
                 <Download className="h-4 w-4 text-neutral-400" />
                 {t('common.downloadPng')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void downloadPdfReport()}>
+                <FileText className="h-4 w-4 text-neutral-400" />
+                {t('common.downloadPdf')}
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={downloadCsv}>
                 <FileDown className="h-4 w-4 text-neutral-400" />

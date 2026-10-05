@@ -20,7 +20,7 @@ import type { Contribution } from '@/lib/types';
  */
 export function ContributionsTable({
   rows,
-  storageKey = 'contributions',
+  storageKey = 'contributions-v2',
   hideEventColumn,
   toolbar,
   bulkActions,
@@ -100,10 +100,10 @@ export function ContributionsTable({
      * what the row total reconciles against), but it can no longer be the only
      * place a commission appears: it hid whose money each part was.
      *
-     * Regalapp's own commission is on by default because it is the platform's
-     * revenue line. The Stripe column defaults to hidden — a wallet-funded row
-     * has none — and is one click away in the column picker for anyone
-     * reconciling a Stripe statement.
+     * Both commissions are on by default: Regalapp's because it is the
+     * platform's revenue line, Stripe's because the combined column alone left
+     * no way to see the processor's cut without opening the drawer. A
+     * wallet-funded row shows a dash rather than a zero.
      */
     {
       id: 'platformFee',
@@ -120,7 +120,6 @@ export function ContributionsTable({
       header: t('contributions.table.stripeFee'),
       numeric: true,
       sortable: true,
-      defaultHidden: true,
       sortValue: (c) => (c.provider === 'stripe' ? c.stripeFee : 0),
       // A dash, not a zero: Stripe never touched a wallet-funded row, and a
       // column of zeroes reads as "Stripe processed it for free".

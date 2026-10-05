@@ -714,7 +714,7 @@ export default function EventDetail() {
         <TabsContent value="contributions">
           <ContributionsTable
             rows={eventContributions}
-            storageKey="event-contributions"
+            storageKey="event-contributions-v2"
             hideEventColumn
             toolbar={
               <ExportButton

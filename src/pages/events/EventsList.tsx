@@ -254,8 +254,9 @@ export default function EventsList() {
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => {
-                  const file = downloadDataset('event', eventColumns, [e], 'csv');
-                  toast({ title: t('common.downloadStarted'), description: file, tone: 'success' });
+                  void downloadDataset('event', eventColumns, [e], 'csv').then((file) =>
+                    toast({ title: t('common.downloadStarted'), description: file, tone: 'success' }),
+                  );
                 }}
               >
                 <Download className="h-4 w-4 text-neutral-400" />

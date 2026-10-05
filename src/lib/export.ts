@@ -59,13 +59,26 @@ export function timestampSlug(d = new Date()): string {
   return d.toISOString().slice(0, 19).replace(/[:T]/g, '-');
 }
 
-/** Download a dataset as CSV or JSON. Returns the filename that was produced. */
-export function downloadDataset<T>(
+/** The formats every Export button offers. */
+export type ExportFormat = 'csv' | 'json' | 'pdf';
+
+/**
+ * Download a dataset as CSV, JSON or PDF. Returns the filename produced.
+ *
+ * PDF lives in its own module and pulls in jsPDF, so it is imported lazily:
+ * a screen that only ever exports CSV must not pay for the renderer.
+ */
+export async function downloadDataset<T>(
   name: string,
   columns: ExportColumn<T>[],
   rows: T[],
-  format: 'csv' | 'json' = 'csv',
-): string {
+  format: ExportFormat = 'csv',
+  pdfMeta?: { title: string; filterSummary?: string; requestedBy?: string; containsPii?: boolean },
+): Promise<string> {
+  if (format === 'pdf') {
+    const { downloadPdf } = await import('./pdf');
+    return downloadPdf(name, columns, rows, { title: pdfMeta?.title ?? name, ...pdfMeta });
+  }
   const filename = `regal-${name}-${timestampSlug()}.${format}`;
   if (format === 'json') {
     triggerDownload(toJson(columns, rows), filename, 'application/json');

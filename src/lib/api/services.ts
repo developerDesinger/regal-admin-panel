@@ -485,7 +485,7 @@ export const exportsService = {
   list: (p: Params = {}) => apiGet<ExportJobRow[], PageMeta>('/exports', cleanParams(p)),
   create: (payload: {
     dataset: string;
-    format: 'csv' | 'json';
+    format: 'csv' | 'json' | 'pdf';
     columns?: string[];
     filters?: Record<string, unknown>;
     reason: string;

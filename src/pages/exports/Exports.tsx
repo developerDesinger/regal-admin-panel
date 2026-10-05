@@ -1,6 +1,6 @@
 import { Trans, useTranslation } from 'react-i18next';
 import * as React from 'react';
-import { Download, FileJson, FileSpreadsheet, Loader2, Lock, Plus, RefreshCw } from 'lucide-react';
+import { Download, FileJson, FileSpreadsheet, FileText, Loader2, Lock, Plus, RefreshCw } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/common/PageHeader';
 import { DataTable, type Column } from '@/components/common/DataTable';
 import { StatusBadge, Chip } from '@/components/common/StatusBadge';
@@ -24,7 +24,7 @@ import { useExportJobs } from '@/hooks/data';
 import { exportsService } from '@/lib/api/services';
 import { API_BASE_URL, ApiError } from '@/lib/api/client';
 import { useUrlState } from '@/hooks/useUrlState';
-import type { ExportColumn } from '@/lib/export';
+import type { ExportColumn, ExportFormat } from '@/lib/export';
 import {
   auditColumns,
   cardColumns,
@@ -66,7 +66,7 @@ export default function Exports() {
   const { get } = useUrlState();
 
   const [dataset, setDataset] = React.useState<DatasetDef>(DATASETS[0]);
-  const [format, setFormat] = React.useState<'csv' | 'json'>('csv');
+  const [format, setFormat] = React.useState<ExportFormat>('csv');
   const [selectedColumns, setSelectedColumns] = React.useState<string[]>(
     DATASETS[0].columns.map((c) => c.key),
   );
@@ -147,6 +147,8 @@ export default function Exports() {
         <div className="flex min-w-0 items-center gap-2">
           {j.format === 'csv' ? (
             <FileSpreadsheet className="h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
+          ) : j.format === 'pdf' ? (
+            <FileText className="h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
           ) : (
             <FileJson className="h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
           )}
@@ -368,7 +370,7 @@ export default function Exports() {
               <Label>{t('exports.format')}</Label>
               <RadioGroup
                 value={format}
-                onValueChange={(v) => setFormat(v as 'csv' | 'json')}
+                onValueChange={(v) => setFormat(v as ExportFormat)}
                 className="mt-2 flex gap-4"
               >
                 <label className="flex cursor-pointer items-center gap-2">
@@ -378,6 +380,10 @@ export default function Exports() {
                 <label className="flex cursor-pointer items-center gap-2">
                   <RadioGroupItem value="json" id="fmt-json" />
                   <span className="text-body text-neutral-700">JSON</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-2">
+                  <RadioGroupItem value="pdf" id="fmt-pdf" />
+                  <span className="text-body text-neutral-700">PDF</span>
                 </label>
               </RadioGroup>
             </div>

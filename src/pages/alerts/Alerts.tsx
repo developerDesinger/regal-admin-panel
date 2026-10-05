@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
+import { ExportButton } from '@/components/common/ExportButton';
+import { alertColumns } from '@/lib/datasets';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -114,14 +116,30 @@ export default function Alerts() {
         title={t('alerts.title')}
         subtitle={t('alerts.subtitle', { count: totalOpen })}
         actions={
-          can('settings:write') && (
-            <Button variant="secondary" asChild>
-              <Link to="/settings">
-                <Settings2 className="h-4 w-4 text-neutral-400" />
-                {t('alerts.tuneThresholds')}
-              </Link>
-            </Button>
-          )
+          <>
+            <ExportButton
+              name="alerts"
+              label={t('alerts.title')}
+              columns={alertColumns}
+              rows={rows}
+              filterSummary={
+                selectedType
+                  ? t('alerts.filterSummaryType', {
+                      type: typeLabel(selectedType),
+                      count: rows.length,
+                    })
+                  : t('alerts.filterSummary', { count: rows.length })
+              }
+            />
+            {can('settings:write') && (
+              <Button variant="secondary" asChild>
+                <Link to="/settings">
+                  <Settings2 className="h-4 w-4 text-neutral-400" />
+                  {t('alerts.tuneThresholds')}
+                </Link>
+              </Button>
+            )}
+          </>
         }
       />
 

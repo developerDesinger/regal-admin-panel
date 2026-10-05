@@ -686,7 +686,7 @@ export interface AlertRow {
 export interface ExportJobRow {
   id: string;
   dataset: string;
-  format: 'csv' | 'json';
+  format: 'csv' | 'json' | 'pdf';
   filters: string;
   rows: number;
   status: 'queued' | 'running' | 'ready' | 'expired' | 'failed';

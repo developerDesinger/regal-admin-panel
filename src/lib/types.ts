@@ -260,7 +260,7 @@ export interface AdminUser {
 export interface ExportJob {
   id: string;
   dataset: string;
-  format: 'csv' | 'json';
+  format: 'csv' | 'json' | 'pdf';
   filters: string;
   rows: number | null;
   status: 'queued' | 'running' | 'ready' | 'expired' | 'failed';

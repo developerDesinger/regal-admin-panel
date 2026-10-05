@@ -295,7 +295,7 @@ export default function UserDetail() {
         </TabsContent>
 
         <TabsContent value="contributions">
-          <ContributionsTable rows={userContributions} storageKey="user-contributions" />
+          <ContributionsTable rows={userContributions} storageKey="user-contributions-v2" />
         </TabsContent>
 
         <TabsContent value="clovers">

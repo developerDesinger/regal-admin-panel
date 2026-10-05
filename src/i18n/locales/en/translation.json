@@ -49,7 +49,8 @@
       "role": "Role",
       "twoFactor": "2FA"
     },
-    "title": "Admin Users & Roles"
+    "title": "Admin Users & Roles",
+    "filterSummary": "{{count}} admin accounts"
   },
   "alertType": {
     "at_risk_event": "At-risk event",
@@ -119,7 +120,9 @@
     "tuneThresholds": "Tune thresholds",
     "typesNav": "Alert types",
     "unassigned": "Unassigned",
-    "warning": "Warning"
+    "warning": "Warning",
+    "filterSummary": "All types · {{count}} alerts",
+    "filterSummaryType": "{{type}} · {{count}} alerts"
   },
   "apiError": {
     "conflict": "That change conflicts with the current state.",
@@ -398,7 +401,8 @@
       "cowArtwork": "Cow illustration",
       "cowConstraints": "PNG · JPG · WEBP · SVG — max 3 MB, min 128 × 128 px. Drawn on the large tile in the app’s category picker.",
       "removeCow": "Remove the current cow illustration",
-      "noCow": "No cow illustration — the app draws the one it ships for this category"
+      "noCow": "No cow illustration — the app draws the one it ships for this category",
+      "filterSummary": "{{count}} categories"
     },
     "catalog": {
       "actionsFor": "Actions for {{name}}",
@@ -581,7 +585,10 @@
     "pngDownloaded": "Chart PNG downloaded",
     "pngFailed": "Couldn’t render this chart as PNG",
     "pngFailedBody": "Download the CSV instead.",
-    "switchBackForPng": "Switch back to chart view to export a PNG"
+    "switchBackForPng": "Switch back to chart view to export a PNG",
+    "pdfDownloaded": "PDF downloaded",
+    "pdfFailed": "Couldn't build the PDF",
+    "pdfFailedBody": "The chart could not be rendered. Try again with the chart visible."
   },
   "cloverLedger": {
     "action": "Action",
@@ -680,8 +687,10 @@
     "download": "Download",
     "downloadCsv": "Download CSV",
     "downloadJson": "Download JSON",
+    "downloadPdf": "Download PDF",
     "downloadPng": "Download PNG",
     "downloadStarted": "Download started",
+    "downloadFailed": "Download failed",
     "export": "Export",
     "hidePassword": "Hide password",
     "loading": "Loading…",

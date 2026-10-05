@@ -6,6 +6,7 @@
 import type { ExportColumn } from './export';
 import { moneyCell } from './export';
 import type {
+  Alert,
   AuditEntry,
   CloverTransaction,
   Contribution,
@@ -14,6 +15,7 @@ import type {
   RegalUser,
   Withdrawal,
 } from './types';
+import type { AdminRow, CardCategoryRow } from './api/types';
 
 export const eventColumns: ExportColumn<RegalEvent>[] = [
   { key: 'id', header: 'Event ID', value: (e) => e.id },
@@ -178,4 +180,43 @@ export const auditColumns: ExportColumn<AuditEntry>[] = [
   { key: 'reason', header: 'Reason', value: (a) => a.reason },
   { key: 'ip', header: 'IP address', value: (a) => a.ip },
   { key: 'userAgent', header: 'User agent', value: (a) => a.userAgent },
+];
+
+export const alertColumns: ExportColumn<Alert>[] = [
+  { key: 'id', header: 'Alert ID', value: (a) => a.id },
+  { key: 'type', header: 'Type', value: (a) => a.type },
+  { key: 'severity', header: 'Severity', value: (a) => a.severity },
+  { key: 'subject', header: 'Subject', value: (a) => a.subject.label },
+  { key: 'status', header: 'Status', value: (a) => a.status },
+  { key: 'assignedTo', header: 'Assigned to', value: (a) => a.assignedTo ?? '' },
+  { key: 'triggeredAt', header: 'Triggered at (UTC)', value: (a) => a.triggeredAt },
+  // The numbers that fired the rule, flattened so a reader needn't open the row.
+  {
+    key: 'evidence',
+    header: 'Evidence',
+    value: (a) => a.evidence.map((e) => `${e.label}: ${e.value}`).join('; '),
+  },
+];
+
+export const adminColumns: ExportColumn<AdminRow>[] = [
+  { key: 'id', header: 'Admin ID', value: (a) => a.id },
+  { key: 'name', header: 'Name', value: (a) => a.name },
+  { key: 'email', header: 'Email', value: (a) => a.email },
+  { key: 'role', header: 'Role', value: (a) => a.role },
+  { key: 'isActive', header: 'Active', value: (a) => a.isActive },
+  { key: 'twoFactorEnabled', header: '2FA enabled', value: (a) => a.twoFactorEnabled },
+  { key: 'lastLoginAt', header: 'Last login (UTC)', value: (a) => a.lastLoginAt ?? '' },
+  { key: 'createdAt', header: 'Created at (UTC)', value: (a) => a.createdAt },
+];
+
+export const cardCategoryColumns: ExportColumn<CardCategoryRow>[] = [
+  { key: 'id', header: 'Category ID', value: (c) => c.id },
+  { key: 'key', header: 'Key', value: (c) => c.key },
+  { key: 'name', header: 'Name (EN)', value: (c) => c.name },
+  { key: 'nameEs', header: 'Name (ES)', value: (c) => c.nameEs ?? '' },
+  { key: 'description', header: 'Description', value: (c) => c.description ?? '' },
+  { key: 'color', header: 'Colour', value: (c) => c.color },
+  { key: 'emoji', header: 'Emoji', value: (c) => c.emoji ?? '' },
+  { key: 'designs', header: 'Designs', value: (c) => c.designs },
+  { key: 'isActive', header: 'Active', value: (c) => c.isActive },
 ];

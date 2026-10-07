@@ -58,6 +58,10 @@ export default function CardAnalytics() {
   };
   const series = cardSeries ?? [];
   const funnelStages = funnel ?? [];
+  // An empty funnel divides 0 by 0 at every stage. Guarded here rather than at
+  // the point of display because it was rendering literal "NaN%" next to each
+  // bar — a reader cannot tell that apart from a broken metric.
+  const rate = (value: number, of: number) => (of > 0 ? (value / of) * 100 : 0);
   const errorSeries = errors?.series ?? [];
   const errorRecords = errors?.records ?? [];
   void errorRecords;
@@ -319,14 +323,14 @@ export default function CardAnalytics() {
             rows: funnelStages.map((s, i) => [
               t(`cards.analytics.funnelStage.${s.stage.toLowerCase()}`, { defaultValue: s.stage }),
               s.value,
-              i === 0 ? '—' : `${((s.value / funnelStages[i - 1].value) * 100).toFixed(1)}%`,
+              i === 0 ? '—' : `${rate(s.value, funnelStages[i - 1].value).toFixed(1)}%`,
             ]),
           }}
         >
           <div className="flex h-full flex-col justify-center gap-2 py-2">
             {funnelStages.map((stage, i) => {
-              const pct = (stage.value / funnelStages[0].value) * 100;
-              const conv = i === 0 ? 100 : (stage.value / funnelStages[i - 1].value) * 100;
+              const pct = rate(stage.value, funnelStages[0].value);
+              const conv = i === 0 ? 100 : rate(stage.value, funnelStages[i - 1].value);
               return (
                 <div key={stage.stage} className="flex items-center gap-3">
                   <span className="w-[80px] shrink-0 text-body text-neutral-700">

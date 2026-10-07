@@ -67,7 +67,7 @@ export function formatClovers(n: number, signed = false): string {
   return `${sign}${formatNumber(Math.abs(n))}`;
 }
 
-export function formatDuration(hours: number): string {
+export function formatDuration(hours: number | null | undefined): string {
   if (hours == null || Number.isNaN(hours)) return '—';
   if (hours < 1) return `${Math.round(hours * 60)} min`;
   if (hours < 48) return `${hours.toFixed(1)} h`;

@@ -158,6 +158,11 @@ export function adaptContribution(c: ContributionRow): Contribution {
     amount: c.amount,
     platformFee: c.platformFee,
     stripeFee: c.stripeFee,
+    // Rows written before the IVA was itemised carry neither half: read the
+    // whole fee as base so the two still add up to `stripeFee` instead of the
+    // breakdown collapsing to zero.
+    stripeFeeBase: c.stripeFeeBase ?? c.stripeFee,
+    stripeFeeIva: c.stripeFeeIva ?? 0,
     totalCharged: c.totalCharged,
     creditedAmount: c.creditedAmount,
     feePayer: c.feePayer,
@@ -184,6 +189,8 @@ export function adaptUser(u: UserRow): RegalUser {
     isVerified: u.isVerified,
     isDeleted: u.isDeleted,
     lastLoginAt: u.lastLoginAt,
+    // Older API builds do not send it; the login is the closest true answer.
+    lastSeenAt: u.lastSeenAt ?? u.lastLoginAt,
     cloverBalance: u.cloverBalance,
     authProviders: u.authProviders,
     createdAt: u.createdAt,
@@ -191,6 +198,8 @@ export function adaptUser(u: UserRow): RegalUser {
     eventsContributedTo: u.eventsContributedTo,
     invitationsReceived: u.invitationsReceived,
     totalContributed: u.totalContributed,
+    // Not on a list row — only the detail endpoint computes it. The user
+    // detail page reads it from that response directly rather than from here.
     medianDecisionTimeHours: 0,
     country: u.country ? u.country.toUpperCase() : null,
     city: u.city?.trim() || null,

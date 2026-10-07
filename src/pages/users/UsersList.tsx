@@ -169,16 +169,28 @@ export default function UsersList() {
       cell: (u) => <span className="tnum whitespace-nowrap">{formatDate(u.createdAt)}</span>,
     },
     {
-      id: 'lastLogin',
-      header: t('users.table.lastLogin'),
+      // Activity, not authentication. The column used to read `lastLoginAt`,
+      // which the app writes once and never again — it runs on refresh tokens
+      // — so somebody who opens Regal every day showed a months-old date, or
+      // "never". The tooltip keeps the login itself visible for the cases
+      // where that is the question being asked.
+      id: 'lastSeen',
+      header: t('users.table.lastSeen'),
       sortable: true,
-      sortValue: (u) => u.lastLoginAt ?? '',
-      cell: (u) =>
-        u.lastLoginAt ? (
-          <span className="text-neutral-500">{formatRelative(u.lastLoginAt)}</span>
-        ) : (
-          <span className="text-neutral-400">{t('status.never')}</span>
-        ),
+      sortValue: (u) => u.lastSeenAt ?? u.lastLoginAt ?? '',
+      cell: (u) => {
+        const seen = u.lastSeenAt ?? u.lastLoginAt;
+        if (!seen) return <span className="text-neutral-400">{t('status.never')}</span>;
+        return (
+          <Tooltip
+            content={t('users.table.lastSeenTooltip', {
+              login: u.lastLoginAt ? formatRelative(u.lastLoginAt) : t('status.never'),
+            })}
+          >
+            <span className="cursor-help text-neutral-500">{formatRelative(seen)}</span>
+          </Tooltip>
+        );
+      },
     },
     {
       id: 'providers',

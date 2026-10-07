@@ -119,10 +119,10 @@ function sendFile(res, file, { immutable }) {
 /**
  * Invitation links for the mobile app.
  *
- * An invitation is `https://admin.regalapp.net/i/<code>`. With Regal installed,
+ * An invitation is `https://admin.regalapp.net/i/<code>`. With Regalapp installed,
  * iOS and Android open the app straight away — but only after fetching the two
  * association files below from this exact host and finding the app named in
- * them. Without Regal, the link opens here and the landing page sends the person
+ * them. Without Regalapp, the link opens here and the landing page sends the person
  * to the store.
  *
  * Only `/i/*` and `/download` are claimed, in both files and in the app's own
@@ -190,7 +190,7 @@ function invitePage(code) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Regal</title>
+<title>Regalapp</title>
 <style>
   body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -208,12 +208,12 @@ function invitePage(code) {
 </head>
 <body>
 <main class="card">
-  <h1>Regal</h1>
-  <p data-es="Te invitaron a Regal. Descarga la app y regístrate con tu número de teléfono para conectar con quien te invitó."
-     data-en="You've been invited to Regal. Get the app and sign up with your phone number to connect with the person who invited you."></p>
-  <a id="store" class="btn primary" href="#" data-es="Descargar Regal" data-en="Get Regal"></a>
+  <h1>Regalapp</h1>
+  <p data-es="Te invitaron a Regalapp. Descarga la app y regístrate con tu número de teléfono para conectar con quien te invitó."
+     data-en="You've been invited to Regalapp. Get the app and sign up with your phone number to connect with the person who invited you."></p>
+  <a id="store" class="btn primary" href="#" data-es="Descargar Regalapp" data-en="Get Regalapp"></a>
   <a id="open" class="btn secondary" href="${appUrl}" data-es="Ya tengo la app" data-en="I already have the app"></a>
-  <div id="soon" class="note" hidden data-es="Regal estará disponible pronto en App Store." data-en="Regal is coming soon to the App Store."></div>
+  <div id="soon" class="note" hidden data-es="Regalapp estará disponible pronto en App Store." data-en="Regalapp is coming soon to the App Store."></div>
   <div id="beta" class="note" hidden
        data-es="Necesitas la app TestFlight de Apple para instalar la beta; el enlace te guía paso a paso."
        data-en="You'll need Apple's TestFlight app to install the beta — the link walks you through it."></div>
@@ -232,7 +232,7 @@ function invitePage(code) {
       store.href = iosUrl;
       // A TestFlight link is not the App Store: it installs a beta through
       // Apple's own TestFlight app, which the person may not have. A button
-      // reading "Get Regal" drops them on a screen they did not expect, so the
+      // reading "Get Regalapp" drops them on a screen they did not expect, so the
       // beta says it is a beta. Detected from the URL rather than a second
       // flag, so swapping in the App Store link later restores the original
       // wording on its own.
@@ -250,8 +250,8 @@ function invitePage(code) {
     document.getElementById('open').hidden = true;
     document.getElementById('soon').hidden = false;
     document.getElementById('soon').textContent = lang === 'en'
-      ? 'Open this link on your phone to get Regal.'
-      : 'Abre este enlace en tu teléfono para obtener Regal.';
+      ? 'Open this link on your phone to get Regalapp.'
+      : 'Abre este enlace en tu teléfono para obtener Regalapp.';
   }
 </script>
 </body>

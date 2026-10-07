@@ -118,6 +118,7 @@ export const userColumns: ExportColumn<RegalUser>[] = [
   { key: 'cloverBalance', header: 'Clover balance', value: (u) => u.cloverBalance },
   { key: 'createdAt', header: 'Registered at (UTC)', value: (u) => u.createdAt },
   { key: 'lastLoginAt', header: 'Last login (UTC)', value: (u) => u.lastLoginAt ?? '' },
+  { key: 'lastSeenAt', header: 'Last activity (UTC)', value: (u) => u.lastSeenAt ?? '' },
 ];
 
 export const cardColumns: ExportColumn<GiftCardDesign>[] = [

@@ -109,14 +109,18 @@ export interface Contribution {
   stripePaymentIntentId: string;
   /**
    * How the money arrived: a Stripe card charge, or the contributor's own
-   * wallet balance. Only a `stripe` row carries a processor fee in `stripeFee`
-   * and has a charge to look up in the Stripe dashboard.
+   * wallet balance. Only a `stripe` row has a charge to look up in the Stripe
+   * dashboard; the Stripe fee schedule is applied either way, so `stripeFee`
+   * is charged on both and is part of `totalCharged`.
    */
   provider: PaymentProvider;
   amount: number;
   platformFee: number;
-  /** The processor's cut. Named for Stripe historically — see `provider`. */
+  /** The processor's cut, IVA included. */
   stripeFee: number;
+  /** The two halves of `stripeFee`: Stripe's cut, and the IVA on it. */
+  stripeFeeBase: number;
+  stripeFeeIva: number;
   totalCharged: number;
   creditedAmount: number;
   feePayer: 'contributor' | 'beneficiary';
@@ -141,6 +145,12 @@ export interface RegalUser {
   isVerified: boolean;
   isDeleted: boolean;
   lastLoginAt: string | null;
+  /**
+   * When the account was last active, which is not the same question as when
+   * it last logged in: the app authenticates once and runs on refresh tokens,
+   * so `lastLoginAt` can be months old on somebody who opens Regal daily.
+   */
+  lastSeenAt: string | null;
   cloverBalance: number;
   authProviders: ('local' | 'google' | 'apple')[];
   createdAt: string;

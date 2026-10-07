@@ -120,11 +120,13 @@ export function ContributionsTable({
       header: t('contributions.table.stripeFee'),
       numeric: true,
       sortable: true,
-      sortValue: (c) => (c.provider === 'stripe' ? c.stripeFee : 0),
-      // A dash, not a zero: Stripe never touched a wallet-funded row, and a
-      // column of zeroes reads as "Stripe processed it for free".
+      sortValue: (c) => c.stripeFee,
+      // Shown on every row that was charged one, wallet-funded included: the
+      // Stripe schedule is applied either way and the fee is already inside
+      // `totalCharged`, so dashing it out by provider hid money the payer paid.
+      // The dash is kept for a genuine zero.
       cell: (c) =>
-        c.provider === 'stripe' ? (
+        c.stripeFee > 0 ? (
           <MoneyValue amount={c.stripeFee} currency={c.currency} showCurrency={false} />
         ) : (
           <span className="text-neutral-400">—</span>
@@ -283,17 +285,27 @@ export function ContributionsTable({
                 <DetailRow label={t('contributions.table.platformFee')}>
                   <MoneyValue amount={detail.platformFee} currency={detail.currency} />
                 </DetailRow>
-                {/* Stripe's cut gets a row on every record, dashed out on a
-                    wallet-funded gift, so it is visible that no processor took
-                    anything rather than that the figure is hidden somewhere the
-                    reader cannot see. */}
+                {/* Stripe's cut, segregated from the total and split into the
+                    fee itself and the IVA on it. Charged on wallet-funded
+                    gifts too — it is part of `totalCharged` on every row — so
+                    it is read off the figure, not off the provider. */}
                 <DetailRow label={t('contributions.table.stripeFee')}>
-                  {detail.provider === 'stripe' ? (
+                  {detail.stripeFee > 0 ? (
                     <MoneyValue amount={detail.stripeFee} currency={detail.currency} />
                   ) : (
                     <span className="text-neutral-400">—</span>
                   )}
                 </DetailRow>
+                {detail.stripeFee > 0 && (
+                  <>
+                    <DetailRow label={t('contributions.table.stripeFeeBase')}>
+                      <MoneyValue amount={detail.stripeFeeBase} currency={detail.currency} />
+                    </DetailRow>
+                    <DetailRow label={t('contributions.table.stripeFeeIva')}>
+                      <MoneyValue amount={detail.stripeFeeIva} currency={detail.currency} />
+                    </DetailRow>
+                  </>
+                )}
                 <DetailRow label={t('contributions.table.totalCharged')}>
                   <MoneyValue amount={detail.totalCharged} currency={detail.currency} emphasis="strong" />
                 </DetailRow>

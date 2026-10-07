@@ -54,7 +54,10 @@ export default function UserDetail() {
   const { rows: cloverLedger } = useUserClovers(userId);
   const { rows: auditEntries } = useUserActivity(userId);
   const unlockedCardRows = useUserCards(userId);
-  const { user: resolvedUser } = useUser(userId);
+  // `raw` carries the aggregates the detail endpoint computes over EVERY row:
+  // the lists below are paginated (25 by default), so anything summed from
+  // them under-reports the moment a user has a 26th contribution.
+  const { user: resolvedUser, raw: detail } = useUser(userId);
   const mutations = useAdminMutations();
   const [action, setAction] = React.useState<null | 'suspend' | 'reactivate' | 'clovers' | 'reset'>(null);
   const [adjustAmount, setAdjustAmount] = React.useState('');
@@ -80,14 +83,21 @@ export default function UserDetail() {
   const userAudit = auditEntries;
   const unlockedCards = unlockedCardRows;
 
-  const totalContributed = confirmed.reduce((a, c) => a + c.amount, 0);
+  // Server-side totals first, the visible page only as a fallback for an older
+  // API build. These are the numbers the metric cards are supposed to show.
+  const totalContributed =
+    detail?.totalContributed ?? confirmed.reduce((a, c) => a + c.amount, 0);
+  const contributionCount = detail?.contributionFrequency ?? confirmed.length;
+  const averageContribution =
+    detail?.averageContribution ??
+    (confirmed.length ? Math.round(totalContributed / confirmed.length) : 0);
   const conversion = user.invitationsReceived
     ? (user.eventsContributedTo / user.invitationsReceived) * 100
     : 0;
 
   const paymentProfile = (['succeeded', 'pending', 'failed', 'cancelled'] as const).map((s) => ({
     status: s,
-    count: userContributions.filter((c) => c.status === s).length,
+    count: detail?.paymentStatusProfile?.[s] ?? userContributions.filter((c) => c.status === s).length,
   }));
   const profileTotal = Math.max(1, paymentProfile.reduce((a, p) => a + p.count, 0));
 
@@ -133,10 +143,13 @@ export default function UserDetail() {
         actions={
           <>
             <span className="hidden text-caption text-neutral-500 md:block">
+              {/* Last *seen*, not last login: the app signs in once and lives
+                  on refresh tokens, so the login date says nothing about
+                  whether this account is still in use. */}
               {t('userDetail.joined', {
                 date: formatDate(user.createdAt),
-                lastLogin: user.lastLoginAt
-                  ? formatRelative(user.lastLoginAt)
+                lastSeen: user.lastSeenAt ?? user.lastLoginAt
+                  ? formatRelative((user.lastSeenAt ?? user.lastLoginAt) as string)
                   : t('userDetail.never'),
               })}
             </span>
@@ -195,6 +208,11 @@ export default function UserDetail() {
               definition={t('userDetail.metrics.invitationsDef')}
             />
             <MetricCard
+              label={t('userDetail.metrics.eventsOrganized')}
+              value={String(user.eventsOrganized)}
+              definition={t('userDetail.metrics.eventsOrganizedDef')}
+            />
+            <MetricCard
               label={t('userDetail.metrics.eventsContributed')}
               value={String(user.eventsContributedTo)}
               definition={t('userDetail.metrics.eventsContributedDef')}
@@ -211,19 +229,17 @@ export default function UserDetail() {
             />
             <MetricCard
               label={t('userDetail.metrics.avgContribution')}
-              value={formatMoney(
-                confirmed.length ? Math.round(totalContributed / confirmed.length) : 0,
-              )}
+              value={formatMoney(averageContribution)}
               definition={t('userDetail.metrics.avgContributionDef')}
             />
             <MetricCard
               label={t('userDetail.metrics.decisionTime')}
-              value={formatDuration(user.medianDecisionTimeHours)}
+              value={formatDuration(detail?.medianDecisionTimeHours ?? null)}
               definition={t('userDetail.metrics.decisionTimeDef')}
             />
             <MetricCard
               label={t('userDetail.metrics.frequency')}
-              value={t('userDetail.metrics.frequencyValue', { count: confirmed.length })}
+              value={t('userDetail.metrics.frequencyValue', { count: contributionCount })}
               definition={t('userDetail.metrics.frequencyDef')}
             />
             <MetricCard

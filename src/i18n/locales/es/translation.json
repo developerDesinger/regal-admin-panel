@@ -790,7 +790,7 @@
       "platformFees": "Comisiones de Regalapp",
       "platformFeesDef": "Comisión propia de Regalapp (4.9%) en las aportaciones confirmadas. Es ingreso de la plataforma.",
       "stripeFees": "Comisiones de Stripe",
-      "stripeFeesDef": "Comisión de procesamiento de Stripe con IVA, en las aportaciones confirmadas que procesó Stripe. Se paga a Stripe: no es ingreso de la plataforma."
+      "stripeFeesDef": "Comisión de procesamiento de Stripe con IVA en todas las aportaciones confirmadas, tanto con tarjeta como con saldo. Se paga a Stripe: no es ingreso de la plataforma."
     },
     "searchPlaceholder": "Buscar por participante, evento o PaymentIntent…",
     "subtitle": "Todos los pagos que entran en la plataforma, con el desglose de comisiones y el motivo de cada fallo.",
@@ -821,6 +821,8 @@
       "record": "Registro",
       "revealed": "Revelada",
       "stripeFee": "Comisión de Stripe",
+      "stripeFeeBase": "— Comisión de Stripe",
+      "stripeFeeIva": "— IVA sobre la comisión",
       "stripePaymentIntent": "PaymentIntent de Stripe",
       "totalCharged": "Total cobrado",
       "processorFee": "Comisión de {{processor}}"
@@ -1455,7 +1457,7 @@
     "currentBalance": "Saldo actual",
     "earned": "Ganados",
     "free": "Gratis",
-    "joined": "Se unió el {{date}} · último acceso {{lastLogin}}",
+    "joined": "Se unió el {{date}} · última actividad {{lastSeen}}",
     "location": "Ubicación",
     "metrics": {
       "avgContribution": "Aportación media",
@@ -1464,6 +1466,8 @@
       "conversionDef": "Aportó ÷ invitado × 100.",
       "decisionTime": "Tiempo de decisión",
       "decisionTimeDef": "Mediana de (fecha de la aportación − fecha de la invitación).",
+      "eventsOrganized": "Eventos organizados",
+      "eventsOrganizedDef": "Eventos creados por este usuario, sea cual sea su estado.",
       "eventsContributed": "Eventos con aportación",
       "eventsContributedDef": "Eventos distintos con al menos una aportación confirmada.",
       "frequency": "Frecuencia de aportación",
@@ -1584,6 +1588,8 @@
       "emptyBody": "Quite un filtro o busque por correo electrónico para ampliar los resultados.",
       "invitations": "Invitaciones",
       "lastLogin": "Último acceso",
+      "lastSeen": "Última actividad",
+      "lastSeenTooltip": "Cuándo estuvo activa esta cuenta por última vez. Último inicio de sesión con credenciales: {{login}}.",
       "location": "Ubicación",
       "organized": "Organizados",
       "registered": "Registrado",
@@ -1643,5 +1649,17 @@
       "stripePayout": "Pago de Stripe"
     },
     "title": "Retiros y pagos"
+  },
+  "publicShare": {
+    "getTheApp": "Descargar Regalapp",
+    "event": {
+      "goneTitle": "Este evento no está disponible",
+      "goneBody": "Puede que el enlace esté mal escrito, o que el evento haya terminado o se haya cancelado.",
+      "forPerson": "Para {{name}}",
+      "ofGoal": "de {{goal}}",
+      "stats": "{{count}} aportantes · faltan {{days}} días",
+      "openInApp": "Abrir en Regalapp",
+      "dontHaveApp": "¿No tienes la app? Descárgala aquí"
+    }
   }
 }

@@ -167,9 +167,12 @@ export default function Contributions() {
           {...kpi('platformFees', (v) => formatMoney(v))}
           definition={t('contributions.kpi.platformFeesDef')}
         />
+        {/* `processorFees`, not `stripeFees`: the latter counts only rows the
+            card network handled, so a book of wallet-funded gifts reported
+            $0.00 while their Stripe fees sat inside the total. */}
         <KpiCard
           label={t('contributions.kpi.stripeFees')}
-          {...kpi('stripeFees', (v) => formatMoney(v))}
+          {...kpi('processorFees', (v) => formatMoney(v))}
           definition={t('contributions.kpi.stripeFeesDef')}
         />
         <KpiCard

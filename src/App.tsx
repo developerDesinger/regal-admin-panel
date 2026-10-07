@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { lazy } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ToastProvider } from '@/components/ui/toast';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -11,6 +11,12 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import ChangePassword from '@/pages/ChangePassword';
 import Legal from '@/pages/Legal';
+// An event's public page — where `shareUrl` from the API lands. Code-split:
+// nobody signing into the panel needs it, and nobody opening a shared link
+// needs the panel. `/download` and `/i/:code` are NOT here: server.js answers
+// those before the SPA ever loads, which is also what serves the two app
+// association files.
+const EventLanding = lazy(() => import('@/pages/public/EventLanding'));
 
 // Every authenticated route is code-split, so the login screen never downloads
 // the charting library and the dashboard's first paint stays small
@@ -61,6 +67,19 @@ export default function App() {
             <Route path="/privacy" element={<Legal doc="privacy" />} />
             <Route path="/terms" element={<Legal doc="terms" />} />
             <Route path="/delete-account" element={<Legal doc="deleteAccount" />} />
+            {/* An event's share link. Public: whoever follows one has no
+                account, and the admin shell would bounce them to /login. It
+                needs its own Suspense — the only other one lives inside that
+                shell. */}
+            <Route
+              element={
+                <Suspense fallback={<div className="min-h-screen bg-neutral-50" />}>
+                  <Outlet />
+                </Suspense>
+              }
+            >
+              <Route path="/c/:slug" element={<EventLanding />} />
+            </Route>
 
             {/* (dashboard) — shell: sidebar + topbar + filter context */}
             <Route element={<AppShell />}>

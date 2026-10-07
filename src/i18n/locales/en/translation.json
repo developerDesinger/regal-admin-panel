@@ -790,7 +790,7 @@
       "platformFees": "Regalapp Fees",
       "platformFeesDef": "Regalapp's own commission (4.9%) across confirmed contributions. This is platform revenue.",
       "stripeFees": "Stripe Fees",
-      "stripeFeesDef": "Stripe processing commission incl. IVA, on confirmed contributions Stripe processed. Paid to Stripe — not platform revenue."
+      "stripeFeesDef": "Stripe processing commission incl. IVA on every confirmed contribution, card-paid and wallet-funded alike. Paid to Stripe — not platform revenue."
     },
     "searchPlaceholder": "Search contributor, event, PaymentIntent…",
     "subtitle": "Every payment into the platform, with the fee split and the reason behind each failure.",
@@ -821,6 +821,8 @@
       "record": "Record",
       "revealed": "Revealed",
       "stripeFee": "Stripe fee",
+      "stripeFeeBase": "— Stripe commission",
+      "stripeFeeIva": "— IVA on commission",
       "stripePaymentIntent": "Stripe PaymentIntent",
       "totalCharged": "Total charged",
       "processorFee": "{{processor}} fee"
@@ -1455,7 +1457,7 @@
     "currentBalance": "Current balance",
     "earned": "Earned",
     "free": "Free",
-    "joined": "Joined {{date}} · last login {{lastLogin}}",
+    "joined": "Joined {{date}} · last active {{lastSeen}}",
     "location": "Location",
     "metrics": {
       "avgContribution": "Average Contribution",
@@ -1464,6 +1466,8 @@
       "conversionDef": "Contributed ÷ invited × 100.",
       "decisionTime": "Decision Time",
       "decisionTimeDef": "Median of (contribution timestamp − invitation timestamp).",
+      "eventsOrganized": "Events Organized",
+      "eventsOrganizedDef": "Events this user created, whatever their status.",
       "eventsContributed": "Events Contributed To",
       "eventsContributedDef": "Distinct events with at least one confirmed contribution.",
       "frequency": "Contribution Frequency",
@@ -1584,6 +1588,8 @@
       "emptyBody": "Clear a filter or search by email to widen the result set.",
       "invitations": "Invitations",
       "lastLogin": "Last login",
+      "lastSeen": "Last activity",
+      "lastSeenTooltip": "When this account was last active. Last credential login: {{login}}.",
       "location": "Location",
       "organized": "Organized",
       "registered": "Registered",
@@ -1643,5 +1649,17 @@
       "stripePayout": "Stripe payout"
     },
     "title": "Withdrawals & Payouts"
+  },
+  "publicShare": {
+    "getTheApp": "Get Regalapp",
+    "event": {
+      "goneTitle": "This event isn't available",
+      "goneBody": "The link may be mistyped, or the event has ended or been cancelled.",
+      "forPerson": "For {{name}}",
+      "ofGoal": "of {{goal}}",
+      "stats": "{{count}} contributors · {{days}} days left",
+      "openInApp": "Open in Regalapp",
+      "dontHaveApp": "Don't have the app? Get it here"
+    }
   }
 }

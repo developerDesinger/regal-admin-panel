@@ -315,6 +315,9 @@ export interface ContributionRow {
   amount: number;
   platformFee: number;
   stripeFee: number;
+  /** The two halves of `stripeFee`; they always sum to it. */
+  stripeFeeBase: number;
+  stripeFeeIva: number;
   totalCharged: number;
   creditedAmount: number;
   feePayer: 'contributor' | 'beneficiary';
@@ -404,6 +407,8 @@ export interface UserRow {
   authProviders: ('local' | 'google' | 'apple')[];
   createdAt: string;
   lastLoginAt: string | null;
+  /** Last session renewal — see `lastSeenAt` on the server's user model. */
+  lastSeenAt: string | null;
   cloverBalance: number;
   eventsOrganized: number;
   eventsContributedTo: number;
